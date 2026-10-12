@@ -1,0 +1,1652 @@
+[
+  {
+    "capital": "A",
+    "correct": "a",
+    "distractors": [
+      "b",
+      "k"
+    ],
+    "emoji": "✈️",
+    "label": "Aeroplane",
+    "image": "aeroplane.gif"
+  },
+  {
+    "capital": "A",
+    "correct": "a",
+    "distractors": [
+      "b",
+      "k"
+    ],
+    "emoji": "🐊",
+    "label": "Alligator",
+    "image": "alligator.gif"
+  },
+  {
+    "capital": "A",
+    "correct": "a",
+    "distractors": [
+      "b",
+      "k"
+    ],
+    "emoji": "🐜",
+    "label": "Ant",
+    "image": "ant.gif"
+  },
+  {
+    "capital": "A",
+    "correct": "a",
+    "distractors": [
+      "b",
+      "k"
+    ],
+    "emoji": "🍎",
+    "label": "Apple",
+    "image": "apple.gif"
+  },
+  {
+    "capital": "A",
+    "correct": "a",
+    "distractors": [
+      "b",
+      "k"
+    ],
+    "emoji": "🧑‍🚀",
+    "label": "Astronaut",
+    "image": "astronaut.gif"
+  },
+  {
+    "capital": "A",
+    "correct": "a",
+    "distractors": [
+      "b",
+      "k"
+    ],
+    "emoji": "🪓",
+    "label": "Axe",
+    "image": "axe.gif"
+  },
+  {
+    "capital": "B",
+    "correct": "b",
+    "distractors": [
+      "c",
+      "n"
+    ],
+    "emoji": "⚽",
+    "label": "Ball",
+    "image": "ball.gif"
+  },
+  {
+    "capital": "B",
+    "correct": "b",
+    "distractors": [
+      "c",
+      "n"
+    ],
+    "emoji": "⭐",
+    "label": "Ballon",
+    "image": "ballon.gif"
+  },
+  {
+    "capital": "B",
+    "correct": "b",
+    "distractors": [
+      "c",
+      "n"
+    ],
+    "emoji": "🍌",
+    "label": "Banana",
+    "image": "banana.gif"
+  },
+  {
+    "capital": "B",
+    "correct": "b",
+    "distractors": [
+      "c",
+      "n"
+    ],
+    "emoji": "🦇",
+    "label": "Bat",
+    "image": "bat.gif"
+  },
+  {
+    "capital": "B",
+    "correct": "b",
+    "distractors": [
+      "c",
+      "n"
+    ],
+    "emoji": "🐻",
+    "label": "Bear",
+    "image": "bear.gif"
+  },
+  {
+    "capital": "B",
+    "correct": "b",
+    "distractors": [
+      "c",
+      "n"
+    ],
+    "emoji": "🐝",
+    "label": "Bee",
+    "image": "bee.gif"
+  },
+  {
+    "capital": "C",
+    "correct": "c",
+    "distractors": [
+      "e",
+      "o"
+    ],
+    "emoji": "🍬",
+    "label": "Candy",
+    "image": "candy.webp"
+  },
+  {
+    "capital": "C",
+    "correct": "c",
+    "distractors": [
+      "e",
+      "o"
+    ],
+    "emoji": "🚗",
+    "label": "Car",
+    "image": "car.gif"
+  },
+  {
+    "capital": "C",
+    "correct": "c",
+    "distractors": [
+      "e",
+      "o"
+    ],
+    "emoji": "🐱",
+    "label": "Cat",
+    "image": "cat.gif"
+  },
+  {
+    "capital": "C",
+    "correct": "c",
+    "distractors": [
+      "e",
+      "o"
+    ],
+    "emoji": "⭐",
+    "label": "Catterpillar",
+    "image": "catterpillar.gif"
+  },
+  {
+    "capital": "C",
+    "correct": "c",
+    "distractors": [
+      "e",
+      "o"
+    ],
+    "emoji": "⭐",
+    "label": "Circle",
+    "image": "circle.gif"
+  },
+  {
+    "capital": "C",
+    "correct": "c",
+    "distractors": [
+      "e",
+      "o"
+    ],
+    "emoji": "⭐",
+    "label": "Crab",
+    "image": "crab.gif"
+  },
+  {
+    "capital": "C",
+    "correct": "c",
+    "distractors": [
+      "e",
+      "o"
+    ],
+    "emoji": "⭐",
+    "label": "Crocodile",
+    "image": "crocodile.gif"
+  },
+  {
+    "capital": "C",
+    "correct": "c",
+    "distractors": [
+      "e",
+      "o"
+    ],
+    "emoji": "⭐",
+    "label": "Cup",
+    "image": "cup.gif"
+  },
+  {
+    "capital": "D",
+    "correct": "d",
+    "distractors": [
+      "p",
+      "q"
+    ],
+    "emoji": "⭐",
+    "label": "Dolphine",
+    "image": "dolphine.gif"
+  },
+  {
+    "capital": "D",
+    "correct": "d",
+    "distractors": [
+      "p",
+      "q"
+    ],
+    "emoji": "👗",
+    "label": "Dress",
+    "image": "dress.jpg"
+  },
+  {
+    "capital": "D",
+    "correct": "d",
+    "distractors": [
+      "p",
+      "q"
+    ],
+    "emoji": "⭐",
+    "label": "Drive",
+    "image": "drive.gif"
+  },
+  {
+    "capital": "D",
+    "correct": "d",
+    "distractors": [
+      "p",
+      "q"
+    ],
+    "emoji": "🥁",
+    "label": "Drum",
+    "image": "drum.gif"
+  },
+  {
+    "capital": "D",
+    "correct": "d",
+    "distractors": [
+      "p",
+      "q"
+    ],
+    "emoji": "🦆",
+    "label": "Duck",
+    "image": "duck.gif"
+  },
+  {
+    "capital": "E",
+    "correct": "e",
+    "distractors": [
+      "f",
+      "g"
+    ],
+    "emoji": "⭐",
+    "label": "Eagel",
+    "image": "eagel.gif"
+  },
+  {
+    "capital": "E",
+    "correct": "e",
+    "distractors": [
+      "f",
+      "g"
+    ],
+    "emoji": "👂",
+    "label": "Ear",
+    "image": "ear.gif"
+  },
+  {
+    "capital": "E",
+    "correct": "e",
+    "distractors": [
+      "f",
+      "g"
+    ],
+    "emoji": "🌍",
+    "label": "Earth",
+    "image": "earth.gif"
+  },
+  {
+    "capital": "E",
+    "correct": "e",
+    "distractors": [
+      "f",
+      "g"
+    ],
+    "emoji": "🥚",
+    "label": "Egg",
+    "image": "egg.gif"
+  },
+  {
+    "capital": "E",
+    "correct": "e",
+    "distractors": [
+      "f",
+      "g"
+    ],
+    "emoji": "⭐",
+    "label": "Elephant Gif",
+    "image": "elephant gif.gif"
+  },
+  {
+    "capital": "E",
+    "correct": "e",
+    "distractors": [
+      "f",
+      "g"
+    ],
+    "emoji": "🐘",
+    "label": "Elephant",
+    "image": "elephant.gif"
+  },
+  {
+    "capital": "F",
+    "correct": "f",
+    "distractors": [
+      "t",
+      "r"
+    ],
+    "emoji": "🪭",
+    "label": "Fan",
+    "image": "fan.gif"
+  },
+  {
+    "capital": "F",
+    "correct": "f",
+    "distractors": [
+      "t",
+      "r"
+    ],
+    "emoji": "🐟",
+    "label": "Fish",
+    "image": "fish.gif"
+  },
+  {
+    "capital": "F",
+    "correct": "f",
+    "distractors": [
+      "t",
+      "r"
+    ],
+    "emoji": "🌸",
+    "label": "Flower",
+    "image": "flower.gif"
+  },
+  {
+    "capital": "F",
+    "correct": "f",
+    "distractors": [
+      "t",
+      "r"
+    ],
+    "emoji": "⭐",
+    "label": "Food",
+    "image": "food.jpg"
+  },
+  {
+    "capital": "F",
+    "correct": "f",
+    "distractors": [
+      "t",
+      "r"
+    ],
+    "emoji": "🦊",
+    "label": "Fox",
+    "image": "fox.gif"
+  },
+  {
+    "capital": "F",
+    "correct": "f",
+    "distractors": [
+      "t",
+      "r"
+    ],
+    "emoji": "🐸",
+    "label": "Frog",
+    "image": "frog.gif"
+  },
+  {
+    "capital": "F",
+    "correct": "f",
+    "distractors": [
+      "t",
+      "r"
+    ],
+    "emoji": "🐸",
+    "label": "Frog",
+    "image": "frog.jpg"
+  },
+  {
+    "capital": "G",
+    "correct": "g",
+    "distractors": [
+      "q",
+      "y"
+    ],
+    "emoji": "⭐",
+    "label": "Girafee",
+    "image": "girafee.jpg"
+  },
+  {
+    "capital": "G",
+    "correct": "g",
+    "distractors": [
+      "q",
+      "y"
+    ],
+    "emoji": "🦒",
+    "label": "Giraffe",
+    "image": "giraffe.png"
+  },
+  {
+    "capital": "G",
+    "correct": "g",
+    "distractors": [
+      "q",
+      "y"
+    ],
+    "emoji": "🐐",
+    "label": "Goat",
+    "image": "goat.gif"
+  },
+  {
+    "capital": "G",
+    "correct": "g",
+    "distractors": [
+      "q",
+      "y"
+    ],
+    "emoji": "🍇",
+    "label": "Grapes",
+    "image": "grapes.gif"
+  },
+  {
+    "capital": "G",
+    "correct": "g",
+    "distractors": [
+      "q",
+      "y"
+    ],
+    "emoji": "⭐",
+    "label": "Gun",
+    "image": "gun.gif"
+  },
+  {
+    "capital": "H",
+    "correct": "h",
+    "distractors": [
+      "n",
+      "m"
+    ],
+    "emoji": "🎩",
+    "label": "Hat",
+    "image": "hat.gif"
+  },
+  {
+    "capital": "H",
+    "correct": "h",
+    "distractors": [
+      "n",
+      "m"
+    ],
+    "emoji": "⭐",
+    "label": "Helicopter Gif",
+    "image": "helicopter gif.gif"
+  },
+  {
+    "capital": "H",
+    "correct": "h",
+    "distractors": [
+      "n",
+      "m"
+    ],
+    "emoji": "⭐",
+    "label": "Hen Gif",
+    "image": "hen gif.gif"
+  },
+  {
+    "capital": "H",
+    "correct": "h",
+    "distractors": [
+      "n",
+      "m"
+    ],
+    "emoji": "⭐",
+    "label": "Hippotoms",
+    "image": "hippotoms.gif"
+  },
+  {
+    "capital": "H",
+    "correct": "h",
+    "distractors": [
+      "n",
+      "m"
+    ],
+    "emoji": "⭐",
+    "label": "Honey",
+    "image": "honey.gif"
+  },
+  {
+    "capital": "H",
+    "correct": "h",
+    "distractors": [
+      "n",
+      "m"
+    ],
+    "emoji": "🐴",
+    "label": "Horse",
+    "image": "horse.gif"
+  },
+  {
+    "capital": "I",
+    "correct": "i",
+    "distractors": [
+      "l",
+      "j"
+    ],
+    "emoji": "⭐",
+    "label": "Ice Cube",
+    "image": "ice cube.gif"
+  },
+  {
+    "capital": "I",
+    "correct": "i",
+    "distractors": [
+      "l",
+      "j"
+    ],
+    "emoji": "🍦",
+    "label": "Icecream",
+    "image": "icecream.gif"
+  },
+  {
+    "capital": "I",
+    "correct": "i",
+    "distractors": [
+      "l",
+      "j"
+    ],
+    "emoji": "🧊",
+    "label": "Igloo",
+    "image": "igloo.gif"
+  },
+  {
+    "capital": "I",
+    "correct": "i",
+    "distractors": [
+      "l",
+      "j"
+    ],
+    "emoji": "⭐",
+    "label": "Iron",
+    "image": "iron.png"
+  },
+  {
+    "capital": "J",
+    "correct": "j",
+    "distractors": [
+      "i",
+      "g"
+    ],
+    "emoji": "🧥",
+    "label": "Jacket",
+    "image": "jacket.gif"
+  },
+  {
+    "capital": "J",
+    "correct": "j",
+    "distractors": [
+      "i",
+      "g"
+    ],
+    "emoji": "🍓",
+    "label": "Jam",
+    "image": "jam.gif"
+  },
+  {
+    "capital": "J",
+    "correct": "j",
+    "distractors": [
+      "i",
+      "g"
+    ],
+    "emoji": "⭐",
+    "label": "Jar",
+    "image": "jar.gif"
+  },
+  {
+    "capital": "J",
+    "correct": "j",
+    "distractors": [
+      "i",
+      "g"
+    ],
+    "emoji": "⭐",
+    "label": "Jelly Fish",
+    "image": "jelly fish.gif"
+  },
+  {
+    "capital": "J",
+    "correct": "j",
+    "distractors": [
+      "i",
+      "g"
+    ],
+    "emoji": "🧃",
+    "label": "Juice",
+    "image": "juice.gif"
+  },
+  {
+    "capital": "K",
+    "correct": "k",
+    "distractors": [
+      "x",
+      "v"
+    ],
+    "emoji": "🦘",
+    "label": "Kangaroo",
+    "image": "kangaroo.gif"
+  },
+  {
+    "capital": "K",
+    "correct": "k",
+    "distractors": [
+      "x",
+      "v"
+    ],
+    "emoji": "🦘",
+    "label": "Kangaroo",
+    "image": "kangaroo.jpg"
+  },
+  {
+    "capital": "K",
+    "correct": "k",
+    "distractors": [
+      "x",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "Kettle",
+    "image": "kettle.gif"
+  },
+  {
+    "capital": "K",
+    "correct": "k",
+    "distractors": [
+      "x",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "Keys",
+    "image": "keys.gif"
+  },
+  {
+    "capital": "K",
+    "correct": "k",
+    "distractors": [
+      "x",
+      "v"
+    ],
+    "emoji": "🪁",
+    "label": "Kite",
+    "image": "kite.gif"
+  },
+  {
+    "capital": "L",
+    "correct": "l",
+    "distractors": [
+      "i",
+      "t"
+    ],
+    "emoji": "🪜",
+    "label": "Ladder",
+    "image": "ladder.gif"
+  },
+  {
+    "capital": "L",
+    "correct": "l",
+    "distractors": [
+      "i",
+      "t"
+    ],
+    "emoji": "💡",
+    "label": "Lamp",
+    "image": "lamp.gif"
+  },
+  {
+    "capital": "L",
+    "correct": "l",
+    "distractors": [
+      "i",
+      "t"
+    ],
+    "emoji": "🍃",
+    "label": "Leaf",
+    "image": "leaf.gif"
+  },
+  {
+    "capital": "L",
+    "correct": "l",
+    "distractors": [
+      "i",
+      "t"
+    ],
+    "emoji": "🍋",
+    "label": "Lemon",
+    "image": "lemon.gif"
+  },
+  {
+    "capital": "L",
+    "correct": "l",
+    "distractors": [
+      "i",
+      "t"
+    ],
+    "emoji": "🦁",
+    "label": "Lion",
+    "image": "lion.gif"
+  },
+  {
+    "capital": "L",
+    "correct": "l",
+    "distractors": [
+      "i",
+      "t"
+    ],
+    "emoji": "🦁",
+    "label": "Lion",
+    "image": "lion.jpg"
+  },
+  {
+    "capital": "L",
+    "correct": "l",
+    "distractors": [
+      "i",
+      "t"
+    ],
+    "emoji": "⭐",
+    "label": "Lizard",
+    "image": "lizard.jpg"
+  },
+  {
+    "capital": "M",
+    "correct": "m",
+    "distractors": [
+      "n",
+      "w"
+    ],
+    "emoji": "🥭",
+    "label": "Mango",
+    "image": "mango.gif"
+  },
+  {
+    "capital": "M",
+    "correct": "m",
+    "distractors": [
+      "n",
+      "w"
+    ],
+    "emoji": "⭐",
+    "label": "Mangoose",
+    "image": "mangoose.gif"
+  },
+  {
+    "capital": "M",
+    "correct": "m",
+    "distractors": [
+      "n",
+      "w"
+    ],
+    "emoji": "🟫",
+    "label": "Mat",
+    "image": "mat.gif"
+  },
+  {
+    "capital": "M",
+    "correct": "m",
+    "distractors": [
+      "n",
+      "w"
+    ],
+    "emoji": "🥛",
+    "label": "Milk",
+    "image": "milk.gif"
+  },
+  {
+    "capital": "M",
+    "correct": "m",
+    "distractors": [
+      "n",
+      "w"
+    ],
+    "emoji": "🐒",
+    "label": "Monkey",
+    "image": "monkey.gif"
+  },
+  {
+    "capital": "M",
+    "correct": "m",
+    "distractors": [
+      "n",
+      "w"
+    ],
+    "emoji": "⭐",
+    "label": "Mosquito",
+    "image": "mosquito.gif"
+  },
+  {
+    "capital": "M",
+    "correct": "m",
+    "distractors": [
+      "n",
+      "w"
+    ],
+    "emoji": "⭐",
+    "label": "Mushroom",
+    "image": "mushroom.gif"
+  },
+  {
+    "capital": "N",
+    "correct": "n",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "Neck",
+    "image": "neck.gif"
+  },
+  {
+    "capital": "N",
+    "correct": "n",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "🪹",
+    "label": "Nest",
+    "image": "nest.gif"
+  },
+  {
+    "capital": "N",
+    "correct": "n",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "👃",
+    "label": "Nose",
+    "image": "nose.gif"
+  },
+  {
+    "capital": "N",
+    "correct": "n",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "Notebook",
+    "image": "notebook.gif"
+  },
+  {
+    "capital": "O",
+    "correct": "o",
+    "distractors": [
+      "c",
+      "a"
+    ],
+    "emoji": "⭐",
+    "label": "Octobus",
+    "image": "octobus.gif"
+  },
+  {
+    "capital": "O",
+    "correct": "o",
+    "distractors": [
+      "c",
+      "a"
+    ],
+    "emoji": "⭐",
+    "label": "Octubus",
+    "image": "octubus.gif"
+  },
+  {
+    "capital": "O",
+    "correct": "o",
+    "distractors": [
+      "c",
+      "a"
+    ],
+    "emoji": "🧅",
+    "label": "Onion",
+    "image": "onion.gif"
+  },
+  {
+    "capital": "O",
+    "correct": "o",
+    "distractors": [
+      "c",
+      "a"
+    ],
+    "emoji": "🍊",
+    "label": "Orange",
+    "image": "orange.png"
+  },
+  {
+    "capital": "O",
+    "correct": "o",
+    "distractors": [
+      "c",
+      "a"
+    ],
+    "emoji": "⭐",
+    "label": "Oval",
+    "image": "oval.gif"
+  },
+  {
+    "capital": "O",
+    "correct": "o",
+    "distractors": [
+      "c",
+      "a"
+    ],
+    "emoji": "🦉",
+    "label": "Owl",
+    "image": "owl.gif"
+  },
+  {
+    "capital": "P",
+    "correct": "p",
+    "distractors": [
+      "q",
+      "g"
+    ],
+    "emoji": "🐼",
+    "label": "Panda",
+    "image": "panda.png"
+  },
+  {
+    "capital": "P",
+    "correct": "p",
+    "distractors": [
+      "q",
+      "g"
+    ],
+    "emoji": "🦜",
+    "label": "Parrot",
+    "image": "parrot.gif"
+  },
+  {
+    "capital": "P",
+    "correct": "p",
+    "distractors": [
+      "q",
+      "g"
+    ],
+    "emoji": "✏️",
+    "label": "Pencil",
+    "image": "pencil.gif"
+  },
+  {
+    "capital": "P",
+    "correct": "p",
+    "distractors": [
+      "q",
+      "g"
+    ],
+    "emoji": "⭐",
+    "label": "Penguin",
+    "image": "penguin.gif"
+  },
+  {
+    "capital": "P",
+    "correct": "p",
+    "distractors": [
+      "q",
+      "g"
+    ],
+    "emoji": "🐷",
+    "label": "Pig",
+    "image": "pig.gif"
+  },
+  {
+    "capital": "P",
+    "correct": "p",
+    "distractors": [
+      "q",
+      "g"
+    ],
+    "emoji": "🍕",
+    "label": "Pizza",
+    "image": "pizza.gif"
+  },
+  {
+    "capital": "P",
+    "correct": "p",
+    "distractors": [
+      "q",
+      "g"
+    ],
+    "emoji": "⭐",
+    "label": "Popcorn",
+    "image": "popcorn.png"
+  },
+  {
+    "capital": "Q",
+    "correct": "q",
+    "distractors": [
+      "p",
+      "d"
+    ],
+    "emoji": "⭐",
+    "label": "Quail",
+    "image": "quail.gif"
+  },
+  {
+    "capital": "Q",
+    "correct": "q",
+    "distractors": [
+      "p",
+      "d"
+    ],
+    "emoji": "👑",
+    "label": "Queen",
+    "image": "queen.gif"
+  },
+  {
+    "capital": "Q",
+    "correct": "q",
+    "distractors": [
+      "p",
+      "d"
+    ],
+    "emoji": "⭐",
+    "label": "Quite",
+    "image": "quite.gif"
+  },
+  {
+    "capital": "R",
+    "correct": "r",
+    "distractors": [
+      "v",
+      "s"
+    ],
+    "emoji": "🐰",
+    "label": "Rabbit",
+    "image": "rabbit.gif"
+  },
+  {
+    "capital": "R",
+    "correct": "r",
+    "distractors": [
+      "v",
+      "s"
+    ],
+    "emoji": "🌧️",
+    "label": "Rain",
+    "image": "rain.gif"
+  },
+  {
+    "capital": "R",
+    "correct": "r",
+    "distractors": [
+      "v",
+      "s"
+    ],
+    "emoji": "⭐",
+    "label": "Rainbow",
+    "image": "rainbow.gif"
+  },
+  {
+    "capital": "R",
+    "correct": "r",
+    "distractors": [
+      "v",
+      "s"
+    ],
+    "emoji": "⭐",
+    "label": "Rainbow",
+    "image": "rainbow.jpg"
+  },
+  {
+    "capital": "R",
+    "correct": "r",
+    "distractors": [
+      "v",
+      "s"
+    ],
+    "emoji": "🐀",
+    "label": "Rat",
+    "image": "rat.gif"
+  },
+  {
+    "capital": "R",
+    "correct": "r",
+    "distractors": [
+      "v",
+      "s"
+    ],
+    "emoji": "⭐",
+    "label": "Ring",
+    "image": "ring.gif"
+  },
+  {
+    "capital": "S",
+    "correct": "s",
+    "distractors": [
+      "c",
+      "z"
+    ],
+    "emoji": "⭐",
+    "label": "Santa",
+    "image": "santa.png"
+  },
+  {
+    "capital": "S",
+    "correct": "s",
+    "distractors": [
+      "c",
+      "z"
+    ],
+    "emoji": "🦈",
+    "label": "Shark",
+    "image": "shark.gif"
+  },
+  {
+    "capital": "S",
+    "correct": "s",
+    "distractors": [
+      "c",
+      "z"
+    ],
+    "emoji": "🐑",
+    "label": "Sheep",
+    "image": "sheep.jpg"
+  },
+  {
+    "capital": "S",
+    "correct": "s",
+    "distractors": [
+      "c",
+      "z"
+    ],
+    "emoji": "🐍",
+    "label": "Snake",
+    "image": "snake.gif"
+  },
+  {
+    "capital": "S",
+    "correct": "s",
+    "distractors": [
+      "c",
+      "z"
+    ],
+    "emoji": "🐍",
+    "label": "Snake",
+    "image": "snake.jpg"
+  },
+  {
+    "capital": "S",
+    "correct": "s",
+    "distractors": [
+      "c",
+      "z"
+    ],
+    "emoji": "⭐",
+    "label": "Sparrow",
+    "image": "sparrow.jpg"
+  },
+  {
+    "capital": "S",
+    "correct": "s",
+    "distractors": [
+      "c",
+      "z"
+    ],
+    "emoji": "⭐",
+    "label": "Spoon",
+    "image": "spoon.gif"
+  },
+  {
+    "capital": "S",
+    "correct": "s",
+    "distractors": [
+      "c",
+      "z"
+    ],
+    "emoji": "☀️",
+    "label": "Sun",
+    "image": "sun.png"
+  },
+  {
+    "capital": "T",
+    "correct": "t",
+    "distractors": [
+      "f",
+      "l"
+    ],
+    "emoji": "🐯",
+    "label": "Tiger",
+    "image": "tiger.avif"
+  },
+  {
+    "capital": "T",
+    "correct": "t",
+    "distractors": [
+      "f",
+      "l"
+    ],
+    "emoji": "🐯",
+    "label": "Tiger",
+    "image": "tiger.gif"
+  },
+  {
+    "capital": "T",
+    "correct": "t",
+    "distractors": [
+      "f",
+      "l"
+    ],
+    "emoji": "🍅",
+    "label": "Tomato",
+    "image": "tomato.webp"
+  },
+  {
+    "capital": "T",
+    "correct": "t",
+    "distractors": [
+      "f",
+      "l"
+    ],
+    "emoji": "🌳",
+    "label": "Tree",
+    "image": "tree.gif"
+  },
+  {
+    "capital": "T",
+    "correct": "t",
+    "distractors": [
+      "f",
+      "l"
+    ],
+    "emoji": "🚚",
+    "label": "Truck",
+    "image": "truck.gif"
+  },
+  {
+    "capital": "T",
+    "correct": "t",
+    "distractors": [
+      "f",
+      "l"
+    ],
+    "emoji": "⭐",
+    "label": "Turkey",
+    "image": "turkey.gif"
+  },
+  {
+    "capital": "T",
+    "correct": "t",
+    "distractors": [
+      "f",
+      "l"
+    ],
+    "emoji": "🐢",
+    "label": "Turtle",
+    "image": "turtle.gif"
+  },
+  {
+    "capital": "T",
+    "correct": "t",
+    "distractors": [
+      "f",
+      "l"
+    ],
+    "emoji": "🐢",
+    "label": "Turtle",
+    "image": "turtle.png"
+  },
+  {
+    "capital": "U",
+    "correct": "u",
+    "distractors": [
+      "v",
+      "w"
+    ],
+    "emoji": "⭐",
+    "label": "Umbralla",
+    "image": "umbralla.gif"
+  },
+  {
+    "capital": "U",
+    "correct": "u",
+    "distractors": [
+      "v",
+      "w"
+    ],
+    "emoji": "☂️",
+    "label": "Umbrella",
+    "image": "umbrella.gif"
+  },
+  {
+    "capital": "U",
+    "correct": "u",
+    "distractors": [
+      "v",
+      "w"
+    ],
+    "emoji": "🦄",
+    "label": "Unicorn",
+    "image": "unicorn.gif"
+  },
+  {
+    "capital": "U",
+    "correct": "u",
+    "distractors": [
+      "v",
+      "w"
+    ],
+    "emoji": "⭐",
+    "label": "Uniform",
+    "image": "uniform.png"
+  },
+  {
+    "capital": "V",
+    "correct": "v",
+    "distractors": [
+      "u",
+      "w"
+    ],
+    "emoji": "🚐",
+    "label": "Van",
+    "image": "van.gif"
+  },
+  {
+    "capital": "V",
+    "correct": "v",
+    "distractors": [
+      "u",
+      "w"
+    ],
+    "emoji": "⭐",
+    "label": "Vegetables",
+    "image": "vegetables.avif"
+  },
+  {
+    "capital": "V",
+    "correct": "v",
+    "distractors": [
+      "u",
+      "w"
+    ],
+    "emoji": "⭐",
+    "label": "Vegetables",
+    "image": "vegetables.gif"
+  },
+  {
+    "capital": "V",
+    "correct": "v",
+    "distractors": [
+      "u",
+      "w"
+    ],
+    "emoji": "⭐",
+    "label": "Violine",
+    "image": "violine.jpg"
+  },
+  {
+    "capital": "V",
+    "correct": "v",
+    "distractors": [
+      "u",
+      "w"
+    ],
+    "emoji": "⭐",
+    "label": "Vulture",
+    "image": "vulture.jpg"
+  },
+  {
+    "capital": "W",
+    "correct": "w",
+    "distractors": [
+      "m",
+      "v"
+    ],
+    "emoji": "💧",
+    "label": "Water",
+    "image": "water.jpg"
+  },
+  {
+    "capital": "W",
+    "correct": "w",
+    "distractors": [
+      "m",
+      "v"
+    ],
+    "emoji": "🍉",
+    "label": "Watermelon",
+    "image": "watermelon.gif"
+  },
+  {
+    "capital": "W",
+    "correct": "w",
+    "distractors": [
+      "m",
+      "v"
+    ],
+    "emoji": "🐋",
+    "label": "Whale",
+    "image": "whale.gif"
+  },
+  {
+    "capital": "W",
+    "correct": "w",
+    "distractors": [
+      "m",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "Wheel",
+    "image": "wheel.gif"
+  },
+  {
+    "capital": "W",
+    "correct": "w",
+    "distractors": [
+      "m",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "Window",
+    "image": "window.gif"
+  },
+  {
+    "capital": "W",
+    "correct": "w",
+    "distractors": [
+      "m",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "World",
+    "image": "world.gif"
+  },
+  {
+    "capital": "X",
+    "correct": "x",
+    "distractors": [
+      "y",
+      "z"
+    ],
+    "emoji": "🩻",
+    "label": "X Ray",
+    "image": "x ray.gif"
+  },
+  {
+    "capital": "X",
+    "correct": "x",
+    "distractors": [
+      "y",
+      "z"
+    ],
+    "emoji": "⭐",
+    "label": "Xerox",
+    "image": "xerox.gif"
+  },
+  {
+    "capital": "X",
+    "correct": "x",
+    "distractors": [
+      "y",
+      "z"
+    ],
+    "emoji": "⭐",
+    "label": "Xmas Tree",
+    "image": "xmas tree.gif"
+  },
+  {
+    "capital": "X",
+    "correct": "x",
+    "distractors": [
+      "y",
+      "z"
+    ],
+    "emoji": "⭐",
+    "label": "Xmas",
+    "image": "xmas.gif"
+  },
+  {
+    "capital": "X",
+    "correct": "x",
+    "distractors": [
+      "y",
+      "z"
+    ],
+    "emoji": "🎹",
+    "label": "Xylophone",
+    "image": "xylophone.gif"
+  },
+  {
+    "capital": "Y",
+    "correct": "y",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "🐂",
+    "label": "Yak",
+    "image": "yak.gif"
+  },
+  {
+    "capital": "Y",
+    "correct": "y",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "🧶",
+    "label": "Yarn",
+    "image": "yarn.gif"
+  },
+  {
+    "capital": "Y",
+    "correct": "y",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "Yarwn",
+    "image": "yarwn.gif"
+  },
+  {
+    "capital": "Y",
+    "correct": "y",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "Yawn",
+    "image": "yawn.webp"
+  },
+  {
+    "capital": "Y",
+    "correct": "y",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "⭐",
+    "label": "Yellow",
+    "image": "yellow.jpg"
+  },
+  {
+    "capital": "Y",
+    "correct": "y",
+    "distractors": [
+      "u",
+      "v"
+    ],
+    "emoji": "🪀",
+    "label": "Yoyo",
+    "image": "yoyo.png"
+  },
+  {
+    "capital": "Z",
+    "correct": "z",
+    "distractors": [
+      "s",
+      "x"
+    ],
+    "emoji": "🦓",
+    "label": "Zebra",
+    "image": "zebra.gif"
+  },
+  {
+    "capital": "Z",
+    "correct": "z",
+    "distractors": [
+      "s",
+      "x"
+    ],
+    "emoji": "⭐",
+    "label": "Zerba",
+    "image": "zerba.gif"
+  },
+  {
+    "capital": "Z",
+    "correct": "z",
+    "distractors": [
+      "s",
+      "x"
+    ],
+    "emoji": "⭐",
+    "label": "Zero",
+    "image": "zero.gif"
+  },
+  {
+    "capital": "Z",
+    "correct": "z",
+    "distractors": [
+      "s",
+      "x"
+    ],
+    "emoji": "〰️",
+    "label": "Zigzag",
+    "image": "zigzag.gif"
+  },
+  {
+    "capital": "Z",
+    "correct": "z",
+    "distractors": [
+      "s",
+      "x"
+    ],
+    "emoji": "⭐",
+    "label": "Zip",
+    "image": "zip.gif"
+  }
+]

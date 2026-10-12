@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Word Family Blending - LiveTutor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FFF8EA;
+    --sky: #6FC3E0;
+    --sun: #FFC93C;
+    --coral: #FF6F59;
+    --leaf: #7AB852;
+    --plum: #3D2C4E;
+    --plum-soft: #6B5A7D;
+    --danger: #E0554F;
+    --card-shadow: 0 8px 0 rgba(61,44,78,0.15);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Nunito', sans-serif;
+    background: var(--cream);
+    color: var(--plum);
+    min-height: 100vh;
+    padding-bottom: 40px;
+    user-select: none;
+  }
+
+  header { text-align: center; padding: 16px 16px 8px; }
+  header h1 { font-family: 'Baloo 2', cursive; font-size: clamp(22px, 5vw, 32px); margin: 0; color: var(--coral); }
+  header p { margin: 2px 0; font-size: 13px; color: var(--plum-soft); font-weight: 700; }
+  #manifest-status { font-size: 11px; font-weight: 700; min-height: 16px; margin-top: 4px; }
+
+  .wave {
+    width: 100%; height: 16px;
+    background: repeating-linear-gradient(115deg, var(--sky) 0 20px, var(--sun) 20px 40px);
+    opacity: 0.35; border-radius: 0 0 50% 50%/0 0 100% 100%;
+  }
+
+  main { max-width: 800px; margin: 0 auto; padding: 12px 16px; }
+
+  /* Navigation Tabs & Sections */
+  .section-switch { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .section-btn {
+    font-family: 'Baloo 2', cursive; font-size: 15px; font-weight: 800;
+    padding: 8px 18px; border-radius: 18px; border: 3px solid var(--plum);
+    background: #fff; color: var(--plum); cursor: pointer; box-shadow: 0 4px 0 rgba(61,44,78,0.12);
+    transition: all 0.2s ease;
+  }
+  .section-btn.active { background: var(--coral); color: #fff; border-color: var(--coral); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Card Containers */
+  .card {
+    background: #fff; border: 4px solid var(--plum); border-radius: 24px;
+    box-shadow: var(--card-shadow); padding: 20px; text-align: center; margin-bottom: 16px;
+  }
+  .card-title { font-family: 'Baloo 2', cursive; font-size: 20px; color: var(--coral); margin-bottom: 6px; }
+  .card-sub { font-size: 13px; font-weight: 700; color: var(--plum-soft); margin-bottom: 16px; }
+
+  /* Word Selection Grid */
+  .grid-picker { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; }
+  .select-chip {
+    font-family: 'Baloo 2', cursive; font-size: 18px; font-weight: 800;
+    background: #fff; border: 3px solid var(--plum); border-radius: 14px;
+    padding: 8px 20px; cursor: pointer; box-shadow: 0 4px 0 rgba(61,44,78,0.1);
+    transition: transform 0.15s ease, background 0.2s ease;
+  }
+  .select-chip.selected { background: var(--leaf); color: #fff; border-color: var(--leaf); transform: translateY(-2px); }
+
+  /* Target Boxes & Letter Options */
+  .target-container { display: flex; justify-content: center; gap: 12px; margin: 20px 0; min-height: 80px; align-items: center; }
+  .target-box {
+    width: clamp(55px, 14vmin, 75px); height: clamp(55px, 14vmin, 75px);
+    border: 4px dashed var(--plum-soft); border-radius: 16px; background: #FAF5EA;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Baloo 2', cursive; font-size: clamp(28px, 7vmin, 42px); font-weight: 800; color: var(--plum);
+    cursor: pointer;
+  }
+  .target-box.filled { border-style: solid; border-color: var(--plum); background: var(--sun); }
+  .target-box.correct { border-color: var(--leaf); background: var(--leaf); color: #fff; }
+
+  .options-container { display: flex; justify-content: center; gap: 12px; margin: 20px 0; flex-wrap: wrap; min-height: 70px; }
+  .letter-option {
+    width: clamp(50px, 12vmin, 65px); height: clamp(50px, 12vmin, 65px);
+    border: 3px solid var(--plum); border-radius: 16px; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Baloo 2', cursive; font-size: clamp(24px, 6vmin, 36px); font-weight: 800; color: var(--coral);
+    cursor: pointer; box-shadow: 0 4px 0 rgba(61,44,78,0.15); transition: transform 0.15s ease;
+  }
+  .letter-option:active { transform: translateY(3px); box-shadow: none; }
+  .letter-option.disabled { opacity: 0.25; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Image Display */
+  .word-image {
+    max-width: 150px; max-height: 150px; margin: 12px auto;
+    border-radius: 16px; border: 3px solid var(--plum); display: block; object-fit: cover;
+  }
+
+  /* Action Buttons */
+  .action-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+  button.btn {
+    font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 13px;
+    border: 3px solid var(--plum); background: #fff; color: var(--plum);
+    padding: 10px 20px; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 0 rgba(61,44,78,0.15);
+  }
+  button.btn.primary { background: var(--coral); color: #fff; border-color: var(--coral); }
+  button.btn.sound { background: var(--sun); border-color: var(--sun); }
+  button.btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+  /* Manage JSON Form */
+  .form-group { text-align: left; margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 900; color: var(--plum-soft); margin-bottom: 4px; }
+  .form-group input[type="file"] {
+    width: 100%; padding: 8px; border: 2px dashed var(--plum-soft); border-radius: 10px; background: #FAF5EA;
+  }
+</style>
+</head>
+<body>
+
+<div class="wave"></div>
+<header>
+  <h1>Word Family Blending</h1>
+  <p>Jolly Phonics Interactive Practice</p>
+  <div id="manifest-status"></div>
+</header>
+
+<main>
+  <!-- SECTION SWITCHER -->
+  <div class="section-switch">
+    <button class="section-btn active" id="btnSec2">2-Letter Words</button>
+    <button class="section-btn" id="btnSec3">3-Letter Words</button>
+    <button class="section-btn" id="btnSecManage">Manage JSON</button>
+  </div>
+
+  <!-- SECTION 1: TWO LETTER WORDS -->
+  <div class="panel active" id="panel2Letter">
+    <!-- Step 1: Picker -->
+    <div class="card" id="card2Picker">
+      <div class="card-title">Select 2-Letter Words</div>
+      <div class="card-sub">Choose one or more base words to practice</div>
+      <div class="grid-picker" id="picker2List"></div>
+      <button class="btn primary" id="btn2Start" disabled>Next: Start Practice</button>
+    </div>
+
+    <!-- Step 2: Practice -->
+    <div class="card" id="card2Practice" style="display:none;">
+      <div class="card-title" id="title2Word">Word Practice</div>
+      <div class="card-sub">Tap options to fill the boxes. Tap filled boxes to hear sound.</div>
+
+      <div class="action-group">
+        <button class="btn sound" id="btn2HearWord">🔊 Hear Full Word</button>
+      </div>
+
+      <div class="target-container" id="targets2Container"></div>
+      <div class="options-container" id="options2Container"></div>
+
+      <div class="action-group">
+        <button class="btn" id="btn2Reset">Reset Boxes</button>
+        <button class="btn primary" id="btn2NextWord" disabled>Next Word</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: THREE LETTER WORDS -->
+  <div class="panel" id="panel3Letter">
+    <!-- Step 1: Picker -->
+    <div class="card" id="card3Picker">
+      <div class="card-title">Select 3-Letter Words</div>
+      <div class="card-sub">Choose 3-letter words to build and blend</div>
+      <div class="grid-picker" id="picker3List"></div>
+      <button class="btn primary" id="btn3Start" disabled>Next: Start Practice</button>
+    </div>
+
+    <!-- Step 2: Practice -->
+    <div class="card" id="card3Practice" style="display:none;">
+      <div class="card-title">Blend & Spell the Word</div>
+      <div class="card-sub">Place letters in order. Tap filled boxes to hear sound.</div>
+
+      <div class="target-container" id="targets3Container"></div>
+      <div class="options-container" id="options3Container"></div>
+
+      <div id="image3Display"></div>
+
+      <div class="action-group">
+        <button class="btn sound" id="btn3HearWord">🔊 Hear Full Word</button>
+        <button class="btn" id="btn3Reset">Reset Boxes</button>
+        <button class="btn primary" id="btn3NextWord" disabled>Next Word</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: MANAGE JSON -->
+  <div class="panel" id="panelManage">
+    <div class="card">
+      <div class="card-title">Manifest Data Management</div>
+      <div class="card-sub">Upload your custom word families manifest file</div>
+      
+      <div class="form-group">
+        <label>Upload manifest.json</label>
+        <input type="file" id="jsonFileInput" accept=".json">
+      </div>
+      <button class="btn primary" id="btnUploadJson">Apply & Sync Manifest</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// ==========================================
+// 1. CONSOLE SYNC PROTOCOL ENGINE
+// ==========================================
+window.isRemoteUpdate = false;
+
+function sendAction(actionType, payload = {}) {
+  if (window.isRemoteUpdate) return;
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: {
+        type: 'ACTION_EVENT',
+        actionType: actionType,
+        ...payload
+      }
+    }, '*');
+  }
+}
+
+window.addEventListener('message', function(event) {
+  const data = event.data;
+  if (!data || data.type !== 'EXECUTE_UNIVERSAL_ACTION') return;
+  const action = data.action;
+
+  if (action && action.type === 'ACTION_EVENT') {
+    window.isRemoteUpdate = true;
+    
+    switch (action.actionType) {
+      case 'SWITCH_SECTION':
+        switchSection(action.section);
+        break;
+      case 'TOGGLE_2_SELECTION':
+        toggle2Selection(action.word);
+        break;
+      case 'START_2_PRACTICE':
+        start2Practice(action.options);
+        break;
+      case 'PLACE_2_LETTER':
+        place2Letter(action.letter, action.optIdx);
+        break;
+      case 'SPEAK_LETTER':
+        speakLetter(action.letter);
+        break;
+      case 'RESET_2_PRACTICE':
+        setup2WordPractice(action.options);
+        break;
+      case 'NEXT_2_WORD':
+        next2Word(action.options);
+        break;
+      case 'TOGGLE_3_SELECTION':
+        toggle3Selection(action.word);
+        break;
+      case 'START_3_PRACTICE':
+        start3Practice(action.options);
+        break;
+      case 'PLACE_3_LETTER':
+        place3Letter(action.letter, action.optIdx);
+        break;
+      case 'RESET_3_PRACTICE':
+        setup3WordPractice(action.options);
+        break;
+      case 'NEXT_3_WORD':
+        next3Word(action.options);
+        break;
+      case 'UPDATE_MANIFEST':
+        manifestData = action.manifest;
+        renderPickers();
+        break;
+    }
+
+    window.isRemoteUpdate = false;
+  }
+});
+
+// ==========================================
+// 2. SPEECH SYNTHESIS ENGINE (Debounced)
+// ==========================================
+let isSpeakingWord = false;
+
+function speakLetter(char) {
+  if (!('speechSynthesis' in window) || !char) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(char.toLowerCase());
+  u.rate = 0.7; u.pitch = 1.1;
+  window.speechSynthesis.speak(u);
+}
+
+function speakWord(word) {
+  if (!('speechSynthesis' in window) || !word) return;
+  if (isSpeakingWord || window.speechSynthesis.speaking) return;
+
+  isSpeakingWord = true;
+  const u = new SpeechSynthesisUtterance(word);
+  u.rate = 0.8; u.pitch = 1.0;
+  
+  u.onend = () => { isSpeakingWord = false; };
+  u.onerror = () => { isSpeakingWord = false; };
+  
+  window.speechSynthesis.speak(u);
+}
+
+// ==========================================
+// 3. DEFAULT DATA & STATE
+// ==========================================
+const DEFAULT_MANIFEST = [
+  {
+    id: "family_at",
+    group: "group1",
+    two_letter: "at",
+    three_letter_words: [
+      { word: "cat", prefix: "c", base: "at", image: "images/cat.png" },
+      { word: "bat", prefix: "b", base: "at", image: "images/bat.png" },
+      { word: "sat", prefix: "s", base: "at", image: "images/sat.png" }
+    ]
+  },
+  {
+    id: "family_an",
+    group: "group1",
+    two_letter: "an",
+    three_letter_words: [
+      { word: "pan", prefix: "p", base: "an", image: "images/pan.png" },
+      { word: "van", prefix: "v", base: "an", image: "images/van.png" }
+    ]
+  }
+];
+
+let manifestData = [];
+let activeSection = '2letter';
+
+// 2-Letter State
+let selected2Words = [];
+let idx2Active = 0;
+let state2Placed = [];
+let state2Options = [];
+
+// 3-Letter State
+let selected3Words = [];
+let idx3Active = 0;
+let state3Placed = [];
+let state3Options = [];
+
+// ==========================================
+// 4. MANIFEST LOADING & RENDER PICKERS
+// ==========================================
+async function initManifest() {
+  const statusEl = document.getElementById('manifest-status');
+  try {
+    const res = await fetch('manifest.json');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        manifestData = data;
+        statusEl.style.color = '#059669';
+        statusEl.innerText = `✅ Loaded ${manifestData.length} families from manifest.json`;
+        renderPickers();
+        return;
+      }
+    }
+  } catch(e) {}
+
+  manifestData = DEFAULT_MANIFEST;
+  statusEl.style.color = '#d97706';
+  statusEl.innerText = `⚠️ Using default sample manifest`;
+  renderPickers();
+}
+
+function renderPickers() {
+  // Render 2-Letter List
+  const picker2 = document.getElementById('picker2List');
+  picker2.innerHTML = '';
+  const twoLetterSet = [...new Set(manifestData.map(f => f.two_letter))];
+
+  twoLetterSet.forEach(w => {
+    const chip = document.createElement('div');
+    chip.className = 'select-chip' + (selected2Words.includes(w) ? ' selected' : '');
+    chip.textContent = w.toUpperCase();
+    chip.onclick = () => {
+      toggle2Selection(w);
+      sendAction('TOGGLE_2_SELECTION', { word: w });
+    };
+    picker2.appendChild(chip);
+  });
+
+  // Render 3-Letter List
+  const picker3 = document.getElementById('picker3List');
+  picker3.innerHTML = '';
+  let threeLetterWords = [];
+  manifestData.forEach(f => {
+    if (f.three_letter_words) {
+      f.three_letter_words.forEach(tw => threeLetterWords.push(tw));
+    }
+  });
+
+  threeLetterWords.forEach(obj => {
+    const chip = document.createElement('div');
+    const isSel = selected3Words.some(w => w.word === obj.word);
+    chip.className = 'select-chip' + (isSel ? ' selected' : '');
+    chip.textContent = obj.word.toUpperCase();
+    chip.onclick = () => {
+      toggle3Selection(obj.word);
+      sendAction('TOGGLE_3_SELECTION', { word: obj.word });
+    };
+    picker3.appendChild(chip);
+  });
+
+  updatePickerButtons();
+}
+
+function updatePickerButtons() {
+  document.getElementById('btn2Start').disabled = selected2Words.length === 0;
+  document.getElementById('btn3Start').disabled = selected3Words.length === 0;
+}
+
+// ==========================================
+// 5. SECTION SWITCHING
+// ==========================================
+function switchSection(sec) {
+  activeSection = sec;
+  document.getElementById('btnSec2').classList.toggle('active', sec === '2letter');
+  document.getElementById('btnSec3').classList.toggle('active', sec === '3letter');
+  document.getElementById('btnSecManage').classList.toggle('active', sec === 'manage');
+
+  document.getElementById('panel2Letter').classList.toggle('active', sec === '2letter');
+  document.getElementById('panel3Letter').classList.toggle('active', sec === '3letter');
+  document.getElementById('panelManage').classList.toggle('active', sec === 'manage');
+}
+
+document.getElementById('btnSec2').onclick = () => { switchSection('2letter'); sendAction('SWITCH_SECTION', { section: '2letter' }); };
+document.getElementById('btnSec3').onclick = () => { switchSection('3letter'); sendAction('SWITCH_SECTION', { section: '3letter' }); };
+document.getElementById('btnSecManage').onclick = () => { switchSection('manage'); sendAction('SWITCH_SECTION', { section: 'manage' }); };
+
+// ==========================================
+// 6. SECTION 1 LOGIC (2-LETTER WORDS)
+// ==========================================
+function toggle2Selection(w) {
+  if (selected2Words.includes(w)) {
+    selected2Words = selected2Words.filter(item => item !== w);
+  } else {
+    selected2Words.push(w);
+  }
+  renderPickers();
+}
+
+function generate2LetterOptions() {
+  const currentWord = selected2Words[idx2Active].toUpperCase();
+  const letters = currentWord.split('');
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let distractor = alphabet[Math.floor(Math.random() * alphabet.length)];
+  while (letters.includes(distractor)) {
+    distractor = alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return [...letters, distractor].sort(() => 0.5 - Math.random()).map(l => ({ letter: l, used: false }));
+}
+
+document.getElementById('btn2Start').onclick = () => {
+  const options = generate2LetterOptions();
+  start2Practice(options);
+  sendAction('START_2_PRACTICE', { options: options });
+};
+
+function start2Practice(providedOptions) {
+  idx2Active = 0;
+  document.getElementById('card2Picker').style.display = 'none';
+  document.getElementById('card2Practice').style.display = 'block';
+  setup2WordPractice(providedOptions);
+}
+
+function setup2WordPractice(providedOptions) {
+  const currentWord = selected2Words[idx2Active].toUpperCase();
+  document.getElementById('title2Word').textContent = `Word ${idx2Active + 1} of ${selected2Words.length}: ${currentWord}`;
+
+  state2Placed = ['', ''];
+
+  if (providedOptions) {
+    state2Options = JSON.parse(JSON.stringify(providedOptions));
+  } else {
+    state2Options = generate2LetterOptions();
+  }
+
+  render2PracticeUI();
+}
+
+function render2PracticeUI() {
+  const currentWord = selected2Words[idx2Active].toUpperCase();
+  const targetCont = document.getElementById('targets2Container');
+  const optCont = document.getElementById('options2Container');
+
+  targetCont.innerHTML = '';
+  optCont.innerHTML = '';
+
+  const isComplete = state2Placed.join('') === currentWord;
+
+  // Render Target Boxes (Tap to hear sound)
+  state2Placed.forEach((char) => {
+    const box = document.createElement('div');
+    box.className = 'target-box' + (char ? (isComplete ? ' correct' : ' filled') : '');
+    box.textContent = char;
+    if (char) {
+      box.onclick = () => {
+        speakLetter(char);
+        sendAction('SPEAK_LETTER', { letter: char });
+      };
+    }
+    targetCont.appendChild(box);
+  });
+
+  // Render Letter Options
+  state2Options.forEach((opt, idx) => {
+    const btn = document.createElement('div');
+    btn.className = 'letter-option' + (opt.used ? ' disabled' : '');
+    btn.textContent = opt.letter;
+    btn.onclick = () => {
+      if (opt.used || isComplete) return;
+      place2Letter(opt.letter, idx);
+      sendAction('PLACE_2_LETTER', { letter: opt.letter, optIdx: idx });
+    };
+    optCont.appendChild(btn);
+  });
+
+  document.getElementById('btn2NextWord').disabled = !isComplete;
+}
+
+function place2Letter(char, optIdx) {
+  const emptyIdx = state2Placed.indexOf('');
+  if (emptyIdx !== -1) {
+    state2Placed[emptyIdx] = char;
+    state2Options[optIdx].used = true;
+    render2PracticeUI();
+  }
+}
+
+document.getElementById('btn2HearWord').onclick = () => speakWord(selected2Words[idx2Active]);
+
+document.getElementById('btn2Reset').onclick = () => {
+  const options = generate2LetterOptions();
+  setup2WordPractice(options);
+  sendAction('RESET_2_PRACTICE', { options: options });
+};
+
+document.getElementById('btn2NextWord').onclick = () => {
+  let options = null;
+  if (idx2Active < selected2Words.length - 1) {
+    const nextWord = selected2Words[idx2Active + 1].toUpperCase();
+    const letters = nextWord.split('');
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let distractor = alphabet[Math.floor(Math.random() * alphabet.length)];
+    while (letters.includes(distractor)) {
+      distractor = alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+    options = [...letters, distractor].sort(() => 0.5 - Math.random()).map(l => ({ letter: l, used: false }));
+  }
+  next2Word(options);
+  sendAction('NEXT_2_WORD', { options: options });
+};
+
+function next2Word(providedOptions) {
+  if (idx2Active < selected2Words.length - 1) {
+    idx2Active++;
+    setup2WordPractice(providedOptions);
+  } else {
+    document.getElementById('card2Practice').style.display = 'none';
+    document.getElementById('card2Picker').style.display = 'block';
+  }
+}
+
+// ==========================================
+// 7. SECTION 2 LOGIC (3-LETTER WORDS)
+// ==========================================
+function toggle3Selection(wordStr) {
+  const exists = selected3Words.some(w => w.word === wordStr);
+  if (exists) {
+    selected3Words = selected3Words.filter(w => w.word !== wordStr);
+  } else {
+    let obj = null;
+    manifestData.forEach(f => {
+      if (f.three_letter_words) {
+        const found = f.three_letter_words.find(tw => tw.word === wordStr);
+        if (found) obj = found;
+      }
+    });
+    if (obj) selected3Words.push(obj);
+  }
+  renderPickers();
+}
+
+function generate3LetterOptions() {
+  const wordObj = selected3Words[idx3Active];
+  const targetWord = wordObj.word.toUpperCase();
+  const letters = targetWord.split('');
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let distractor = alphabet[Math.floor(Math.random() * alphabet.length)];
+  while (letters.includes(distractor)) {
+    distractor = alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return [...letters, distractor].sort(() => 0.5 - Math.random()).map(l => ({ letter: l, used: false }));
+}
+
+document.getElementById('btn3Start').onclick = () => {
+  const options = generate3LetterOptions();
+  start3Practice(options);
+  sendAction('START_3_PRACTICE', { options: options });
+};
+
+function start3Practice(providedOptions) {
+  idx3Active = 0;
+  document.getElementById('card3Picker').style.display = 'none';
+  document.getElementById('card3Practice').style.display = 'block';
+  setup3WordPractice(providedOptions);
+}
+
+function setup3WordPractice(providedOptions) {
+  state3Placed = ['', '', ''];
+
+  if (providedOptions) {
+    state3Options = JSON.parse(JSON.stringify(providedOptions));
+  } else {
+    state3Options = generate3LetterOptions();
+  }
+
+  render3PracticeUI();
+}
+
+function render3PracticeUI() {
+  const wordObj = selected3Words[idx3Active];
+  const targetWord = wordObj.word.toUpperCase();
+  const targetCont = document.getElementById('targets3Container');
+  const optCont = document.getElementById('options3Container');
+  const imgDisplay = document.getElementById('image3Display');
+
+  targetCont.innerHTML = '';
+  optCont.innerHTML = '';
+  imgDisplay.innerHTML = '';
+
+  const isComplete = state3Placed.join('') === targetWord;
+
+  // Render Target Boxes (Tap to hear sound)
+  state3Placed.forEach((char) => {
+    const box = document.createElement('div');
+    box.className = 'target-box' + (char ? (isComplete ? ' correct' : ' filled') : '');
+    box.textContent = char;
+    if (char) {
+      box.onclick = () => {
+        speakLetter(char);
+        sendAction('SPEAK_LETTER', { letter: char });
+      };
+    }
+    targetCont.appendChild(box);
+  });
+
+  // Render Letter Options
+  state3Options.forEach((opt, idx) => {
+    const btn = document.createElement('div');
+    btn.className = 'letter-option' + (opt.used ? ' disabled' : '');
+    btn.textContent = opt.letter;
+    btn.onclick = () => {
+      if (opt.used || isComplete) return;
+      place3Letter(opt.letter, idx);
+      sendAction('PLACE_3_LETTER', { letter: opt.letter, optIdx: idx });
+    };
+    optCont.appendChild(btn);
+  });
+
+  // Display Image on Completion (Hear Word button remains visible from the start)
+  if (isComplete && wordObj.image) {
+    imgDisplay.innerHTML = `<img src="${wordObj.image}" class="word-image" alt="${targetWord}" onerror="this.style.display='none'">`;
+  }
+
+  document.getElementById('btn3NextWord').disabled = !isComplete;
+}
+
+function place3Letter(char, optIdx) {
+  const emptyIdx = state3Placed.indexOf('');
+  if (emptyIdx !== -1) {
+    state3Placed[emptyIdx] = char;
+    state3Options[optIdx].used = true;
+    render3PracticeUI();
+  }
+}
+
+document.getElementById('btn3HearWord').onclick = () => speakWord(selected3Words[idx3Active].word);
+
+document.getElementById('btn3Reset').onclick = () => {
+  const options = generate3LetterOptions();
+  setup3WordPractice(options);
+  sendAction('RESET_3_PRACTICE', { options: options });
+};
+
+document.getElementById('btn3NextWord').onclick = () => {
+  let options = null;
+  if (idx3Active < selected3Words.length - 1) {
+    const nextWordObj = selected3Words[idx3Active + 1];
+    const targetWord = nextWordObj.word.toUpperCase();
+    const letters = targetWord.split('');
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let distractor = alphabet[Math.floor(Math.random() * alphabet.length)];
+    while (letters.includes(distractor)) {
+      distractor = alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+    options = [...letters, distractor].sort(() => 0.5 - Math.random()).map(l => ({ letter: l, used: false }));
+  }
+  next3Word(options);
+  sendAction('NEXT_3_WORD', { options: options });
+};
+
+function next3Word(providedOptions) {
+  if (idx3Active < selected3Words.length - 1) {
+    idx3Active++;
+    setup3WordPractice(providedOptions);
+  } else {
+    document.getElementById('card3Practice').style.display = 'none';
+    document.getElementById('card3Picker').style.display = 'block';
+  }
+}
+
+// ==========================================
+// 8. MANAGE JSON UPLOAD
+// ==========================================
+document.getElementById('btnUploadJson').onclick = () => {
+  const fileInput = document.getElementById('jsonFileInput');
+  if (!fileInput.files || !fileInput.files[0]) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (Array.isArray(parsed)) {
+        manifestData = parsed;
+        renderPickers();
+        sendAction('UPDATE_MANIFEST', { manifest: manifestData });
+        alert('Manifest updated and synced successfully!');
+        switchSection('2letter');
+      } else {
+        alert('Invalid JSON structure. Must be an array of word families.');
+      }
+    } catch(err) {
+      alert('Error parsing JSON file.');
+    }
+  };
+  reader.readAsText(fileInput.files[0]);
+};
+
+// ==========================================
+// 9. INITIALIZATION
+// ==========================================
+initManifest();
+</script>
+</body>
+</html>

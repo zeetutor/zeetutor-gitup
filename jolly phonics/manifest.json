@@ -1,0 +1,958 @@
+{
+  "group1": [
+    "S",
+    "A",
+    "T",
+    "I",
+    "P",
+    "N"
+  ],
+  "group2": [
+    "CK",
+    "E",
+    "H",
+    "R",
+    "M",
+    "D"
+  ],
+  "group3": [
+    "G",
+    "O",
+    "U",
+    "L",
+    "F",
+    "B"
+  ],
+  "group4": [
+    "AI",
+    "J",
+    "OA",
+    "IE",
+    "EE",
+    "OR"
+  ],
+  "group5": [
+    "Z",
+    "W",
+    "NG",
+    "V",
+    "OOS",
+    "OOL"
+  ],
+  "group6": [
+    "Y",
+    "X",
+    "CH",
+    "SH",
+    "THU",
+    "THV"
+  ],
+  "group7": [
+    "QU",
+    "OU",
+    "OI",
+    "UE",
+    "ER",
+    "AR"
+  ],
+  "letters": [
+    {
+      "letter": "A",
+      "sound": "a",
+      "stories": [
+        {
+          "gif1": "gifs/a 1 1.gif",
+          "gif2": "gifs/a 1 2.gif",
+          "gif3": "gifs/a 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Aeroplane",
+          "image": "images/aeroplane.gif"
+        },
+        {
+          "word": "Alligator",
+          "image": "images/alligator.gif"
+        },
+        {
+          "word": "Ant",
+          "image": "images/ant.gif"
+        },
+        {
+          "word": "Apple",
+          "image": "images/apple.gif"
+        },
+        {
+          "word": "Astronaut",
+          "image": "images/astronaut.gif"
+        },
+        {
+          "word": "Axe",
+          "image": "images/axe.gif"
+        }
+      ]
+    },
+    {
+      "letter": "B",
+      "sound": "b",
+      "stories": [],
+      "images": [
+        {
+          "word": "Ball",
+          "image": "images/ball.gif"
+        },
+        {
+          "word": "Ballon",
+          "image": "images/ballon.gif"
+        },
+        {
+          "word": "Banana",
+          "image": "images/banana.gif"
+        },
+        {
+          "word": "Bat",
+          "image": "images/bat.gif"
+        },
+        {
+          "word": "Bear",
+          "image": "images/bear.gif"
+        },
+        {
+          "word": "Bee",
+          "image": "images/bee.gif"
+        }
+      ]
+    },
+    {
+      "letter": "C",
+      "sound": "c",
+      "stories": [],
+      "images": [
+        {
+          "word": "Candy",
+          "image": "images/candy.webp"
+        },
+        {
+          "word": "Car",
+          "image": "images/car.gif"
+        },
+        {
+          "word": "Cat",
+          "image": "images/cat.gif"
+        },
+        {
+          "word": "Catterpillar",
+          "image": "images/catterpillar.gif"
+        },
+        {
+          "word": "Circle",
+          "image": "images/circle.gif"
+        },
+        {
+          "word": "Crab",
+          "image": "images/crab.gif"
+        },
+        {
+          "word": "Crocodile",
+          "image": "images/crocodile.gif"
+        },
+        {
+          "word": "Cup",
+          "image": "images/cup.gif"
+        }
+      ]
+    },
+    {
+      "letter": "CK",
+      "sound": "ck",
+      "stories": [
+        {
+          "gif1": "gifs/ck 1 1.gif",
+          "gif2": "gifs/ck 1 2.gif",
+          "gif3": "gifs/ck 1 3.gif"
+        }
+      ],
+      "images": []
+    },
+    {
+      "letter": "D",
+      "sound": "d",
+      "stories": [
+        {
+          "gif1": "gifs/d 1 1.gif",
+          "gif2": "gifs/d 1 2.gif",
+          "gif3": "gifs/d 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Dolphine",
+          "image": "images/dolphine.gif"
+        },
+        {
+          "word": "Dress",
+          "image": "images/dress.jpg"
+        },
+        {
+          "word": "Drive",
+          "image": "images/drive.gif"
+        },
+        {
+          "word": "Drum",
+          "image": "images/drum.gif"
+        },
+        {
+          "word": "Duck",
+          "image": "images/duck.gif"
+        }
+      ]
+    },
+    {
+      "letter": "E",
+      "sound": "e",
+      "stories": [
+        {
+          "gif1": "gifs/e  1 1.gif",
+          "gif2": "gifs/e 1 2.gif",
+          "gif3": "gifs/e 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Eagel",
+          "image": "images/eagel.gif"
+        },
+        {
+          "word": "Ear",
+          "image": "images/ear.gif"
+        },
+        {
+          "word": "Earth",
+          "image": "images/earth.gif"
+        },
+        {
+          "word": "Egg",
+          "image": "images/egg.gif"
+        },
+        {
+          "word": "Elephant gif",
+          "image": "images/elephant gif.gif"
+        },
+        {
+          "word": "Elephant",
+          "image": "images/elephant.gif"
+        }
+      ]
+    },
+    {
+      "letter": "F",
+      "sound": "f",
+      "stories": [],
+      "images": [
+        {
+          "word": "Fan",
+          "image": "images/fan.gif"
+        },
+        {
+          "word": "Fish",
+          "image": "images/fish.gif"
+        },
+        {
+          "word": "Flower",
+          "image": "images/flower.gif"
+        },
+        {
+          "word": "Food",
+          "image": "images/food.jpg"
+        },
+        {
+          "word": "Fox",
+          "image": "images/fox.gif"
+        },
+        {
+          "word": "Frog",
+          "image": "images/frog.gif"
+        },
+        {
+          "word": "Frog",
+          "image": "images/frog.jpg"
+        }
+      ]
+    },
+    {
+      "letter": "G",
+      "sound": "g",
+      "stories": [
+        {
+          "gif1": "gifs/g 1 1.gif",
+          "gif2": "gifs/g 1 2.gif",
+          "gif3": "gifs/g 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Girafee",
+          "image": "images/girafee.jpg"
+        },
+        {
+          "word": "Giraffe",
+          "image": "images/giraffe.png"
+        },
+        {
+          "word": "Goat",
+          "image": "images/goat.gif"
+        },
+        {
+          "word": "Grapes",
+          "image": "images/grapes.gif"
+        },
+        {
+          "word": "Gun",
+          "image": "images/gun.gif"
+        }
+      ]
+    },
+    {
+      "letter": "H",
+      "sound": "h",
+      "stories": [
+        {
+          "gif1": "gifs/h 1 1.gif",
+          "gif2": "gifs/h 1 2.gif",
+          "gif3": "gifs/h 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Hat",
+          "image": "images/hat.gif"
+        },
+        {
+          "word": "Helicopter gif",
+          "image": "images/helicopter gif.gif"
+        },
+        {
+          "word": "Hen gif",
+          "image": "images/hen gif.gif"
+        },
+        {
+          "word": "Hippotoms",
+          "image": "images/hippotoms.gif"
+        },
+        {
+          "word": "Honey",
+          "image": "images/honey.gif"
+        },
+        {
+          "word": "Horse",
+          "image": "images/horse.gif"
+        }
+      ]
+    },
+    {
+      "letter": "I",
+      "sound": "i",
+      "stories": [
+        {
+          "gif1": "gifs/i 1 1.gif",
+          "gif2": "gifs/i 1 2.gif",
+          "gif3": "gifs/i 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Ice cube",
+          "image": "images/ice cube.gif"
+        },
+        {
+          "word": "Icecream",
+          "image": "images/icecream.gif"
+        },
+        {
+          "word": "Igloo",
+          "image": "images/igloo.gif"
+        },
+        {
+          "word": "Iron",
+          "image": "images/iron.png"
+        }
+      ]
+    },
+    {
+      "letter": "J",
+      "sound": "j",
+      "stories": [],
+      "images": [
+        {
+          "word": "Jacket",
+          "image": "images/jacket.gif"
+        },
+        {
+          "word": "Jam",
+          "image": "images/jam.gif"
+        },
+        {
+          "word": "Jar",
+          "image": "images/jar.gif"
+        },
+        {
+          "word": "Jelly fish",
+          "image": "images/jelly fish.gif"
+        },
+        {
+          "word": "Juice",
+          "image": "images/juice.gif"
+        }
+      ]
+    },
+    {
+      "letter": "K",
+      "sound": "k",
+      "stories": [],
+      "images": [
+        {
+          "word": "Kangaroo",
+          "image": "images/kangaroo.gif"
+        },
+        {
+          "word": "Kangaroo",
+          "image": "images/kangaroo.jpg"
+        },
+        {
+          "word": "Kettle",
+          "image": "images/kettle.gif"
+        },
+        {
+          "word": "Keys",
+          "image": "images/keys.gif"
+        },
+        {
+          "word": "Kite",
+          "image": "images/kite.gif"
+        }
+      ]
+    },
+    {
+      "letter": "L",
+      "sound": "l",
+      "stories": [
+        {
+          "gif1": "gifs/l 1 1.gif",
+          "gif2": "gifs/l 1 2.gif",
+          "gif3": "gifs/l 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Ladder",
+          "image": "images/ladder.gif"
+        },
+        {
+          "word": "Lamp",
+          "image": "images/lamp.gif"
+        },
+        {
+          "word": "Leaf",
+          "image": "images/leaf.gif"
+        },
+        {
+          "word": "Lemon",
+          "image": "images/lemon.gif"
+        },
+        {
+          "word": "Lion",
+          "image": "images/lion.gif"
+        },
+        {
+          "word": "Lion",
+          "image": "images/lion.jpg"
+        },
+        {
+          "word": "Lizard",
+          "image": "images/lizard.jpg"
+        }
+      ]
+    },
+    {
+      "letter": "M",
+      "sound": "m",
+      "stories": [
+        {
+          "gif1": "gifs/m 1 1.gif",
+          "gif2": "gifs/m 1 2.gif",
+          "gif3": "gifs/m 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Mango",
+          "image": "images/mango.gif"
+        },
+        {
+          "word": "Mangoose",
+          "image": "images/mangoose.gif"
+        },
+        {
+          "word": "Mat",
+          "image": "images/mat.gif"
+        },
+        {
+          "word": "Milk",
+          "image": "images/milk.gif"
+        },
+        {
+          "word": "Monkey",
+          "image": "images/monkey.gif"
+        },
+        {
+          "word": "Mosquito",
+          "image": "images/mosquito.gif"
+        },
+        {
+          "word": "Mushroom",
+          "image": "images/mushroom.gif"
+        }
+      ]
+    },
+    {
+      "letter": "N",
+      "sound": "n",
+      "stories": [
+        {
+          "gif1": "gifs/n 1 1.gif",
+          "gif2": "gifs/n 1 2.gif",
+          "gif3": "gifs/n 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Neck",
+          "image": "images/neck.gif"
+        },
+        {
+          "word": "Nest",
+          "image": "images/nest.gif"
+        },
+        {
+          "word": "Nose",
+          "image": "images/nose.gif"
+        },
+        {
+          "word": "Notebook",
+          "image": "images/notebook.gif"
+        }
+      ]
+    },
+    {
+      "letter": "O",
+      "sound": "o",
+      "stories": [
+        {
+          "gif1": "gifs/o 1 1.gif",
+          "gif2": "gifs/o 1 2.gif",
+          "gif3": "gifs/o 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Octobus",
+          "image": "images/octobus.gif"
+        },
+        {
+          "word": "Octubus",
+          "image": "images/octubus.gif"
+        },
+        {
+          "word": "Onion",
+          "image": "images/onion.gif"
+        },
+        {
+          "word": "Oval",
+          "image": "images/oval.gif"
+        },
+        {
+          "word": "Owl",
+          "image": "images/owl.gif"
+        }
+      ]
+    },
+    {
+      "letter": "OR",
+      "sound": "or",
+      "stories": [],
+      "images": [
+        {
+          "word": "Orange",
+          "image": "images/orange.png"
+        }
+      ]
+    },
+    {
+      "letter": "P",
+      "sound": "p",
+      "stories": [
+        {
+          "gif1": "gifs/p 1 1.gif",
+          "gif2": "gifs/p 1 2.gif",
+          "gif3": "gifs/p 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Panda",
+          "image": "images/panda.png"
+        },
+        {
+          "word": "Parrot",
+          "image": "images/parrot.gif"
+        },
+        {
+          "word": "Pencil",
+          "image": "images/pencil.gif"
+        },
+        {
+          "word": "Penguin",
+          "image": "images/penguin.gif"
+        },
+        {
+          "word": "Pig",
+          "image": "images/pig.gif"
+        },
+        {
+          "word": "Pizza",
+          "image": "images/pizza.gif"
+        },
+        {
+          "word": "Popcorn",
+          "image": "images/popcorn.png"
+        }
+      ]
+    },
+    {
+      "letter": "QU",
+      "sound": "qu",
+      "stories": [],
+      "images": [
+        {
+          "word": "Quail",
+          "image": "images/quail.gif"
+        },
+        {
+          "word": "Queen",
+          "image": "images/queen.gif"
+        },
+        {
+          "word": "Quite",
+          "image": "images/quite.gif"
+        }
+      ]
+    },
+    {
+      "letter": "R",
+      "sound": "r",
+      "stories": [
+        {
+          "gif1": "gifs/r 1 1.gif",
+          "gif2": "gifs/r 1 2.gif",
+          "gif3": "gifs/r 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Rabbit",
+          "image": "images/rabbit.gif"
+        },
+        {
+          "word": "Rain",
+          "image": "images/rain.gif"
+        },
+        {
+          "word": "Rainbow",
+          "image": "images/rainbow.gif"
+        },
+        {
+          "word": "Rainbow",
+          "image": "images/rainbow.jpg"
+        },
+        {
+          "word": "Rat",
+          "image": "images/rat.gif"
+        },
+        {
+          "word": "Ring",
+          "image": "images/ring.gif"
+        }
+      ]
+    },
+    {
+      "letter": "S",
+      "sound": "s",
+      "stories": [
+        {
+          "gif1": "gifs/s 1 1.gif",
+          "gif2": "gifs/s 1 2.gif",
+          "gif3": "gifs/s 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Santa",
+          "image": "images/santa.png"
+        },
+        {
+          "word": "Snake",
+          "image": "images/snake.gif"
+        },
+        {
+          "word": "Snake",
+          "image": "images/snake.jpg"
+        },
+        {
+          "word": "Sparrow",
+          "image": "images/sparrow.jpg"
+        },
+        {
+          "word": "Spoon",
+          "image": "images/spoon.gif"
+        },
+        {
+          "word": "Sun",
+          "image": "images/sun.png"
+        }
+      ]
+    },
+    {
+      "letter": "SH",
+      "sound": "sh",
+      "stories": [],
+      "images": [
+        {
+          "word": "Shark",
+          "image": "images/shark.gif"
+        },
+        {
+          "word": "Sheep",
+          "image": "images/sheep.jpg"
+        }
+      ]
+    },
+    {
+      "letter": "T",
+      "sound": "t",
+      "stories": [
+        {
+          "gif1": "gifs/t 1 1.gif",
+          "gif2": "gifs/t 1 2.gif",
+          "gif3": "gifs/t 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Tiger",
+          "image": "images/tiger.avif"
+        },
+        {
+          "word": "Tiger",
+          "image": "images/tiger.gif"
+        },
+        {
+          "word": "Tomato",
+          "image": "images/tomato.webp"
+        },
+        {
+          "word": "Tree",
+          "image": "images/tree.gif"
+        },
+        {
+          "word": "Truck",
+          "image": "images/truck.gif"
+        },
+        {
+          "word": "Turkey",
+          "image": "images/turkey.gif"
+        },
+        {
+          "word": "Turtle",
+          "image": "images/turtle.gif"
+        },
+        {
+          "word": "Turtle",
+          "image": "images/turtle.png"
+        }
+      ]
+    },
+    {
+      "letter": "U",
+      "sound": "u",
+      "stories": [
+        {
+          "gif1": "gifs/u 1 1.gif",
+          "gif2": "gifs/u 1 2.gif",
+          "gif3": "gifs/u 1 3.gif"
+        }
+      ],
+      "images": [
+        {
+          "word": "Umbralla",
+          "image": "images/umbralla.gif"
+        },
+        {
+          "word": "Umbrella",
+          "image": "images/umbrella.gif"
+        },
+        {
+          "word": "Unicorn",
+          "image": "images/unicorn.gif"
+        },
+        {
+          "word": "Uniform",
+          "image": "images/uniform.png"
+        }
+      ]
+    },
+    {
+      "letter": "V",
+      "sound": "v",
+      "stories": [],
+      "images": [
+        {
+          "word": "Van",
+          "image": "images/van.gif"
+        },
+        {
+          "word": "Vegetables",
+          "image": "images/vegetables.avif"
+        },
+        {
+          "word": "Vegetables",
+          "image": "images/vegetables.gif"
+        },
+        {
+          "word": "Violine",
+          "image": "images/violine.jpg"
+        },
+        {
+          "word": "Vulture",
+          "image": "images/vulture.jpg"
+        }
+      ]
+    },
+    {
+      "letter": "W",
+      "sound": "w",
+      "stories": [],
+      "images": [
+        {
+          "word": "Water",
+          "image": "images/water.jpg"
+        },
+        {
+          "word": "Watermelon",
+          "image": "images/watermelon.gif"
+        },
+        {
+          "word": "Whale",
+          "image": "images/whale.gif"
+        },
+        {
+          "word": "Wheel",
+          "image": "images/wheel.gif"
+        },
+        {
+          "word": "Window",
+          "image": "images/window.gif"
+        },
+        {
+          "word": "World",
+          "image": "images/world.gif"
+        }
+      ]
+    },
+    {
+      "letter": "X",
+      "sound": "x",
+      "stories": [],
+      "images": [
+        {
+          "word": "X ray",
+          "image": "images/x ray.gif"
+        },
+        {
+          "word": "Xerox",
+          "image": "images/xerox.gif"
+        },
+        {
+          "word": "Xmas tree",
+          "image": "images/xmas tree.gif"
+        },
+        {
+          "word": "Xmas",
+          "image": "images/xmas.gif"
+        },
+        {
+          "word": "Xylophone",
+          "image": "images/xylophone.gif"
+        }
+      ]
+    },
+    {
+      "letter": "Y",
+      "sound": "y",
+      "stories": [],
+      "images": [
+        {
+          "word": "Yak",
+          "image": "images/yak.gif"
+        },
+        {
+          "word": "Yarn",
+          "image": "images/yarn.gif"
+        },
+        {
+          "word": "Yarwn",
+          "image": "images/yarwn.gif"
+        },
+        {
+          "word": "Yawn",
+          "image": "images/yawn.webp"
+        },
+        {
+          "word": "Yellow",
+          "image": "images/yellow.jpg"
+        },
+        {
+          "word": "Yoyo",
+          "image": "images/yoyo.png"
+        }
+      ]
+    },
+    {
+      "letter": "Z",
+      "sound": "z",
+      "stories": [],
+      "images": [
+        {
+          "word": "Zebra",
+          "image": "images/zebra.gif"
+        },
+        {
+          "word": "Zerba",
+          "image": "images/zerba.gif"
+        },
+        {
+          "word": "Zero",
+          "image": "images/zero.gif"
+        },
+        {
+          "word": "Zigzag",
+          "image": "images/zigzag.gif"
+        },
+        {
+          "word": "Zip",
+          "image": "images/zip.gif"
+        }
+      ]
+    }
+  ]
+}

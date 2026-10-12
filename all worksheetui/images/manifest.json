@@ -1,0 +1,902 @@
+[
+  {
+    "searchName": "aeroplane",
+    "category": "a",
+    "word": "Aeroplane",
+    "fallbackSvg": "✈️"
+  },
+  {
+    "searchName": "alligator",
+    "category": "a",
+    "word": "Alligator",
+    "fallbackSvg": "🐊"
+  },
+  {
+    "searchName": "ant",
+    "category": "a",
+    "word": "Ant",
+    "fallbackSvg": "🐜"
+  },
+  {
+    "searchName": "apple",
+    "category": "a",
+    "word": "Apple",
+    "fallbackSvg": "🍎"
+  },
+  {
+    "searchName": "astronaut",
+    "category": "a",
+    "word": "Astronaut",
+    "fallbackSvg": "🧑‍🚀"
+  },
+  {
+    "searchName": "axe",
+    "category": "a",
+    "word": "Axe",
+    "fallbackSvg": "🪓"
+  },
+  {
+    "searchName": "ball",
+    "category": "b",
+    "word": "Ball",
+    "fallbackSvg": "⚽"
+  },
+  {
+    "searchName": "ballon",
+    "category": "b",
+    "word": "Ballon",
+    "fallbackSvg": "🎈"
+  },
+  {
+    "searchName": "banana",
+    "category": "b",
+    "word": "Banana",
+    "fallbackSvg": "🍌"
+  },
+  {
+    "searchName": "bat",
+    "category": "b",
+    "word": "Bat",
+    "fallbackSvg": "🦇"
+  },
+  {
+    "searchName": "bear",
+    "category": "b",
+    "word": "Bear",
+    "fallbackSvg": "🐻"
+  },
+  {
+    "searchName": "bee",
+    "category": "b",
+    "word": "Bee",
+    "fallbackSvg": "🐝"
+  },
+  {
+    "searchName": "candy",
+    "category": "c",
+    "word": "Candy",
+    "fallbackSvg": "🍬"
+  },
+  {
+    "searchName": "car",
+    "category": "c",
+    "word": "Car",
+    "fallbackSvg": "🚗"
+  },
+  {
+    "searchName": "cat",
+    "category": "c",
+    "word": "Cat",
+    "fallbackSvg": "🐱"
+  },
+  {
+    "searchName": "catterpillar",
+    "category": "c",
+    "word": "Catterpillar",
+    "fallbackSvg": "🐛"
+  },
+  {
+    "searchName": "circle",
+    "category": "c",
+    "word": "Circle",
+    "fallbackSvg": "⭕"
+  },
+  {
+    "searchName": "crab",
+    "category": "c",
+    "word": "Crab",
+    "fallbackSvg": "🦀"
+  },
+  {
+    "searchName": "crocodile",
+    "category": "c",
+    "word": "Crocodile",
+    "fallbackSvg": "🐊"
+  },
+  {
+    "searchName": "cup",
+    "category": "c",
+    "word": "Cup",
+    "fallbackSvg": "🥤"
+  },
+  {
+    "searchName": "dolphine",
+    "category": "d",
+    "word": "Dolphine",
+    "fallbackSvg": "🐬"
+  },
+  {
+    "searchName": "dress",
+    "category": "d",
+    "word": "Dress",
+    "fallbackSvg": "👗"
+  },
+  {
+    "searchName": "drive",
+    "category": "d",
+    "word": "Drive",
+    "fallbackSvg": "🚙"
+  },
+  {
+    "searchName": "drum",
+    "category": "d",
+    "word": "Drum",
+    "fallbackSvg": "🥁"
+  },
+  {
+    "searchName": "duck",
+    "category": "d",
+    "word": "Duck",
+    "fallbackSvg": "🦆"
+  },
+  {
+    "searchName": "eagel",
+    "category": "e",
+    "word": "Eagel",
+    "fallbackSvg": "🦅"
+  },
+  {
+    "searchName": "ear",
+    "category": "e",
+    "word": "Ear",
+    "fallbackSvg": "👂"
+  },
+  {
+    "searchName": "earth",
+    "category": "e",
+    "word": "Earth",
+    "fallbackSvg": "🌍"
+  },
+  {
+    "searchName": "egg",
+    "category": "e",
+    "word": "Egg",
+    "fallbackSvg": "🥚"
+  },
+  {
+    "searchName": "elephant gif",
+    "category": "e",
+    "word": "Elephant Gif",
+    "fallbackSvg": "⭐"
+  },
+  {
+    "searchName": "elephant",
+    "category": "e",
+    "word": "Elephant",
+    "fallbackSvg": "🐘"
+  },
+  {
+    "searchName": "fan",
+    "category": "f",
+    "word": "Fan",
+    "fallbackSvg": "🪭"
+  },
+  {
+    "searchName": "fish",
+    "category": "f",
+    "word": "Fish",
+    "fallbackSvg": "🐟"
+  },
+  {
+    "searchName": "flower",
+    "category": "f",
+    "word": "Flower",
+    "fallbackSvg": "🌸"
+  },
+  {
+    "searchName": "food",
+    "category": "f",
+    "word": "Food",
+    "fallbackSvg": "🍽️"
+  },
+  {
+    "searchName": "fox",
+    "category": "f",
+    "word": "Fox",
+    "fallbackSvg": "🦊"
+  },
+  {
+    "searchName": "frog",
+    "category": "f",
+    "word": "Frog",
+    "fallbackSvg": "🐸"
+  },
+  {
+    "searchName": "frog",
+    "category": "f",
+    "word": "Frog",
+    "fallbackSvg": "🐸"
+  },
+  {
+    "searchName": "girafee",
+    "category": "g",
+    "word": "Girafee",
+    "fallbackSvg": "🦒"
+  },
+  {
+    "searchName": "giraffe",
+    "category": "g",
+    "word": "Giraffe",
+    "fallbackSvg": "🦒"
+  },
+  {
+    "searchName": "goat",
+    "category": "g",
+    "word": "Goat",
+    "fallbackSvg": "🐐"
+  },
+  {
+    "searchName": "grapes",
+    "category": "g",
+    "word": "Grapes",
+    "fallbackSvg": "🍇"
+  },
+  {
+    "searchName": "gun",
+    "category": "g",
+    "word": "Gun",
+    "fallbackSvg": "🔫"
+  },
+  {
+    "searchName": "hat",
+    "category": "h",
+    "word": "Hat",
+    "fallbackSvg": "🎩"
+  },
+  {
+    "searchName": "helicopter gif",
+    "category": "h",
+    "word": "Helicopter Gif",
+    "fallbackSvg": "⭐"
+  },
+  {
+    "searchName": "hen gif",
+    "category": "h",
+    "word": "Hen Gif",
+    "fallbackSvg": "⭐"
+  },
+  {
+    "searchName": "hippotoms",
+    "category": "h",
+    "word": "Hippotoms",
+    "fallbackSvg": "🦛"
+  },
+  {
+    "searchName": "honey",
+    "category": "h",
+    "word": "Honey",
+    "fallbackSvg": "🍯"
+  },
+  {
+    "searchName": "horse",
+    "category": "h",
+    "word": "Horse",
+    "fallbackSvg": "🐴"
+  },
+  {
+    "searchName": "ice cube",
+    "category": "i",
+    "word": "Ice Cube",
+    "fallbackSvg": "🧊"
+  },
+  {
+    "searchName": "icecream",
+    "category": "i",
+    "word": "Icecream",
+    "fallbackSvg": "🍦"
+  },
+  {
+    "searchName": "igloo",
+    "category": "i",
+    "word": "Igloo",
+    "fallbackSvg": "🧊"
+  },
+  {
+    "searchName": "iron",
+    "category": "i",
+    "word": "Iron",
+    "fallbackSvg": "🧺"
+  },
+  {
+    "searchName": "jacket",
+    "category": "j",
+    "word": "Jacket",
+    "fallbackSvg": "🧥"
+  },
+  {
+    "searchName": "jam",
+    "category": "j",
+    "word": "Jam",
+    "fallbackSvg": "🍓"
+  },
+  {
+    "searchName": "jar",
+    "category": "j",
+    "word": "Jar",
+    "fallbackSvg": "🫙"
+  },
+  {
+    "searchName": "jelly fish",
+    "category": "j",
+    "word": "Jelly Fish",
+    "fallbackSvg": "🪼"
+  },
+  {
+    "searchName": "juice",
+    "category": "j",
+    "word": "Juice",
+    "fallbackSvg": "🧃"
+  },
+  {
+    "searchName": "kangaroo",
+    "category": "k",
+    "word": "Kangaroo",
+    "fallbackSvg": "🦘"
+  },
+  {
+    "searchName": "kangaroo",
+    "category": "k",
+    "word": "Kangaroo",
+    "fallbackSvg": "🦘"
+  },
+  {
+    "searchName": "kettle",
+    "category": "k",
+    "word": "Kettle",
+    "fallbackSvg": "🫖"
+  },
+  {
+    "searchName": "keys",
+    "category": "k",
+    "word": "Keys",
+    "fallbackSvg": "🔑"
+  },
+  {
+    "searchName": "kite",
+    "category": "k",
+    "word": "Kite",
+    "fallbackSvg": "🪁"
+  },
+  {
+    "searchName": "ladder",
+    "category": "l",
+    "word": "Ladder",
+    "fallbackSvg": "🪜"
+  },
+  {
+    "searchName": "lamp",
+    "category": "l",
+    "word": "Lamp",
+    "fallbackSvg": "💡"
+  },
+  {
+    "searchName": "leaf",
+    "category": "l",
+    "word": "Leaf",
+    "fallbackSvg": "🍃"
+  },
+  {
+    "searchName": "lemon",
+    "category": "l",
+    "word": "Lemon",
+    "fallbackSvg": "🍋"
+  },
+  {
+    "searchName": "lion",
+    "category": "l",
+    "word": "Lion",
+    "fallbackSvg": "🦁"
+  },
+  {
+    "searchName": "lion",
+    "category": "l",
+    "word": "Lion",
+    "fallbackSvg": "🦁"
+  },
+  {
+    "searchName": "lizard",
+    "category": "l",
+    "word": "Lizard",
+    "fallbackSvg": "🦎"
+  },
+  {
+    "searchName": "mango",
+    "category": "m",
+    "word": "Mango",
+    "fallbackSvg": "🥭"
+  },
+  {
+    "searchName": "mangoose",
+    "category": "m",
+    "word": "Mangoose",
+    "fallbackSvg": "🐿️"
+  },
+  {
+    "searchName": "mat",
+    "category": "m",
+    "word": "Mat",
+    "fallbackSvg": "🟫"
+  },
+  {
+    "searchName": "milk",
+    "category": "m",
+    "word": "Milk",
+    "fallbackSvg": "🥛"
+  },
+  {
+    "searchName": "monkey",
+    "category": "m",
+    "word": "Monkey",
+    "fallbackSvg": "🐒"
+  },
+  {
+    "searchName": "mosquito",
+    "category": "m",
+    "word": "Mosquito",
+    "fallbackSvg": "🦟"
+  },
+  {
+    "searchName": "mushroom",
+    "category": "m",
+    "word": "Mushroom",
+    "fallbackSvg": "🍄"
+  },
+  {
+    "searchName": "neck",
+    "category": "n",
+    "word": "Neck",
+    "fallbackSvg": "🧣"
+  },
+  {
+    "searchName": "nest",
+    "category": "n",
+    "word": "Nest",
+    "fallbackSvg": "🪹"
+  },
+  {
+    "searchName": "nose",
+    "category": "n",
+    "word": "Nose",
+    "fallbackSvg": "👃"
+  },
+  {
+    "searchName": "notebook",
+    "category": "n",
+    "word": "Notebook",
+    "fallbackSvg": "📓"
+  },
+  {
+    "searchName": "octobus",
+    "category": "o",
+    "word": "Octobus",
+    "fallbackSvg": "🐙"
+  },
+  {
+    "searchName": "octubus",
+    "category": "o",
+    "word": "Octubus",
+    "fallbackSvg": "⭐"
+  },
+  {
+    "searchName": "onion",
+    "category": "o",
+    "word": "Onion",
+    "fallbackSvg": "🧅"
+  },
+  {
+    "searchName": "orange",
+    "category": "o",
+    "word": "Orange",
+    "fallbackSvg": "🍊"
+  },
+  {
+    "searchName": "oval",
+    "category": "o",
+    "word": "Oval",
+    "fallbackSvg": "⬭"
+  },
+  {
+    "searchName": "owl",
+    "category": "o",
+    "word": "Owl",
+    "fallbackSvg": "🦉"
+  },
+  {
+    "searchName": "panda",
+    "category": "p",
+    "word": "Panda",
+    "fallbackSvg": "🐼"
+  },
+  {
+    "searchName": "parrot",
+    "category": "p",
+    "word": "Parrot",
+    "fallbackSvg": "🦜"
+  },
+  {
+    "searchName": "pencil",
+    "category": "p",
+    "word": "Pencil",
+    "fallbackSvg": "✏️"
+  },
+  {
+    "searchName": "penguin",
+    "category": "p",
+    "word": "Penguin",
+    "fallbackSvg": "🐧"
+  },
+  {
+    "searchName": "pig",
+    "category": "p",
+    "word": "Pig",
+    "fallbackSvg": "🐷"
+  },
+  {
+    "searchName": "pizza",
+    "category": "p",
+    "word": "Pizza",
+    "fallbackSvg": "🍕"
+  },
+  {
+    "searchName": "popcorn",
+    "category": "p",
+    "word": "Popcorn",
+    "fallbackSvg": "🍿"
+  },
+  {
+    "searchName": "quail",
+    "category": "q",
+    "word": "Quail",
+    "fallbackSvg": "🐦"
+  },
+  {
+    "searchName": "queen",
+    "category": "q",
+    "word": "Queen",
+    "fallbackSvg": "👑"
+  },
+  {
+    "searchName": "quite",
+    "category": "q",
+    "word": "Quite",
+    "fallbackSvg": "🛏️"
+  },
+  {
+    "searchName": "rabbit",
+    "category": "r",
+    "word": "Rabbit",
+    "fallbackSvg": "🐰"
+  },
+  {
+    "searchName": "rain",
+    "category": "r",
+    "word": "Rain",
+    "fallbackSvg": "🌧️"
+  },
+  {
+    "searchName": "rainbow",
+    "category": "r",
+    "word": "Rainbow",
+    "fallbackSvg": "🌈"
+  },
+  {
+    "searchName": "rainbow",
+    "category": "r",
+    "word": "Rainbow",
+    "fallbackSvg": "🌈"
+  },
+  {
+    "searchName": "rat",
+    "category": "r",
+    "word": "Rat",
+    "fallbackSvg": "🐀"
+  },
+  {
+    "searchName": "ring",
+    "category": "r",
+    "word": "Ring",
+    "fallbackSvg": "💍"
+  },
+  {
+    "searchName": "santa",
+    "category": "s",
+    "word": "Santa",
+    "fallbackSvg": "🎅"
+  },
+  {
+    "searchName": "shark",
+    "category": "s",
+    "word": "Shark",
+    "fallbackSvg": "🦈"
+  },
+  {
+    "searchName": "sheep",
+    "category": "s",
+    "word": "Sheep",
+    "fallbackSvg": "🐑"
+  },
+  {
+    "searchName": "snake",
+    "category": "s",
+    "word": "Snake",
+    "fallbackSvg": "🐍"
+  },
+  {
+    "searchName": "snake",
+    "category": "s",
+    "word": "Snake",
+    "fallbackSvg": "🐍"
+  },
+  {
+    "searchName": "sparrow",
+    "category": "s",
+    "word": "Sparrow",
+    "fallbackSvg": "🐦"
+  },
+  {
+    "searchName": "spoon",
+    "category": "s",
+    "word": "Spoon",
+    "fallbackSvg": "🥄"
+  },
+  {
+    "searchName": "sun",
+    "category": "s",
+    "word": "Sun",
+    "fallbackSvg": "☀️"
+  },
+  {
+    "searchName": "tiger",
+    "category": "t",
+    "word": "Tiger",
+    "fallbackSvg": "🐯"
+  },
+  {
+    "searchName": "tiger",
+    "category": "t",
+    "word": "Tiger",
+    "fallbackSvg": "🐯"
+  },
+  {
+    "searchName": "tomato",
+    "category": "t",
+    "word": "Tomato",
+    "fallbackSvg": "🍅"
+  },
+  {
+    "searchName": "tree",
+    "category": "t",
+    "word": "Tree",
+    "fallbackSvg": "🌳"
+  },
+  {
+    "searchName": "truck",
+    "category": "t",
+    "word": "Truck",
+    "fallbackSvg": "🚚"
+  },
+  {
+    "searchName": "turkey",
+    "category": "t",
+    "word": "Turkey",
+    "fallbackSvg": "🦃"
+  },
+  {
+    "searchName": "turtle",
+    "category": "t",
+    "word": "Turtle",
+    "fallbackSvg": "🐢"
+  },
+  {
+    "searchName": "turtle",
+    "category": "t",
+    "word": "Turtle",
+    "fallbackSvg": "🐢"
+  },
+  {
+    "searchName": "umbralla",
+    "category": "u",
+    "word": "Umbralla",
+    "fallbackSvg": "☂️"
+  },
+  {
+    "searchName": "umbrella",
+    "category": "u",
+    "word": "Umbrella",
+    "fallbackSvg": "☂️"
+  },
+  {
+    "searchName": "unicorn",
+    "category": "u",
+    "word": "Unicorn",
+    "fallbackSvg": "🦄"
+  },
+  {
+    "searchName": "uniform",
+    "category": "u",
+    "word": "Uniform",
+    "fallbackSvg": "👕"
+  },
+  {
+    "searchName": "van",
+    "category": "v",
+    "word": "Van",
+    "fallbackSvg": "🚐"
+  },
+  {
+    "searchName": "vegetables",
+    "category": "v",
+    "word": "Vegetables",
+    "fallbackSvg": "🥦"
+  },
+  {
+    "searchName": "vegetables",
+    "category": "v",
+    "word": "Vegetables",
+    "fallbackSvg": "🥦"
+  },
+  {
+    "searchName": "violine",
+    "category": "v",
+    "word": "Violine",
+    "fallbackSvg": "🎻"
+  },
+  {
+    "searchName": "vulture",
+    "category": "v",
+    "word": "Vulture",
+    "fallbackSvg": "🦅"
+  },
+  {
+    "searchName": "water",
+    "category": "w",
+    "word": "Water",
+    "fallbackSvg": "💧"
+  },
+  {
+    "searchName": "watermelon",
+    "category": "w",
+    "word": "Watermelon",
+    "fallbackSvg": "🍉"
+  },
+  {
+    "searchName": "whale",
+    "category": "w",
+    "word": "Whale",
+    "fallbackSvg": "🐋"
+  },
+  {
+    "searchName": "wheel",
+    "category": "w",
+    "word": "Wheel",
+    "fallbackSvg": "🛞"
+  },
+  {
+    "searchName": "window",
+    "category": "w",
+    "word": "Window",
+    "fallbackSvg": "🪟"
+  },
+  {
+    "searchName": "world",
+    "category": "w",
+    "word": "World",
+    "fallbackSvg": "🌎"
+  },
+  {
+    "searchName": "x ray",
+    "category": "x",
+    "word": "X Ray",
+    "fallbackSvg": "🩻"
+  },
+  {
+    "searchName": "xerox",
+    "category": "x",
+    "word": "Xerox",
+    "fallbackSvg": "🖨️"
+  },
+  {
+    "searchName": "xmas tree",
+    "category": "x",
+    "word": "Xmas Tree",
+    "fallbackSvg": "🎄"
+  },
+  {
+    "searchName": "xmas",
+    "category": "x",
+    "word": "Xmas",
+    "fallbackSvg": "⭐"
+  },
+  {
+    "searchName": "xylophone",
+    "category": "x",
+    "word": "Xylophone",
+    "fallbackSvg": "🎹"
+  },
+  {
+    "searchName": "yak",
+    "category": "y",
+    "word": "Yak",
+    "fallbackSvg": "🐂"
+  },
+  {
+    "searchName": "yarn",
+    "category": "y",
+    "word": "Yarn",
+    "fallbackSvg": "🧶"
+  },
+  {
+    "searchName": "yarwn",
+    "category": "y",
+    "word": "Yarwn",
+    "fallbackSvg": "⭐"
+  },
+  {
+    "searchName": "yawn",
+    "category": "y",
+    "word": "Yawn",
+    "fallbackSvg": "🥱"
+  },
+  {
+    "searchName": "yellow",
+    "category": "y",
+    "word": "Yellow",
+    "fallbackSvg": "🟡"
+  },
+  {
+    "searchName": "yoyo",
+    "category": "y",
+    "word": "Yoyo",
+    "fallbackSvg": "🪀"
+  },
+  {
+    "searchName": "zebra",
+    "category": "z",
+    "word": "Zebra",
+    "fallbackSvg": "🦓"
+  },
+  {
+    "searchName": "zerba",
+    "category": "z",
+    "word": "Zerba",
+    "fallbackSvg": "⭐"
+  },
+  {
+    "searchName": "zero",
+    "category": "z",
+    "word": "Zero",
+    "fallbackSvg": "0️⃣"
+  },
+  {
+    "searchName": "zigzag",
+    "category": "z",
+    "word": "Zigzag",
+    "fallbackSvg": "〰️"
+  },
+  {
+    "searchName": "zip",
+    "category": "z",
+    "word": "Zip",
+    "fallbackSvg": "🤐"
+  }
+]

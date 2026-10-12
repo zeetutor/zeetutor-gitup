@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Vethyasam Kandupidikkuka</title>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<!-- ============================================================
+     PART 1 — SYNC BLOCK — NEVER EDIT ANYTHING BELOW THIS LINE
+     ============================================================ -->
+<script>
+  window.isSimulating = false;
+  const urlParams = new URLSearchParams(
+    window.location.search || window.location.hash.replace('#','?')
+  );
+  const roomId = urlParams.get('room') || '54321';
+  let localSeed = 0;
+  for (let i = 0; i < roomId.length; i++) {
+    localSeed = roomId.charCodeAt(i) + ((localSeed << 5) - localSeed);
+  }
+  localSeed = Math.abs(localSeed);
+  window.seededRandom = function() {
+    let x = Math.sin(localSeed++) * 10000;
+    return x - Math.floor(x);
+  };
+  function getUniqueSelector(el) {
+    if (!el) return null;
+    if (el.id) return '#' + el.id;
+    if (el === document.body) return 'body';
+    let path = [];
+    while (el && el.nodeType === Node.ELEMENT_NODE) {
+      let sel = el.nodeName.toLowerCase();
+      if (el.id) { sel = '#' + el.id; path.unshift(sel); break; }
+      else {
+        if (el.className && typeof el.className === 'string') {
+          const cls = Array.from(el.classList)
+            .filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/'))
+            .join('.');
+          if (cls) sel += '.' + cls;
+        }
+        let sib = el, nth = 1;
+        while (sib = sib.previousElementSibling)
+          if (sib.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++;
+        sel += ':nth-of-type(' + nth + ')';
+        path.unshift(sel);
+      }
+      el = el.parentNode;
+    }
+    return path.join(' > ');
+  }
+  document.addEventListener('click', (e) => {
+    if (e.isTrusted === false || window.isSimulating) return;
+    const sel = getUniqueSelector(e.target);
+    if (!sel) return;
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: { type: 'UNIVERSAL_CLICK', selector: sel, seed: localSeed }
+    }, '*');
+  }, true);
+  document.addEventListener('mousemove', (e) => {
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: {
+        type: 'UNIVERSAL_CURSOR',
+        pctX: (e.clientX / window.innerWidth) * 100,
+        pctY: ((e.clientY + window.scrollY) / document.documentElement.scrollHeight) * 100
+      }
+    }, '*');
+  });
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+      window.parent.postMessage({
+        type: 'IFRAME_ACTION_TRIGGERED',
+        payload: {
+          type: 'UNIVERSAL_CURSOR',
+          pctX: (e.touches[0].clientX / window.innerWidth) * 100,
+          pctY: (e.touches[0].clientY / window.innerHeight) * 100
+        }
+      }, '*');
+    }
+  }, { passive: true });
+  function applyScale() {
+    const targetH = 650;
+    const curH = window.innerHeight;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    if (curH < targetH) {
+      const s = curH / targetH;
+      document.body.style.transform = 'scale(' + s + ')';
+      document.body.style.transformOrigin = 'top left';
+      document.body.style.width = (100 / s) + '%';
+      document.body.style.height = (100 / s) + '%';
+    } else {
+      document.body.style.transform = 'none';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    }
+  }
+  window.addEventListener('resize', applyScale);
+  window.addEventListener('load', applyScale);
+  window.addEventListener('message', (event) => {
+    if (event.data?.type === 'EXECUTE_UNIVERSAL_ACTION') {
+      const action = event.data.action;
+      window.isSimulating = true;
+      if (action.seed !== undefined) localSeed = action.seed;
+      if (action.type === 'UNIVERSAL_CLICK') {
+        const el = document.querySelector(action.selector);
+        if (el) el.click();
+      } else if (action.type === 'UNIVERSAL_CURSOR') {
+        const c = document.getElementById('remote-cursor');
+        if (c) {
+          c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+          c.style.top = (action.pctY / 100 * document.documentElement.scrollHeight - window.scrollY) + 'px';
+          c.style.display = 'block';
+        }
+      }
+      window.isSimulating = false;
+    }
+  });
+</script>
+
+<!-- ============================================================
+     PART 2 — CSS
+     ============================================================ -->
+<style>
+  :root { --bg: #e0f2fe; }
+  
+  /* ANTI-FLICKER ARMOR: Native selectionum draggingum globally block cheyyunnu */
+  * { 
+      box-sizing: border-box; 
+      -webkit-tap-highlight-color: transparent; 
+      -webkit-user-select: none; 
+      user-select: none; 
+      -webkit-user-drag: none;
+  }
+
+  body {
+    overflow: hidden; /* NIRBANDHAMANU */
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    touch-action: manipulation;
+    height: 650px;
+    min-height: 100vh;
+  }
+  h1, .font-display { font-family: 'Boogaloo', cursive; }
+
+  @keyframes popIn {
+    0%   { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+  .pop-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+  .btn-3d {
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+  }
+  .btn-3d:active { transform: translateY(6px); box-shadow: 0 0px 0 rgba(0,0,0,0.2); }
+
+  /* ── SVG scene container ── */
+  .svg-container {
+    width: 100%; height: auto; aspect-ratio: 4/3;
+    background: #87CEEB;
+    border-radius: 16px; border: 6px solid white;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.15); overflow: hidden;
+  }
+
+  /* ── Object animations ── */
+  .anim-jet  { animation: flyJet 12s linear infinite; }
+  @keyframes flyJet { 0% { transform: translateX(-200px); } 100% { transform: translateX(1000px); } }
+
+  .anim-walk { animation: walkPerson 18s linear infinite; }
+  @keyframes walkPerson { 0% { transform: translateX(900px); } 100% { transform: translateX(-200px); } }
+
+  .anim-bob  { animation: bob 2s ease-in-out infinite; transform-origin: bottom; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+  /* ── Diff interaction ── */
+  .diff-hitbox { cursor: pointer; }
+  /* Hitbox pointer events mathram allow cheyyunnu */
+  .diff-hitbox > * { pointer-events: none; }
+  .diff-hitbox > .hover-highlight { pointer-events: all; }
+  
+  .diff-hitbox:hover .hover-highlight { opacity: 0.18; }
+  .hover-highlight { transition: opacity 0.2s; }
+
+  /* ── Diff marker ring ── */
+  .diff-marker {
+    opacity: 0;
+    transition: opacity 0.35s, transform 0.35s;
+    transform: scale(0.4); transform-origin: center;
+    pointer-events: none;
+  }
+  .diff-marker.found { opacity: 1; transform: scale(1); }
+
+  /* ── Kandethiya badge (kurachu neram kanichittu mayam) ── */
+  @keyframes badgePop {
+    0%   { opacity: 0; transform: translate(-50%,-60%) scale(0.5); }
+    25%  { opacity: 1; transform: translate(-50%,-60%) scale(1.1); }
+    75%  { opacity: 1; transform: translate(-50%,-80%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-100%) scale(0.8); }
+  }
+  .found-badge {
+    position: fixed; pointer-events: none; z-index: 200;
+    background: #22c55e; color: white; font-family: 'Boogaloo', cursive;
+    font-size: 1.1rem; padding: 4px 14px; border-radius: 50px;
+    border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    animation: badgePop 1.2s ease forwards;
+  }
+
+  /* ── Shariyaya tap-il pulse ring ── */
+  @keyframes pulseRing {
+    0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
+    100% { box-shadow: 0 0 0 20px rgba(34,197,94,0); }
+  }
+  .pulse-tap { animation: pulseRing 0.6s ease; }
+</style>
+</head>
+
+<body class="flex flex-col">
+
+<!-- CHUVANNA DOT CURSOR - NIRBANDHAMANU, maattaruthu, id rename cheyyaruthu -->
+<div id="remote-cursor" style="
+  position:fixed; width:18px; height:18px;
+  background:red; border-radius:50%;
+  border:3px solid white;
+  box-shadow:0 0 10px rgba(255,0,0,.6);
+  pointer-events:none; z-index:9999;
+  transform:translate(-50%,-50%); display:none;
+"></div>
+
+<!-- ══════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════ -->
+<header class="w-full flex justify-between items-center bg-white px-4 py-2 border-b-4 border-blue-400 shadow-md flex-shrink-0" style="min-height:56px;">
+  <div>
+    <h1 class="font-display text-2xl md:text-3xl text-blue-600 leading-tight">Ayalpakkam 🏡</h1>
+    <p class="text-gray-400 font-bold text-xs">5 vyathyasangal kandupidikkuka!</p>
+  </div>
+  <div class="flex items-center gap-3">
+    <div class="bg-blue-50 px-4 py-2 rounded-2xl border-3 border-blue-200 text-center">
+      <span class="text-sm font-bold text-gray-400">Kandethiyava</span>
+      <div id="score-display" class="font-display text-2xl text-blue-500 leading-none">0 / 5</div>
+    </div>
+    <button id="btn-reset-top" onclick="resetGame()"
+      class="bg-red-500 text-white px-4 py-2 rounded-2xl font-black text-sm btn-3d border-3 border-red-700">
+      🔄 Reset Cheyyuka
+    </button>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════
+     MAIN — randu SVG panelukal side by side
+     Teacher-kum student-num ore screen kanam.
+══════════════════════════════════════════ -->
+<main class="flex-1 grid grid-cols-2 gap-2 px-2 pb-1 overflow-hidden" style="min-height:0;">
+
+  <!-- ═══ ORIGINAL SCENE (LEFT) ═══ -->
+  <div class="relative flex flex-col">
+    <div class="absolute -top-1 left-1 bg-blue-500 text-white px-3 py-0.5 rounded-full font-display text-sm shadow border-2 border-white z-10 -rotate-3">Chithram 1</div>
+    <svg viewBox="0 0 800 600" class="svg-container flex-1">
+
+      <!-- Background -->
+      <rect width="800" height="600" fill="#87CEEB"/>
+      <circle cx="700" cy="80" r="45" fill="#FFD700"/>
+      <path d="M 200 100 Q 220 80 240 100 Q 270 70 300 100 Q 320 120 300 130 L 200 130 Z" fill="#FFF" opacity="0.8"/>
+      <path d="M 500 150 Q 520 130 540 150 Q 570 120 600 150 Q 620 170 600 180 L 500 180 Z" fill="#FFF" opacity="0.6"/>
+      <!-- Ground -->
+      <path d="M 0 320 Q 400 300 800 320 L 800 600 L 0 600 Z" fill="#7CFC00"/>
+      <path d="M 0 370 Q 400 350 800 370 L 800 600 L 0 600 Z" fill="#32CD32"/>
+      <path d="M 0 450 Q 400 420 800 480 L 800 600 L 0 600 Z" fill="#EEDD82"/>
+      <path d="M 0 520 Q 400 490 800 550 L 800 600 L 0 600 Z" fill="#DAA520"/>
+      <!-- House -->
+      <polygon points="450,220 550,100 650,220" fill="#A52A2A"/>
+      <rect x="470" y="220" width="160" height="150" fill="#FFE4B5"/>
+      <rect x="525" y="290" width="40" height="80" fill="#8B4513"/>
+      <circle cx="560" cy="335" r="4" fill="#FFD700"/>
+      <rect x="485" y="240" width="30" height="30" fill="#87CEFA"/>
+      <rect x="635" y="240" width="30" height="30" fill="#87CEFA" stroke="#FFF" stroke-width="2"/>
+      <line x1="500" y1="240" x2="500" y2="270" stroke="#FFF" stroke-width="2"/>
+      <line x1="485" y1="255" x2="515" y2="255" stroke="#FFF" stroke-width="2"/>
+      <line x1="650" y1="240" x2="650" y2="270" stroke="#FFF" stroke-width="2"/>
+      <line x1="635" y1="255" x2="665" y2="255" stroke="#FFF" stroke-width="2"/>
+      <!-- Tree -->
+      <rect x="140" y="200" width="30" height="150" fill="#8B4513"/>
+      <circle cx="155" cy="180" r="70" fill="#228B22"/>
+      <circle cx="110" cy="200" r="50" fill="#006400"/>
+      <circle cx="200" cy="200" r="50" fill="#006400"/>
+      <!-- Dog -->
+      <rect x="650" y="340" width="50" height="25" fill="#D2B48C" rx="10"/>
+      <circle cx="695" cy="335" r="15" fill="#D2B48C"/>
+      <ellipse cx="695" cy="325" rx="5" ry="12" fill="#8B4513" transform="rotate(30 695 325)"/>
+      <circle cx="705" cy="335" r="3" fill="#000"/>
+
+      <!-- DIFF 1: Jet — RED tail -->
+      <g id="L-jet" class="anim-jet diff-hitbox" onclick="checkDiff('jet', event)">
+        <rect id="hit-L-jet" class="hover-highlight" x="30" y="40" width="140" height="80" fill="white" opacity="0" rx="20"/>
+        <ellipse cx="100" cy="80" rx="45" ry="12" fill="#E0E0E0"/>
+        <polygon points="65,80 45,50 85,75" fill="#FF3333"/>
+        <polygon points="100,80 120,65 130,80" fill="#B0BEC5"/>
+        <circle cx="130" cy="78" r="4" fill="#87CEFA"/>
+        <circle class="diff-marker marker-jet" cx="100" cy="80" r="70" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+      <!-- DIFF 2: Birds — 3 birds -->
+      <g id="L-bird" class="diff-hitbox" onclick="checkDiff('bird', event)">
+        <circle id="hit-L-bird" class="hover-highlight" cx="280" cy="150" r="60" fill="white" opacity="0"/>
+        <path d="M 250 140 Q 260 130 270 140 Q 260 135 250 140" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 280 120 Q 290 110 300 120 Q 290 115 280 120" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 265 160 Q 275 150 285 160 Q 275 155 265 160" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+        <circle class="diff-marker marker-bird" cx="275" cy="140" r="50" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+      <!-- DIFF 3: Cat on roof -->
+      <g id="L-cat" class="diff-hitbox" onclick="checkDiff('cat', event)">
+        <circle id="hit-L-cat" class="hover-highlight" cx="600" cy="110" r="50" fill="white" opacity="0"/>
+        <ellipse cx="600" cy="115" rx="15" ry="10" fill="#FFA500"/>
+        <circle cx="585" cy="105" r="8" fill="#FFA500"/>
+        <polygon points="580,100 582,90 588,98" fill="#FFA500"/>
+        <polygon points="585,98 590,90 592,100" fill="#FFA500"/>
+        <path d="M 610 115 Q 625 105 620 90" fill="none" stroke="#FFA500" stroke-width="4" stroke-linecap="round"/>
+        <circle class="diff-marker marker-cat" cx="600" cy="105" r="50" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+      <!-- DIFF 4: Children with ball -->
+      <g id="L-ball" class="diff-hitbox" onclick="checkDiff('ball', event)">
+        <rect id="hit-L-ball" class="hover-highlight" x="200" y="350" width="160" height="120" fill="white" opacity="0" rx="20"/>
+        <g class="anim-bob">
+          <rect x="230" y="400" width="20" height="30" fill="#FF4500" rx="5"/>
+          <circle cx="240" cy="385" r="15" fill="#FFDAB9"/>
+          <rect x="235" y="430" width="10" height="20" fill="#1E90FF"/>
+        </g>
+        <circle cx="280" cy="445" r="10" fill="#FFF" stroke="#000" stroke-width="2"/>
+        <path d="M 270 445 Q 280 435 290 445 M 275 437 Q 280 450 285 453" fill="none" stroke="#000" stroke-width="1"/>
+        <g class="anim-bob" style="animation-delay:0.5s;">
+          <rect x="310" y="405" width="20" height="30" fill="#32CD32" rx="5"/>
+          <circle cx="320" cy="390" r="14" fill="#FFDAB9"/>
+          <rect x="315" y="435" width="10" height="20" fill="#1E90FF"/>
+        </g>
+        <circle class="diff-marker marker-ball" cx="280" cy="445" r="30" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+      <!-- DIFF 5: Person with purple hat -->
+      <g id="L-person" class="anim-walk diff-hitbox" onclick="checkDiff('person', event)">
+        <rect id="hit-L-person" class="hover-highlight" x="370" y="340" width="80" height="150" fill="white" opacity="0" rx="20"/>
+        <rect x="400" y="390" width="25" height="40" fill="#4169E1" rx="5"/>
+        <rect x="405" y="430" width="15" height="35" fill="#333"/>
+        <circle cx="412" cy="375" r="16" fill="#F4A460"/>
+        <path d="M 395 365 L 430 365 L 420 345 L 405 345 Z" fill="#800080"/>
+        <line x1="390" y1="365" x2="435" y2="365" stroke="#800080" stroke-width="4" stroke-linecap="round"/>
+        <circle class="diff-marker marker-person" cx="412" cy="375" r="60" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+    </svg>
+  </div>
+
+  <!-- ═══ MODIFIED SCENE (RIGHT) ═══ -->
+  <div class="relative flex flex-col">
+    <div class="absolute -top-1 left-1 bg-purple-500 text-white px-3 py-0.5 rounded-full font-display text-sm shadow border-2 border-white z-10 -rotate-3">Chithram 2</div>
+    <svg viewBox="0 0 800 600" class="svg-container flex-1">
+
+      <!-- Background (identical) -->
+      <rect width="800" height="600" fill="#87CEEB"/>
+      <circle cx="700" cy="80" r="45" fill="#FFD700"/>
+      <path d="M 200 100 Q 220 80 240 100 Q 270 70 300 100 Q 320 120 300 130 L 200 130 Z" fill="#FFF" opacity="0.8"/>
+      <path d="M 500 150 Q 520 130 540 150 Q 570 120 600 150 Q 620 170 600 180 L 500 180 Z" fill="#FFF" opacity="0.6"/>
+      <path d="M 0 320 Q 400 300 800 320 L 800 600 L 0 600 Z" fill="#7CFC00"/>
+      <path d="M 0 370 Q 400 350 800 370 L 800 600 L 0 600 Z" fill="#32CD32"/>
+      <path d="M 0 450 Q 400 420 800 480 L 800 600 L 0 600 Z" fill="#EEDD82"/>
+      <path d="M 0 520 Q 400 490 800 550 L 800 600 L 0 600 Z" fill="#DAA520"/>
+      <polygon points="450,220 550,100 650,220" fill="#A52A2A"/>
+      <rect x="470" y="220" width="160" height="150" fill="#FFE4B5"/>
+      <rect x="525" y="290" width="40" height="80" fill="#8B4513"/>
+      <circle cx="560" cy="335" r="4" fill="#FFD700"/>
+      <rect x="485" y="240" width="30" height="30" fill="#87CEFA"/>
+      <rect x="635" y="240" width="30" height="30" fill="#87CEFA" stroke="#FFF" stroke-width="2"/>
+      <line x1="500" y1="240" x2="500" y2="270" stroke="#FFF" stroke-width="2"/>
+      <line x1="485" y1="255" x2="515" y2="255" stroke="#FFF" stroke-width="2"/>
+      <line x1="650" y1="240" x2="650" y2="270" stroke="#FFF" stroke-width="2"/>
+      <line x1="635" y1="255" x2="665" y2="255" stroke="#FFF" stroke-width="2"/>
+      <rect x="140" y="200" width="30" height="150" fill="#8B4513"/>
+      <circle cx="155" cy="180" r="70" fill="#228B22"/>
+      <circle cx="110" cy="200" r="50" fill="#006400"/>
+      <circle cx="200" cy="200" r="50" fill="#006400"/>
+      <rect x="650" y="340" width="50" height="25" fill="#D2B48C" rx="10"/>
+      <circle cx="695" cy="335" r="15" fill="#D2B48C"/>
+      <ellipse cx="695" cy="325" rx="5" ry="12" fill="#8B4513" transform="rotate(30 695 325)"/>
+      <circle cx="705" cy="335" r="3" fill="#000"/>
+
+      <!-- DIFF 1: Jet — BLUE tail -->
+      <g id="R-jet" class="anim-jet diff-hitbox" onclick="checkDiff('jet', event)">
+        <rect id="hit-R-jet" class="hover-highlight" x="30" y="40" width="140" height="80" fill="white" opacity="0" rx="20"/>
+        <ellipse cx="100" cy="80" rx="45" ry="12" fill="#E0E0E0"/>
+        <polygon points="65,80 45,50 85,75" fill="#0000FF"/>
+        <polygon points="100,80 120,65 130,80" fill="#B0BEC5"/>
+        <circle cx="130" cy="78" r="4" fill="#87CEFA"/>
+        <circle class="diff-marker marker-jet" cx="100" cy="80" r="70" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+      <!-- DIFF 2: Birds — only 2 birds -->
+      <g id="R-bird" class="diff-hitbox" onclick="checkDiff('bird', event)">
+        <circle id="hit-R-bird" class="hover-highlight" cx="280" cy="150" r="60" fill="white" opacity="0"/>
+        <path d="M 250 140 Q 260 130 270 140 Q 260 135 250 140" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 280 120 Q 290 110 300 120 Q 290 115 280 120" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+        <!-- 3rd bird MISSING -->
+        <circle class="diff-marker marker-bird" cx="275" cy="140" r="50" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+      <!-- DIFF 3: Cat MISSING from roof -->
+      <g id="R-cat" class="diff-hitbox" onclick="checkDiff('cat', event)">
+        <circle id="hit-R-cat" class="hover-highlight" cx="600" cy="110" r="50" fill="white" opacity="0"/>
+        <!-- Cat MISSING -->
+        <circle class="diff-marker marker-cat" cx="600" cy="105" r="50" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+      <!-- DIFF 4: Ball MISSING -->
+      <g id="R-ball" class="diff-hitbox" onclick="checkDiff('ball', event)">
+        <rect id="hit-R-ball" class="hover-highlight" x="200" y="350" width="160" height="120" fill="white" opacity="0" rx="20"/>
+        <g class="anim-bob">
+          <rect x="230" y="400" width="20" height="30" fill="#FF4500" rx="5"/>
+          <circle cx="240" cy="385" r="15" fill="#FFDAB9"/>
+          <rect x="235" y="430" width="10" height="20" fill="#1E90FF"/>
+        </g>
+        <!-- Ball MISSING -->
+        <g class="anim-bob" style="animation-delay:0.5s;">
+          <rect x="310" y="405" width="20" height="30" fill="#32CD32" rx="5"/>
+          <circle cx="320" cy="390" r="14" fill="#FFDAB9"/>
+          <rect x="315" y="435" width="10" height="20" fill="#1E90FF"/>
+        </g>
+        <circle class="diff-marker marker-ball" cx="280" cy="445" r="30" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+      <!-- DIFF 5: Person — hat MISSING -->
+      <g id="R-person" class="anim-walk diff-hitbox" onclick="checkDiff('person', event)">
+        <rect id="hit-R-person" class="hover-highlight" x="370" y="340" width="80" height="150" fill="white" opacity="0" rx="20"/>
+        <rect x="400" y="390" width="25" height="40" fill="#4169E1" rx="5"/>
+        <rect x="405" y="430" width="15" height="35" fill="#333"/>
+        <circle cx="412" cy="375" r="16" fill="#F4A460"/>
+        <!-- Hat MISSING -->
+        <circle class="diff-marker marker-person" cx="412" cy="375" r="60" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+      </g>
+
+    </svg>
+  </div>
+
+</main>
+
+<!-- Victory Modal -->
+<div id="victory-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50">
+  <div class="bg-white p-8 rounded-[2.5rem] text-center border-6 border-blue-400 shadow-2xl max-w-sm w-full mx-4 pop-in">
+    <div class="text-6xl mb-3">🏆</div>
+    <h2 class="font-display text-4xl text-blue-500 mb-1">Mikhachathu!</h2>
+    <p class="text-gray-400 font-bold text-base mb-6">5 vyathyasangalum kandethi!</p>
+    <button id="btn-reset-modal" onclick="resetGame()"
+      class="bg-green-500 text-white px-6 py-3 rounded-full font-black text-xl btn-3d border-4 border-green-700 w-full">
+      Veendum Kalikkuka ➔
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================
+     PART 3 — GAME LOGIC
+     ============================================================ -->
+<script>
+  // SVG element click() work aakan ulla polyfill
+  if (typeof SVGElement !== 'undefined' && !SVGElement.prototype.click) {
+    SVGElement.prototype.click = function() {
+      const ev = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+      this.dispatchEvent(ev);
+    };
+  }
+
+  const TOTAL_DIFFS = 5;
+  let foundDiffs = new Set();
+  let audioCtx = null;
+
+  function getAC() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  document.addEventListener('click', () => getAC(), { once: true });
+
+  function playBeep(freq, type, dur, vol = 0.35) {
+    try {
+      const ac = getAC();
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(vol, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+      o.start(); o.stop(ac.currentTime + dur);
+    } catch(e) {}
+  }
+
+  function checkDiff(id, event) {
+    // Basic deduplication. Sync block isSimulating automatic aayi handle cheyyunnu.
+    if (foundDiffs.has(id)) return;
+    foundDiffs.add(id);
+
+    // Shabdam: nalla chime
+    playBeep(523, 'sine', 0.1, 0.4);
+    setTimeout(() => playBeep(659, 'sine', 0.15, 0.35), 100);
+    setTimeout(() => playBeep(784, 'sine', 0.25, 0.3),  200);
+
+    // Randu panelilum ring kanikkuka
+    document.querySelectorAll(`.marker-${id}`).forEach(m => m.classList.add('found'));
+
+    // Floating badge position kanakkakkunnu: 
+    // Frameworkil ninnulla replayed click aanenkil SVG element-te center edukka.
+    let x, y;
+    if (event && event.isTrusted && event.clientX) {
+        x = event.clientX;
+        y = event.clientY;
+    } else if (event && event.currentTarget) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        x = rect.left + (rect.width / 2);
+        y = rect.top + (rect.height / 2);
+    }
+
+    if (x && y) showBadge(x, y);
+
+    // Cheriya confetti burst
+    confetti({ particleCount: 25, spread: 50, origin: { y: 0.5 }, zIndex: 100 });
+
+    updateScore();
+    if (foundDiffs.size === TOTAL_DIFFS) {
+      setTimeout(triggerWin, 600);
+    }
+  }
+
+  function showBadge(x, y) {
+    const badge = document.createElement('div');
+    badge.className = 'found-badge';
+    badge.textContent = '✓ Kandethi!';
+    badge.style.left = x + 'px';
+    badge.style.top  = y + 'px';
+    document.body.appendChild(badge);
+    setTimeout(() => badge.remove(), 1250);
+  }
+
+  function updateScore() {
+    const d = document.getElementById('score-display');
+    d.innerText = `${foundDiffs.size} / ${TOTAL_DIFFS}`;
+    d.classList.remove('pop-in');
+    void d.offsetWidth;
+    d.classList.add('pop-in');
+  }
+
+  function triggerWin() {
+    // Vijayathinte shabdam
+    [523, 659, 784, 1047, 1319].forEach((f, i) =>
+      setTimeout(() => playBeep(f, 'sine', 0.3, 0.3), i * 140)
+    );
+    // Confetti burst
+    const end = Date.now() + 3000;
+    (function frame() {
+      confetti({ particleCount: 8, angle: 60,  spread: 55, origin: { x: 0 }, colors: ['#3b82f6','#10b981','#f59e0b'] });
+      confetti({ particleCount: 8, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#3b82f6','#10b981','#f59e0b'] });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+    const modal = document.getElementById('victory-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function resetGame() {
+    foundDiffs.clear();
+    document.querySelectorAll('.diff-marker').forEach(m => m.classList.remove('found'));
+    updateScore();
+    const modal = document.getElementById('victory-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+</script>
+</body>
+</html>

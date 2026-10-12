@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎯 Spot the Difference — Synced Builder & Player</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<!-- ============================================================
+     PART 1 — LIVETUTOR SYNC BLOCK
+     ============================================================ -->
+<script>
+  window.isSimulating = false;
+  const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#','?'));
+  const roomId = urlParams.get('room') || '54321';
+  let localSeed = 0;
+  for (let i = 0; i < roomId.length; i++) { localSeed = roomId.charCodeAt(i) + ((localSeed << 5) - localSeed); }
+  localSeed = Math.abs(localSeed);
+  window.seededRandom = function() { let x = Math.sin(localSeed++) * 10000; return x - Math.floor(x); };
+  
+  function getUniqueSelector(el) {
+    if (!el) return null; if (el.id) return '#' + el.id; if (el === document.body) return 'body';
+    let path = [];
+    while (el && el.nodeType === Node.ELEMENT_NODE) {
+      let sel = el.nodeName.toLowerCase();
+      if (el.id) { sel = '#' + el.id; path.unshift(sel); break; }
+      else {
+        if (el.className && typeof el.className === 'string') {
+          const cls = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+          if (cls) sel += '.' + cls;
+        }
+        let sib = el, nth = 1;
+        while (sib = sib.previousElementSibling) if (sib.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++;
+        sel += ':nth-of-type(' + nth + ')'; path.unshift(sel);
+      }
+      el = el.parentNode;
+    }
+    return path.join(' > ');
+  }
+
+  let actionIdCounter = 0;
+  document.addEventListener('click', (e) => {
+    if (e.isTrusted === false || window.isSimulating) return;
+    const sel = getUniqueSelector(e.target); if (!sel) return;
+    actionIdCounter++;
+    
+    let customPctX = (e.clientX / window.innerWidth) * 100;
+    let customPctY = (e.clientY / window.innerHeight) * 100;
+    let isCanvas = false;
+    
+    if (e.target.tagName === 'CANVAS') {
+        const rect = e.target.getBoundingClientRect();
+        customPctX = ((e.clientX - rect.left) / rect.width) * 100;
+        customPctY = ((e.clientY - rect.top) / rect.height) * 100;
+        isCanvas = true;
+    }
+
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: { 
+          type: 'UNIVERSAL_CLICK', 
+          selector: sel, 
+          seed: localSeed, 
+          actionId: 'click_' + actionIdCounter + '_' + Date.now(),
+          pctX: customPctX,
+          pctY: customPctY,
+          isCanvas: isCanvas
+      }
+    }, '*');
+  }, true);
+
+  let lastCursorTime = 0;
+  document.addEventListener('mousemove', (e) => {
+    const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+    window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 }, '*');
+  });
+  
+  let lastTouchTime = 0;
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 0) return; const now = Date.now(); if (now - lastTouchTime < 40) return; lastTouchTime = now;
+    window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.touches[0].clientX / window.innerWidth) * 100, pctY: (e.touches[0].clientY / window.innerHeight) * 100 }, '*');
+  }, { passive: true });
+
+  let lastProcessedActionId = null;
+  window.addEventListener('message', (event) => {
+    if (event.data?.type === 'EXECUTE_UNIVERSAL_ACTION') {
+      const action = event.data.action; if (action.type === 'UNIVERSAL_CURSOR') return;
+      const currentActionId = action.actionId || action.timestamp;
+      if (currentActionId && currentActionId === lastProcessedActionId) return;
+      lastProcessedActionId = currentActionId;
+      
+      window.isSimulating = true;
+      if (action.seed !== undefined) localSeed = action.seed;
+      if (action.type === 'UNIVERSAL_CLICK') {
+        const el = document.querySelector(action.selector); 
+        if (el) {
+            if(el.tagName === 'CANVAS' && window.processClickDirect) {
+                let rx, ry;
+                if (action.isCanvas) {
+                    rx = action.pctX / 100;
+                    ry = action.pctY / 100;
+                } else {
+                    const fakeX = (action.pctX / 100) * window.innerWidth;
+                    const fakeY = (action.pctY / 100) * window.innerHeight;
+                    const rect = el.getBoundingClientRect();
+                    rx = (fakeX - rect.left) / rect.width;
+                    ry = (fakeY - rect.top) / rect.height;
+                }
+                
+                if(el.id === 'pc-left') window.processClickDirect(rx, ry, 'left', 'left', el);
+                else if(el.id === 'pc-right') window.processClickDirect(rx, ry, 'right', 'right', el);
+            } else {
+                el.click();
+            }
+        }
+      }
+      setTimeout(() => { window.isSimulating = false; }, 50);
+    }
+  });
+</script>
+
+<style>
+  * { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+  body { font-family: 'Nunito', sans-serif; background-color: #0b0f19; overflow: hidden; }
+  .font-fredoka { font-family: 'Fredoka One', cursive; }
+  .play-img-wrap { position: relative; width: 100%; aspect-ratio: 4 / 3; background: #0c0c1e; border-radius: 16px; overflow: hidden; border: 2px solid rgba(255,255,255,0.1); }
+  .play-img-wrap img { width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+  .play-img-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  .ripple { position: absolute; border-radius: 50%; pointer-events: none; animation: ripOut .55s ease forwards; transform: translate(-50%,-50%); width: 50px; height: 50px; z-index: 100; }
+  @keyframes ripOut { from { opacity: .8; transform: translate(-50%,-50%) scale(0); } to { opacity: 0; transform: translate(-50%,-50%) scale(2.2); } }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+</style>
+</head>
+<body class="text-slate-100 h-screen w-screen flex flex-col justify-between">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="bg-slate-900 border-b border-slate-800 px-3 py-2 flex justify-between items-center shrink-0 z-40 shadow-md">
+    <div class="flex items-center gap-2">
+      <span class="text-amber-400 font-fredoka text-sm">🎯 Spot The Difference</span>
+      <span class="px-2 py-0.5 bg-indigo-950 text-indigo-300 rounded-lg text-[10px] font-mono font-bold border border-indigo-800">
+        Room: <strong id="room-code-display" class="text-white">...</strong>
+      </span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btn-back-home" onclick="goHome()" class="hidden px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Levels
+      </button>
+      <button onclick="openManageModal()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">
+        <i data-lucide="settings" class="w-3.5 h-3.5"></i> Manage JSON
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== SCREEN 1: LEVEL SELECTION ==================== -->
+  <section id="home-screen" class="flex-1 flex flex-col p-4 overflow-y-auto max-w-5xl mx-auto w-full">
+    <div class="mb-5 flex flex-wrap justify-between items-center gap-2">
+      <div>
+        <h2 class="text-xl md:text-2xl font-fredoka text-amber-300">Choose a Puzzle</h2>
+        <p class="text-slate-400 text-xs mt-0.5">Spot all differences between the two images.</p>
+      </div>
+      <button onclick="openManageModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5">
+        <i data-lucide="plus" class="w-4 h-4"></i> New Puzzle (Upload 2 Images)
+      </button>
+    </div>
+    <div id="puzzle-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pb-8"></div>
+  </section>
+
+  <!-- ==================== SCREEN 2: GAMEPLAY PLAYGROUND ==================== -->
+  <section id="play-screen" class="hidden flex-1 flex flex-col p-3 md:p-4 max-w-5xl mx-auto w-full overflow-hidden">
+    <div class="flex justify-between items-center mb-3">
+      <h3 id="play-title" class="font-fredoka text-lg md:text-xl text-white">Puzzle</h3>
+      <div class="bg-slate-900 border border-slate-700 px-3 py-1 rounded-full text-xs md:text-sm font-bold">
+        Found: <span id="p-found" class="text-amber-300 font-extrabold text-base">0</span> / <span id="p-total">0</span>
+      </div>
+    </div>
+    
+    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mb-3">
+      <div id="prog-bar" class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full w-0 transition-all duration-300"></div>
+    </div>
+
+    <!-- 2 Images Side-by-Side (or stacked on mobile) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 flex-1 items-center justify-center min-h-0">
+      <!-- Left -->
+      <div class="play-img-wrap" id="pw-left">
+        <span class="absolute top-2 left-2 z-20 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] font-bold text-amber-300">IMAGE 1</span>
+        <img id="pi-left" src="" alt="Left view">
+        <canvas id="pc-left"></canvas>
+      </div>
+      <!-- Right -->
+      <div class="play-img-wrap" id="pw-right">
+        <span class="absolute top-2 left-2 z-20 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] font-bold text-teal-300">IMAGE 2</span>
+        <img id="pi-right" src="" alt="Right view">
+        <canvas id="pc-right"></canvas>
+      </div>
+    </div>
+    <p class="text-center text-slate-500 text-xs mt-2">👆 Tap on either picture where you spot a difference!</p>
+  </section>
+
+  <!-- ==================== WIN OVERLAY ==================== -->
+  <div id="win-overlay" class="fixed inset-0 bg-slate-950/90 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-amber-400/40 rounded-3xl p-6 text-center max-w-sm w-full shadow-2xl">
+      <div class="text-5xl mb-2">🏆</div>
+      <h2 class="font-fredoka text-2xl text-amber-300">All Differences Found!</h2>
+      <p id="win-msg" class="text-slate-400 text-xs mt-1 mb-5">Super sharp eyes!</p>
+      <div class="flex gap-2 justify-center">
+        <button onclick="replayCurrentGame()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-xs font-bold text-white">Play Again</button>
+        <button onclick="goHome()" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl text-xs font-bold text-white">All Levels</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MANAGE / JSON CREATOR MODAL ==================== -->
+  <div id="manage-modal" class="fixed inset-0 bg-slate-950/95 z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl flex flex-col max-h-[92vh] overflow-hidden shadow-2xl">
+      
+      <!-- Modal Header -->
+      <div class="p-3 md:p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
+        <h3 class="font-fredoka text-amber-300 text-base md:text-lg">Spot Difference JSON Builder</h3>
+        <button onclick="closeManageModal()" class="text-slate-400 hover:text-white font-bold text-lg px-2">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 overflow-y-auto space-y-4 flex-1 text-xs md:text-sm">
+        
+        <!-- Step 1: Add/Edit Puzzle Form -->
+        <div class="bg-slate-950 border border-slate-800 p-3 md:p-4 rounded-2xl space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="font-fredoka text-white text-sm">1. Level Setup & Images</span>
+            <span class="text-[11px] text-slate-400 font-mono">Upload Left & Right versions</span>
+          </div>
+          
+          <input id="builder-name" type="text" placeholder="Puzzle Name (e.g. Garden Scene)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold text-xs">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="border border-dashed border-slate-700 p-3 rounded-xl text-center">
+              <p class="font-bold text-slate-300 mb-1">Image 1 (Left / Normal)</p>
+              <label class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer inline-block">
+                <span id="left-img-status">📷 Choose Left Image</span>
+                <input type="file" accept="image/*" class="hidden" onchange="handleBuilderImage(event, 'left')">
+              </label>
+            </div>
+            <div class="border border-dashed border-slate-700 p-3 rounded-xl text-center">
+              <p class="font-bold text-slate-300 mb-1">Image 2 (Right / Changed)</p>
+              <label class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer inline-block">
+                <span id="right-img-status">📷 Choose Right Image</span>
+                <input type="file" accept="image/*" class="hidden" onchange="handleBuilderImage(event, 'right')">
+              </label>
+            </div>
+          </div>
+
+          <!-- Step 2: Interactive Tagger Canvas -->
+          <div id="tagger-container" class="hidden space-y-2 border-t border-slate-800 pt-3">
+            <div class="flex justify-between items-center">
+              <span class="font-fredoka text-amber-300 text-xs">2. Tap & Drag to Tag Differences (<span id="tag-count">0</span> tagged)</span>
+              <button onclick="clearCurrentTags()" class="text-rose-400 hover:underline text-[11px] font-bold">Clear Tags</button>
+            </div>
+            
+            <div class="relative w-full aspect-[4/3] max-w-md mx-auto bg-black rounded-xl overflow-hidden border-2 border-indigo-500/40">
+              <img id="tagger-img" class="w-full h-full object-fill pointer-events-none" src="" alt="Tagger view">
+              <canvas id="tagger-canvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+            </div>
+            <p class="text-center text-[10px] text-slate-400">Click & drag on the picture above to create a difference box.</p>
+          </div>
+
+          <button onclick="saveBuilderPuzzle()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs">
+            Save Puzzle to Deck
+          </button>
+        </div>
+
+        <!-- Current Puzzles Deck -->
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <p class="font-fredoka text-white text-xs uppercase tracking-wider">Current Puzzles in Deck (<span id="deck-count">0</span>)</p>
+            <button onclick="clearAllPuzzles()" class="text-rose-400 text-xs hover:underline font-bold">Clear Deck</button>
+          </div>
+          <div id="deck-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 border-t border-slate-800 bg-slate-950 flex flex-wrap gap-2 justify-between items-center">
+        <div class="flex gap-2">
+          <label class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer border border-slate-700">
+            Import JSON
+            <input type="file" accept=".json,application/json" class="hidden" onchange="importManifest(event)">
+          </label>
+          <button onclick="downloadManifest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs border border-emerald-400">
+            Download manifest.json
+          </button>
+        </div>
+        <button onclick="closeManageModal()" class="bg-slate-800 text-slate-300 font-bold px-4 py-1.5 rounded-xl text-xs">Done</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== LOGIC & APP ENGINE ==================== -->
+  <script>
+    document.getElementById('room-code-display').innerText = roomId;
+    const COLORS = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF6BCB','#FF9F1C','#2EC4B6','#9B5DE5'];
+
+    let puzzleList = [];
+    let currentPuzzle = null;
+    let foundDifferences = new Set();
+
+    // Default Fallback Template
+    const fallbackPuzzles = [
+      {
+        id: 'puz_demo_1',
+        name: 'Demo House',
+        imgs: { left: '', right: '' },
+        diffs: [
+          { id: 1, color: '#FF6B6B', lr: { x: 0.25, y: 0.10, w: 0.15, h: 0.15 }, rr: { x: 0.25, y: 0.10, w: 0.15, h: 0.15 } },
+          { id: 2, color: '#FFD93D', lr: { x: 0.55, y: 0.70, w: 0.12, h: 0.18 }, rr: { x: 0.55, y: 0.70, w: 0.12, h: 0.18 } }
+        ]
+      }
+    ];
+
+    async function loadManifestOnBoot() {
+      try {
+        const res = await fetch('./manifest.json');
+        if (!res.ok) throw new Error('manifest not found');
+        const data = await res.json();
+        if (Array.isArray(data) && data.length) {
+          puzzleList = data;
+        } else {
+          puzzleList = fallbackPuzzles;
+        }
+      } catch (e) {
+        puzzleList = fallbackPuzzles;
+      }
+      renderLevelGrid();
+      renderDeckList();
+      lucide.createIcons();
+    }
+
+    // Audio SFX
+    let AC;
+    function getAC() {
+      if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+      if (AC.state === 'suspended') AC.resume();
+      return AC;
+    }
+    function tone(f, t, v = 0.25, type = 'sine', delay = 0) {
+      try {
+        const ac = getAC(), o = ac.createOscillator(), g = ac.createGain();
+        o.connect(g); g.connect(ac.destination);
+        o.type = type; o.frequency.value = f;
+        g.gain.setValueAtTime(0, ac.currentTime + delay);
+        g.gain.linearRampToValueAtTime(v, ac.currentTime + delay + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + delay + t);
+        o.start(ac.currentTime + delay);
+        o.stop(ac.currentTime + delay + t + 0.05);
+      } catch (e) {}
+    }
+    function sfxOk() { [[523,0],[659,.1],[784,.2],[1047,.32]].forEach(([f,d]) => tone(f,.22,.22,'sine',d)); }
+    function sfxNo() { tone(160, .35, .18, 'sawtooth'); }
+    function sfxWin() { [[523,0],[659,.1],[784,.2],[880,.3],[1047,.42],[1319,.55]].forEach(([f,d]) => tone(f,.45,.28,'sine',d)); }
+
+    // Navigation
+    function goHome() {
+      document.getElementById('play-screen').classList.add('hidden');
+      document.getElementById('home-screen').classList.remove('hidden');
+      document.getElementById('btn-back-home').classList.add('hidden');
+      document.getElementById('win-overlay').classList.add('hidden');
+      renderLevelGrid();
+    }
+
+    function renderLevelGrid() {
+      const grid = document.getElementById('puzzle-grid');
+      if (!puzzleList.length) {
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-500 font-bold">No puzzles available. Click "New Puzzle" to create one!</div>';
+        return;
+      }
+      grid.innerHTML = puzzleList.map(p => {
+        const thumb = p.imgs.left || 'https://placehold.co/400x300/0c0c1e/FFD700?text=No+Image';
+        return `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-indigo-500 transition shadow-lg flex flex-col">
+            <img src="${thumb}" class="w-full h-36 object-cover bg-slate-950"/>
+            <div class="p-3 flex-1 flex flex-col justify-between">
+              <div>
+                <h4 class="font-fredoka text-white text-base truncate">${p.name}</h4>
+                <p class="text-xs text-slate-400 font-bold">${p.diffs.length} Differences to find</p>
+              </div>
+              <button id="btn-play-${p.id}" onclick="startPlay('${p.id}')" class="mt-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-xs">
+                ▶ Play Level
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // Play Engine
+    window.startPlay = function(id) {
+      const p = puzzleList.find(x => x.id === id);
+      if (!p) return;
+      currentPuzzle = p;
+      foundDifferences = new Set();
+
+      document.getElementById('play-title').innerText = p.name;
+      document.getElementById('p-total').innerText = p.diffs.length;
+      document.getElementById('p-found').innerText = '0';
+      document.getElementById('prog-bar').style.width = '0%';
+
+      document.getElementById('pi-left').src = p.imgs.left || '';
+      document.getElementById('pi-right').src = p.imgs.right || '';
+
+      document.getElementById('home-screen').classList.add('hidden');
+      document.getElementById('play-screen').classList.remove('hidden');
+      document.getElementById('btn-back-home').classList.remove('hidden');
+
+      setTimeout(initPlayCanvases, 100);
+    };
+
+    function initPlayCanvases() {
+      setupSideCanvas('left');
+      setupSideCanvas('right');
+    }
+
+    function setupSideCanvas(side) {
+      const img = document.getElementById(`pi-${side}`);
+      const canvas = document.getElementById(`pc-${side}`);
+      const wrap = document.getElementById(`pw-${side}`);
+
+      const resize = () => {
+        const r = wrap.getBoundingClientRect();
+        canvas.width = r.width;
+        canvas.height = r.height;
+        drawMarkers(side);
+      };
+
+      img.onload = () => setTimeout(resize, 40);
+      if (img.complete && img.naturalWidth) setTimeout(resize, 40);
+
+      canvas.onclick = (e) => {
+        if (window.isSimulating) return;
+        const rect = canvas.getBoundingClientRect();
+        const rx = (e.clientX - rect.left) / rect.width;
+        const ry = (e.clientY - rect.top) / rect.height;
+        window.processClickDirect(rx, ry, side, side, canvas);
+      };
+
+      canvas.ontouchend = (e) => {
+        if (window.isSimulating) return;
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        const rect = canvas.getBoundingClientRect();
+        const rx = (t.clientX - rect.left) / rect.width;
+        const ry = (t.clientY - rect.top) / rect.height;
+        window.processClickDirect(rx, ry, side, side, canvas);
+      };
+    }
+
+    window.processClickDirect = function(rx, ry, uiSide, diffSide, canvas) {
+      if (!currentPuzzle) return;
+      let hit = false;
+      const pad = 0.08; // 8% tap leniency
+
+      currentPuzzle.diffs.forEach((d, idx) => {
+        if (foundDifferences.has(idx)) return;
+        const r = d.lr;
+        if (rx >= r.x - pad && rx <= r.x + r.w + pad && ry >= r.y - pad && ry <= r.y + r.h + pad) {
+          foundDifferences.add(idx);
+          hit = true;
+          drawMarkers('left');
+          drawMarkers('right');
+          updateScore();
+          sfxOk();
+          spawnRipple(rx * canvas.width, ry * canvas.height, canvas.parentElement, 'rgba(52,211,153,0.7)');
+
+          if (foundDifferences.size === currentPuzzle.diffs.length) {
+            setTimeout(showWinOverlay, 500);
+          }
+        }
+      });
+
+      if (!hit) {
+        sfxNo();
+        spawnRipple(rx * canvas.width, ry * canvas.height, canvas.parentElement, 'rgba(248,113,113,0.7)');
+        const wrap = canvas.parentElement;
+        wrap.style.animation = 'shake .35s ease';
+        setTimeout(() => wrap.style.animation = '', 380);
+      }
+    };
+
+    function drawMarkers(side) {
+      const canvas = document.getElementById(`pc-${side}`);
+      if (!canvas || !canvas.width || !currentPuzzle) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      currentPuzzle.diffs.forEach((d, idx) => {
+        if (!foundDifferences.has(idx)) return;
+        const r = d.lr;
+        const px = r.x * canvas.width;
+        const py = r.y * canvas.height;
+        const pw = r.w * canvas.width;
+        const ph = r.h * canvas.height;
+
+        ctx.strokeStyle = d.color || '#FFD700';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(px, py, pw, ph);
+        ctx.fillStyle = (d.color || '#FFD700') + '33';
+        ctx.fillRect(px, py, pw, ph);
+
+        const cx = px + pw / 2;
+        const cy = py + ph / 2;
+        ctx.fillStyle = d.color || '#FFD700';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 5, cy);
+        ctx.lineTo(cx - 1, cy + 4);
+        ctx.lineTo(cx + 6, cy - 4);
+        ctx.stroke();
+      });
+    }
+
+    function updateScore() {
+      const f = foundDifferences.size;
+      const t = currentPuzzle.diffs.length;
+      document.getElementById('p-found').innerText = f;
+      document.getElementById('prog-bar').style.width = `${(f / t) * 100}%`;
+    }
+
+    function spawnRipple(x, y, parent, color) {
+      const el = document.createElement('div');
+      el.className = 'ripple';
+      el.style.cssText = `left:${x}px;top:${y}px;background:${color};`;
+      parent.appendChild(el);
+      setTimeout(() => el.remove(), 550);
+    }
+
+    function showWinOverlay() {
+      sfxWin();
+      document.getElementById('win-msg').innerText = `Found all ${currentPuzzle.diffs.length} differences! 🎊`;
+      document.getElementById('win-overlay').classList.remove('hidden');
+      try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } }); } catch (e) {}
+    }
+
+    function replayCurrentGame() {
+      document.getElementById('win-overlay').classList.add('hidden');
+      foundDifferences = new Set();
+      drawMarkers('left');
+      drawMarkers('right');
+      updateScore();
+    }
+
+    // ============================================================
+    // BUILDER & TAGGER LOGIC
+    // ============================================================
+    let tempLeftImg = '';
+    let tempRightImg = '';
+    let tempDiffs = [];
+    let isTagging = false;
+    let startX = 0, startY = 0;
+
+    function openManageModal() {
+      renderDeckList();
+      document.getElementById('manage-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeManageModal() {
+      document.getElementById('manage-modal').classList.add('hidden');
+      renderLevelGrid();
+    }
+
+    function handleBuilderImage(event, side) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (side === 'left') {
+          tempLeftImg = reader.result;
+          document.getElementById('left-img-status').innerText = '✅ Left Ready';
+        } else {
+          tempRightImg = reader.result;
+          document.getElementById('right-img-status').innerText = '✅ Right Ready';
+        }
+
+        if (tempLeftImg || tempRightImg) {
+          initTaggerCanvas();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function initTaggerCanvas() {
+      const container = document.getElementById('tagger-container');
+      container.classList.remove('hidden');
+      const img = document.getElementById('tagger-img');
+      img.src = tempLeftImg || tempRightImg;
+
+      const canvas = document.getElementById('tagger-canvas');
+      
+      const fitTagger = () => {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        drawTaggerPreview();
+      };
+      setTimeout(fitTagger, 50);
+
+      canvas.onmousedown = (e) => {
+        isTagging = true;
+        const rect = canvas.getBoundingClientRect();
+        startX = (e.clientX - rect.left) / rect.width;
+        startY = (e.clientY - rect.top) / rect.height;
+      };
+
+      canvas.onmousemove = (e) => {
+        if (!isTagging) return;
+        const rect = canvas.getBoundingClientRect();
+        const curX = (e.clientX - rect.left) / rect.width;
+        const curY = (e.clientY - rect.top) / rect.height;
+        drawTaggerPreview({ x: Math.min(startX, curX), y: Math.min(startY, curY), w: Math.abs(curX - startX), h: Math.abs(curY - startY) });
+      };
+
+      canvas.onmouseup = (e) => {
+        if (!isTagging) return;
+        isTagging = false;
+        const rect = canvas.getBoundingClientRect();
+        const endX = (e.clientX - rect.left) / rect.width;
+        const endY = (e.clientY - rect.top) / rect.height;
+
+        let w = Math.abs(endX - startX);
+        let h = Math.abs(endY - startY);
+        let x = Math.min(startX, endX);
+        let y = Math.min(startY, endY);
+
+        if (w < 0.03 || h < 0.03) {
+          w = 0.12; h = 0.12;
+          x = Math.max(0, startX - 0.06);
+          y = Math.max(0, startY - 0.06);
+        }
+
+        tempDiffs.push({
+          id: tempDiffs.length + 1,
+          color: COLORS[tempDiffs.length % COLORS.length],
+          lr: { x: +x.toFixed(4), y: +y.toFixed(4), w: +w.toFixed(4), h: +h.toFixed(4) },
+          rr: { x: +x.toFixed(4), y: +y.toFixed(4), w: +w.toFixed(4), h: +h.toFixed(4) }
+        });
+
+        document.getElementById('tag-count').innerText = tempDiffs.length;
+        drawTaggerPreview();
+      };
+    }
+
+    function drawTaggerPreview(activeDragBox = null) {
+      const canvas = document.getElementById('tagger-canvas');
+      if (!canvas || !canvas.width) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      tempDiffs.forEach(d => {
+        const r = d.lr;
+        ctx.strokeStyle = d.color;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(r.x * canvas.width, r.y * canvas.height, r.w * canvas.width, r.h * canvas.height);
+        ctx.fillStyle = d.color + '40';
+        ctx.fillRect(r.x * canvas.width, r.y * canvas.height, r.w * canvas.width, r.h * canvas.height);
+      });
+
+      if (activeDragBox) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(activeDragBox.x * canvas.width, activeDragBox.y * canvas.height, activeDragBox.w * canvas.width, activeDragBox.h * canvas.height);
+        ctx.setLineDash([]);
+      }
+    }
+
+    function clearCurrentTags() {
+      tempDiffs = [];
+      document.getElementById('tag-count').innerText = '0';
+      drawTaggerPreview();
+    }
+
+    function saveBuilderPuzzle() {
+      const name = document.getElementById('builder-name').value.trim();
+      if (!name) return alert('Please enter a Puzzle Name!');
+      if (!tempLeftImg || !tempRightImg) return alert('Please upload both Left and Right images!');
+      if (!tempDiffs.length) return alert('Please tag at least 1 difference on the image!');
+
+      puzzleList.push({
+        id: 'puz_' + Date.now(),
+        name: name,
+        imgs: { left: tempLeftImg, right: tempRightImg },
+        diffs: JSON.parse(JSON.stringify(tempDiffs))
+      });
+
+      // Reset Form
+      document.getElementById('builder-name').value = '';
+      tempLeftImg = '';
+      tempRightImg = '';
+      tempDiffs = [];
+      document.getElementById('left-img-status').innerText = '📷 Choose Left Image';
+      document.getElementById('right-img-status').innerText = '📷 Choose Right Image';
+      document.getElementById('tagger-container').classList.add('hidden');
+      document.getElementById('tag-count').innerText = '0';
+
+      renderDeckList();
+      alert('Puzzle saved to deck!');
+    }
+
+    function renderDeckList() {
+      const list = document.getElementById('deck-list');
+      document.getElementById('deck-count').innerText = puzzleList.length;
+      list.innerHTML = puzzleList.map((p, idx) => `
+        <div class="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <div>
+            <span class="font-bold text-white text-xs">${idx + 1}. ${p.name}</span>
+            <span class="text-[10px] text-slate-400 ml-2">(${p.diffs.length} diffs)</span>
+          </div>
+          <button onclick="deleteDeckItem(${idx})" class="text-rose-400 font-bold hover:text-rose-300 text-xs">Delete</button>
+        </div>
+      `).join('') || '<p class="text-slate-600 text-center py-2 text-xs">No puzzles loaded.</p>';
+    }
+
+    function deleteDeckItem(idx) {
+      puzzleList.splice(idx, 1);
+      renderDeckList();
+    }
+
+    function clearAllPuzzles() {
+      if (!confirm('Erase all puzzles in the deck?')) return;
+      puzzleList = [];
+      renderDeckList();
+    }
+
+    function importManifest(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (Array.isArray(parsed) && parsed.length) {
+            puzzleList = parsed;
+            renderDeckList();
+            renderLevelGrid();
+            alert('manifest.json imported successfully!');
+          }
+        } catch (e) {
+          alert('Invalid JSON file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadManifest() {
+      if (!puzzleList.length) return alert('No puzzles to export!');
+      const blob = new Blob([JSON.stringify(puzzleList, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'manifest.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // Initialize
+    loadManifestOnBoot();
+  </script>
+</body>
+</html>

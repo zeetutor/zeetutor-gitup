@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jolly Phonics - 2 & 3 Letter Word Family Blending</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF8EA; --sky:#6FC3E0; --sun:#FFC93C; --coral:#FF6F59;
+    --leaf:#7AB852; --plum:#3D2C4E; --plum-soft:#6b5a7d; --danger:#E0554F;
+    --card-shadow: 0 8px 0 rgba(61,44,78,0.15);
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Nunito', sans-serif; background:var(--cream); color:var(--plum); min-height:100vh; padding-bottom:50px; }
+  header{ text-align:center; padding:20px 20px 10px; }
+  header h1{ font-family:'Baloo 2', cursive; font-size:clamp(22px, 5vw, 34px); margin:0 0 4px; color:var(--coral); }
+  header p{ margin:0; font-size:13px; color:var(--plum-soft); font-weight:700; }
+  #room-badge{ font-size:11px; font-weight:900; color:var(--plum-soft); margin-top:4px; font-family:monospace; }
+  #manifest-status{ font-size:11px; font-weight:700; margin-top:4px; min-height:14px; }
+  .wave{ width:100%; height:20px; background:repeating-linear-gradient(115deg, var(--sky) 0 24px, var(--sun) 24px 48px); opacity:0.35; border-radius:0 0 50% 50%/0 0 100% 100%; }
+  main{ max-width:840px; margin:0 auto; padding:16px; }
+
+  /* Mode Switcher: 2-Letter vs 3-Letter */
+  .mode-switch{ display:flex; justify-content:center; gap:12px; margin-bottom:16px; }
+  .mode-btn{ font-family:'Baloo 2', cursive; font-size:16px; font-weight:800; padding:8px 20px; border-radius:20px; border:3px solid var(--plum); background:#fff; color:var(--plum); cursor:pointer; box-shadow:0 4px 0 rgba(61,44,78,0.15); }
+  .mode-btn.active{ background:var(--coral); color:#fff; border-color:var(--coral); }
+
+  .tabs{ display:flex; gap:6px; margin-bottom:16px; }
+  .tab-btn{ flex:1; font-family:'Baloo 2', cursive; font-size:14px; font-weight:700; padding:9px 6px; border-radius:14px 14px 0 0; border:3px solid var(--plum); border-bottom:none; background:#efe7d4; color:var(--plum-soft); cursor:pointer; }
+  .tab-btn.active{ background:#fff; color:var(--coral); }
+  .panel{ display:none; } .panel.active{ display:block; }
+
+  .picker-label{ text-align:center; font-size:12px; font-weight:900; color:var(--plum-soft); text-transform:uppercase; margin-bottom:6px; }
+  .family-picker{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:16px; }
+  .family-chip{ font-family:'Baloo 2', cursive; font-size:16px; font-weight:700; background:#fff; border:3px solid var(--plum); border-radius:12px; padding:6px 16px; cursor:pointer; box-shadow:0 4px 0 rgba(61,44,78,0.1); }
+  .family-chip.active{ background:var(--sky); color:#fff; border-color:var(--sky); }
+
+  .word-picker{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:18px; }
+  .word-chip{ font-family:'Baloo 2', cursive; font-size:18px; font-weight:700; background:#fff; border:3px solid var(--plum); border-radius:14px; padding:8px 16px; cursor:pointer; box-shadow:0 4px 0 rgba(61,44,78,0.15); }
+  .word-chip.active{ background:var(--coral); color:#fff; border-color:var(--coral); }
+
+  .stage-progress{ display:flex; justify-content:center; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .stage-progress .step{ flex:1; max-width:130px; text-align:center; padding:7px 6px; border-radius:12px; font-size:11px; font-weight:900; background:#fff; border:2px solid #e4dcc9; color:var(--plum-soft); }
+  .stage-progress .step.active{ background:var(--sun); border-color:var(--sun); color:var(--plum); }
+  .stage-progress .step.done{ background:var(--leaf); border-color:var(--leaf); color:#fff; }
+
+  .stage-panel{ background:#fff; border:4px solid var(--plum); border-radius:24px; box-shadow:var(--card-shadow); padding:26px 18px; text-align:center; }
+  .stage-label{ font-family:'Baloo 2', cursive; font-size:20px; color:var(--coral); margin-bottom:4px; }
+  .stage-sub{ font-size:13px; font-weight:700; color:var(--plum-soft); margin-bottom:20px; min-height:18px; }
+
+  /* Smooth pixel gap reduction between letters */
+  .letter-stage{ display:flex; align-items:center; justify-content:center; min-height:clamp(90px, 20vmin, 130px); margin-bottom:10px; }
+  .letter-box{ font-family:'Baloo 2', cursive; font-weight:800; color:var(--coral); background:#fdf3e2; border:4px solid var(--plum); border-radius:16px;
+    width:clamp(55px, 15vmin, 86px); height:clamp(55px, 15vmin, 86px); font-size:clamp(24px, 7.5vmin, 48px);
+    display:flex; align-items:center; justify-content:center; transition: transform .5s ease, background .3s ease; }
+  .letter-box.blended{ background:var(--sun); transform:scale(1.08); }
+  .gap-indicator{ transition:width .6s ease; }
+
+  .word-result{ font-family:'Baloo 2', cursive; font-size:clamp(26px, 6vmin, 40px); font-weight:800; color:var(--leaf); min-height:44px; margin:6px 0 10px; }
+  .picture-display{ max-width:160px; max-height:160px; margin:10px auto 0; border-radius:16px; border:3px solid var(--plum); display:block; object-fit:cover; }
+
+  .stage-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+  button.action{ font-family:'Nunito'; font-weight:900; font-size:13px; border:3px solid var(--plum); background:#fff; color:var(--plum); padding:9px 18px; border-radius:14px; cursor:pointer; box-shadow:0 4px 0 rgba(61,44,78,0.2); }
+  button.action:active{ transform:translateY(3px); box-shadow:none; }
+  button.action.primary{ background:var(--coral); color:#fff; border-color:var(--coral); }
+  button.action.sound{ background:var(--sun); border-color:var(--sun); }
+  button.action:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .manage-form{ background:#fff; border:4px solid var(--plum); border-radius:20px; padding:20px; box-shadow:var(--card-shadow); margin-bottom:20px; }
+  .manage-form h3{ font-family:'Baloo 2', cursive; margin:0 0 12px; color:var(--plum); font-size:18px; }
+  .form-row{ display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .form-row label{ display:block; font-size:12px; font-weight:900; color:var(--plum-soft); margin-bottom:4px; }
+  .form-row input[type="text"], .form-row input[type="file"]{ width:100%; padding:9px 10px; border:2px solid #d8cfb8; border-radius:10px; font-family:'Nunito'; font-size:14px; font-weight:700; color:var(--plum); text-transform:lowercase; }
+  .form-row .field{ flex:1; min-width:130px; }
+  .status-msg{ font-size:12px; font-weight:700; color:var(--leaf); min-height:16px; margin-top:6px; }
+  .status-msg.error{ color:var(--danger); }
+
+  .word-list{ display:flex; flex-direction:column; gap:8px; }
+  .word-row{ display:flex; align-items:center; gap:10px; background:#fff; border:2px solid #e4dcc9; border-radius:12px; padding:8px 12px; }
+  .word-row .wr-word{ font-family:'Baloo 2', cursive; font-size:16px; color:var(--coral); min-width:60px; }
+  .word-row .wr-group{ font-size:11px; color:var(--plum-soft); font-weight:700; flex:1; }
+  .word-row button{ font-family:'Nunito'; font-weight:900; font-size:12px; border:2px solid var(--danger); background:#fff; color:var(--danger); padding:5px 10px; border-radius:8px; cursor:pointer; }
+
+  footer{ text-align:center; color:var(--plum-soft); font-size:12px; margin-top:24px; font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="wave"></div>
+<header>
+  <h1>Word Family Blending</h1>
+  <p>Jolly Phonics Guided Blending System</p>
+  <p id="room-badge"></p>
+  <p id="manifest-status"></p>
+</header>
+
+<main>
+  <!-- MODE SELECTOR -->
+  <div class="mode-switch">
+    <button class="mode-btn active" id="mode2Letter">2-Letter Blend (Base)</button>
+    <button class="mode-btn" id="mode3Letter">3-Letter Word Family</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabPractice">Practice</button>
+    <button class="tab-btn" id="tabManage">Manage JSON Words</button>
+  </div>
+
+  <!-- PRACTICE PANEL -->
+  <div class="panel active" id="panelPractice">
+    <div class="picker-label">Select 2-Letter Base Family:</div>
+    <div class="family-picker" id="familyPicker"></div>
+    
+    <div id="wordPickerWrapper" style="display:none;">
+      <div class="picker-label">Select 3-Letter Word to Blend:</div>
+      <div class="word-picker" id="wordPicker"></div>
+    </div>
+
+    <div id="practiceArea"></div>
+  </div>
+
+  <!-- MANAGE PANEL -->
+  <div class="panel" id="panelManage">
+    <div class="manage-form">
+      <h3>Add Word to Family (Session Only)</h3>
+      <div class="form-row">
+        <div class="field">
+          <label>2-Letter Base (e.g. at)</label>
+          <input type="text" id="inputBase" maxlength="2" placeholder="at">
+        </div>
+        <div class="field">
+          <label>Prefix Letter (e.g. s for sat)</label>
+          <input type="text" id="inputPrefix" maxlength="1" placeholder="s">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Optional Image</label>
+          <input type="file" id="inputImage" accept="image/*">
+        </div>
+      </div>
+      <button class="action primary" id="btnAddWord">Add Word</button>
+      <div class="status-msg" id="formStatus"></div>
+      <button class="action" id="btnExportJson" style="margin-top:12px;">Export Current List as manifest.json</button>
+    </div>
+
+    <div class="manage-form">
+      <h3>Current Loaded Word Families</h3>
+      <div class="word-list" id="wordListManage"></div>
+    </div>
+  </div>
+</main>
+
+<footer>Press "Next" to shrink letter gaps and blend sounds into full words!</footer>
+
+<script>
+// ==========================================
+// CONSOLE SYNC PROTOCOL (LiveTutor Compatible)
+// ==========================================
+window.isSimulating = false;
+const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+const roomId = hashParams.get('room') || 'default_room';
+
+(function installSeededRNG() {
+  let seed = 0;
+  for (let i = 0; i < roomId.length; i++) seed = (seed + roomId.charCodeAt(i)) | 0;
+  Math.random = function() {
+    let t = (seed += 0x6D2B79F5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+})();
+
+function getUniqueSelector(el) {
+  if (!el) return null;
+  if (el.id) return '#' + el.id;
+  if (el === document.body) return 'body';
+  let path = [];
+  while (el && el.nodeType === Node.ELEMENT_NODE) {
+    let sel = el.nodeName.toLowerCase();
+    if (el.id) { sel = '#' + el.id; path.unshift(sel); break; }
+    let sib = el, nth = 1;
+    while (sib = sib.previousElementSibling) {
+      if (sib.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++;
+    }
+    sel += ':nth-of-type(' + nth + ')';
+    path.unshift(sel);
+    el = el.parentNode;
+  }
+  return path.join(' > ');
+}
+
+document.addEventListener('click', function(e) {
+  if (window.isSimulating) return;
+  const target = e.target.closest('button, .family-chip, .word-chip, .tab-btn, .mode-btn');
+  if (!target || !target.id) return;
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: { type: 'UNIVERSAL_CLICK', selector: getUniqueSelector(target) }
+    }, '*');
+  }
+}, true);
+
+window.addEventListener('message', function(event) {
+  const data = event.data;
+  if (!data || data.type !== 'EXECUTE_UNIVERSAL_ACTION') return;
+  const action = data.action;
+  if (action && action.type === 'UNIVERSAL_CLICK') {
+    window.isSimulating = true;
+    const el = document.querySelector(action.selector);
+    if (el) el.click();
+    window.isSimulating = false;
+  }
+});
+
+/* ============ AUDIO & SYNTHESIS ============ */
+function speak(text, rate=0.85){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = rate; u.pitch = 1.05;
+  window.speechSynthesis.speak(u);
+}
+let audioCtx = null;
+function playChime(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    [523.25, 659.25, 783.99].forEach((freq, i)=>{
+      const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const t0 = now + i * 0.09;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(t0); osc.stop(t0 + 0.3);
+    });
+  }catch(e){}
+}
+
+/* ============ DATA & MANIFEST LOAD ============ */
+const DEFAULT_MANIFEST = [
+  {
+    id: "family_at",
+    group: "group1",
+    two_letter: "at",
+    three_letter_words: [
+      { word: "sat", prefix: "s", base: "at", image: "" },
+      { word: "pat", prefix: "p", base: "at", image: "" }
+    ]
+  },
+  {
+    id: "family_an",
+    group: "group1",
+    two_letter: "an",
+    three_letter_words: [
+      { word: "pan", prefix: "p", base: "an", image: "" },
+      { word: "tan", prefix: "t", base: "an", image: "" }
+    ]
+  },
+  {
+    id: "family_in",
+    group: "group1",
+    two_letter: "in",
+    three_letter_words: [
+      { word: "pin", prefix: "p", base: "in", image: "" },
+      { word: "tin", prefix: "t", base: "in", image: "" }
+    ]
+  }
+];
+
+let wordFamilies = [];
+let activeMode = "2letter"; // "2letter" or "3letter"
+let currentFamilyId = null;
+let currentWordIndex = 0;
+let currentStage = 1;
+
+async function loadManifest(){
+  const statusEl = document.getElementById('manifest-status');
+  try {
+    const res = await fetch('manifest.json');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        wordFamilies = data;
+        statusEl.style.color = '#059669';
+        statusEl.innerText = `✅ Loaded ${wordFamilies.length} word families from manifest.json`;
+        setTimeout(() => statusEl.innerText = '', 6000);
+        return;
+      }
+    }
+  } catch(e) {}
+  wordFamilies = DEFAULT_MANIFEST;
+  statusEl.style.color = '#dc2626';
+  statusEl.innerText = `⚠️ Using default word families (manifest.json not found)`;
+  setTimeout(() => statusEl.innerText = '', 6000);
+}
+
+/* ============ RENDER LOGIC ============ */
+function renderFamilyPicker(){
+  const picker = document.getElementById('familyPicker');
+  picker.innerHTML = '';
+  if(!wordFamilies.find(f => f.id === currentFamilyId)){
+    currentFamilyId = wordFamilies[0] ? wordFamilies[0].id : null;
+  }
+
+  wordFamilies.forEach(fam => {
+    const btn = document.createElement('button');
+    btn.id = 'family-chip-' + fam.id;
+    btn.className = 'family-chip' + (fam.id === currentFamilyId ? ' active' : '');
+    btn.textContent = fam.two_letter;
+    btn.onclick = () => {
+      currentFamilyId = fam.id;
+      currentWordIndex = 0;
+      currentStage = 1;
+      renderFamilyPicker();
+    };
+    picker.appendChild(btn);
+  });
+
+  if (activeMode === '3letter') {
+    document.getElementById('wordPickerWrapper').style.display = 'block';
+    render3LetterWordPicker();
+  } else {
+    document.getElementById('wordPickerWrapper').style.display = 'none';
+    renderPracticeArea();
+  }
+}
+
+function render3LetterWordPicker(){
+  const picker = document.getElementById('wordPicker');
+  picker.innerHTML = '';
+  const currentFam = wordFamilies.find(f => f.id === currentFamilyId);
+  if (!currentFam || !currentFam.three_letter_words.length) {
+    picker.innerHTML = '<span style="font-size:12px;">No 3-letter words in this family yet.</span>';
+    renderPracticeArea();
+    return;
+  }
+
+  currentFam.three_letter_words.forEach((w, idx) => {
+    const btn = document.createElement('button');
+    btn.id = 'word-chip-' + w.word;
+    btn.className = 'word-chip' + (idx === currentWordIndex ? ' active' : '');
+    btn.textContent = w.word;
+    btn.onclick = () => {
+      currentWordIndex = idx;
+      currentStage = 1;
+      render3LetterWordPicker();
+    };
+    picker.appendChild(btn);
+  });
+  renderPracticeArea();
+}
+
+function renderPracticeArea(){
+  const area = document.getElementById('practiceArea');
+  const currentFam = wordFamilies.find(f => f.id === currentFamilyId);
+  if (!currentFam) { area.innerHTML = ''; return; }
+
+  let letters = [];
+  let fullWord = "";
+  let imageSrc = "";
+
+  if (activeMode === '2letter') {
+    letters = currentFam.two_letter.split('');
+    fullWord = currentFam.two_letter;
+  } else {
+    const wordObj = currentFam.three_letter_words[currentWordIndex];
+    if(!wordObj) { area.innerHTML = '<div style="padding:20px;">No word selected.</div>'; return; }
+    letters = [wordObj.prefix, ...wordObj.base.split('')];
+    fullWord = wordObj.word;
+    imageSrc = wordObj.image || '';
+  }
+
+  const stageMeta = {
+    1: { label: 'Stage 1: Sounds Apart', sub: 'Say each sound separately with a gap', gap: 'clamp(2rem, 6vmin, 3.5rem)' },
+    2: { label: 'Stage 2: Getting Closer', sub: 'Bring sounds closer with a shorter pause', gap: 'clamp(0.6rem, 2vmin, 1.2rem)' },
+    3: { label: 'Stage 3: Blended!', sub: 'Gap closed — letters touch and form a word!', gap: '0px' }
+  };
+
+  const meta = stageMeta[currentStage];
+
+  area.innerHTML = `
+    <div class="stage-progress">
+      <div class="step ${currentStage===1?'active':(currentStage>1?'done':'')}">Apart</div>
+      <div class="step ${currentStage===2?'active':(currentStage>2?'done':'')}">Closer</div>
+      <div class="step ${currentStage===3?'active':''}">Blended</div>
+    </div>
+    <div class="stage-panel">
+      <div class="stage-label">${meta.label}</div>
+      <div class="stage-sub">${meta.sub}</div>
+      <div class="letter-stage" id="letterStage"></div>
+      <div class="word-result">${currentStage === 3 ? fullWord.toUpperCase() : ''}</div>
+      ${currentStage === 3 && imageSrc ? `<img src="${imageSrc}" class="picture-display" alt="${fullWord}">` : ''}
+      <div class="stage-actions">
+        <button class="action sound" id="btnPlaySound">Hear Sounds</button>
+        <button class="action" id="btnPrevStage" ${currentStage === 1 ? 'disabled' : ''}>Prev</button>
+        <button class="action primary" id="btnNextStage">${currentStage === 3 ? 'Next Word' : 'Next'}</button>
+      </div>
+    </div>
+  `;
+
+  // Render Letter Boxes with Dynamic Gaps
+  const letterStage = document.getElementById('letterStage');
+  letters.forEach((char, idx) => {
+    const box = document.createElement('div');
+    box.className = 'letter-box' + (currentStage === 3 ? ' blended' : '');
+    box.textContent = char;
+    letterStage.appendChild(box);
+
+    if (idx < letters.length - 1) {
+      const gap = document.createElement('div');
+      gap.className = 'gap-indicator';
+      gap.style.width = meta.gap;
+      letterStage.appendChild(gap);
+    }
+  });
+
+  // Sound Handler
+  document.getElementById('btnPlaySound').onclick = () => {
+    if (currentStage === 1) {
+      letters.forEach((l, i) => setTimeout(() => speak(l, 0.6), i * 1000));
+    } else if (currentStage === 2) {
+      letters.forEach((l, i) => setTimeout(() => speak(l, 0.75), i * 500));
+    } else {
+      speak(fullWord, 0.85);
+      playChime();
+    }
+  };
+
+  // Navigation Handlers
+  document.getElementById('btnPrevStage').onclick = () => {
+    if (currentStage > 1) { currentStage--; renderPracticeArea(); }
+  };
+
+  document.getElementById('btnNextStage').onclick = () => {
+    if (currentStage < 3) {
+      currentStage++;
+      if (currentStage === 3) playChime();
+      renderPracticeArea();
+    } else {
+      // Move to next word/family
+      currentStage = 1;
+      if (activeMode === '2letter') {
+        const idx = wordFamilies.findIndex(f => f.id === currentFamilyId);
+        currentFamilyId = wordFamilies[(idx + 1) % wordFamilies.length].id;
+        renderFamilyPicker();
+      } else {
+        const currentFam = wordFamilies.find(f => f.id === currentFamilyId);
+        if (currentWordIndex < currentFam.three_letter_words.length - 1) {
+          currentWordIndex++;
+        } else {
+          currentWordIndex = 0;
+          const idx = wordFamilies.findIndex(f => f.id === currentFamilyId);
+          currentFamilyId = wordFamilies[(idx + 1) % wordFamilies.length].id;
+        }
+        renderFamilyPicker();
+      }
+    }
+  };
+}
+
+/* ============ MODE & TABS ============ */
+document.getElementById('mode2Letter').onclick = (e) => {
+  activeMode = '2letter';
+  document.getElementById('mode2Letter').classList.add('active');
+  document.getElementById('mode3Letter').classList.remove('active');
+  currentStage = 1;
+  renderFamilyPicker();
+};
+
+document.getElementById('mode3Letter').onclick = (e) => {
+  activeMode = '3letter';
+  document.getElementById('mode3Letter').classList.add('active');
+  document.getElementById('mode2Letter').classList.remove('active');
+  currentStage = 1;
+  renderFamilyPicker();
+};
+
+document.getElementById('tabPractice').onclick = () => {
+  document.getElementById('tabPractice').classList.add('active');
+  document.getElementById('tabManage').classList.remove('active');
+  document.getElementById('panelPractice').classList.add('active');
+  document.getElementById('panelManage').classList.remove('active');
+};
+
+document.getElementById('tabManage').onclick = () => {
+  document.getElementById('tabManage').classList.add('active');
+  document.getElementById('tabPractice').classList.remove('active');
+  document.getElementById('panelManage').classList.add('active');
+  document.getElementById('panelPractice').classList.remove('active');
+  renderManageList();
+};
+
+/* ============ MANAGE / JSON EXPORT ============ */
+document.getElementById('btnAddWord').onclick = () => {
+  const base = document.getElementById('inputBase').value.trim().toLowerCase();
+  const prefix = document.getElementById('inputPrefix').value.trim().toLowerCase();
+  const fileInput = document.getElementById('inputImage');
+  const status = document.getElementById('formStatus');
+
+  if (!base || base.length !== 2) {
+    status.className = 'status-msg error';
+    status.textContent = 'Enter a valid 2-letter base (e.g. at).';
+    return;
+  }
+
+  let family = wordFamilies.find(f => f.two_letter === base);
+  if (!family) {
+    family = { id: 'family_' + base, group: 'custom', two_letter: base, three_letter_words: [] };
+    wordFamilies.push(family);
+  }
+
+  const addWordObj = (imgData) => {
+    if (prefix && prefix.length === 1) {
+      const fullWord = prefix + base;
+      if (!family.three_letter_words.find(w => w.word === fullWord)) {
+        family.three_letter_words.push({ word: fullWord, prefix: prefix, base: base, image: imgData });
+      }
+    }
+    status.className = 'status-msg';
+    status.textContent = 'Word added to session!';
+    document.getElementById('inputPrefix').value = '';
+    renderManageList();
+    renderFamilyPicker();
+  };
+
+  if (fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => addWordObj(e.target.result);
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    addWordObj('');
+  }
+};
+
+document.getElementById('btnExportJson').onclick = () => {
+  const blob = new Blob([JSON.stringify(wordFamilies, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'manifest.json';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+function renderManageList(){
+  const container = document.getElementById('wordListManage');
+  container.innerHTML = '';
+  wordFamilies.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'word-row';
+    const wordsStr = f.three_letter_words.map(w => w.word).join(', ') || 'No 3-letter words';
+    row.innerHTML = `<div class="wr-word">${f.two_letter}</div><div class="wr-group">Family Words: ${wordsStr}</div>`;
+    container.appendChild(row);
+  });
+}
+
+/* ============ INITIALIZATION ============ */
+async function init(){
+  const badge = document.getElementById('room-badge');
+  if (badge) badge.innerText = `Room: ${roomId}`;
+  await loadManifest();
+  renderFamilyPicker();
+}
+init();
+</script>
+</body>
+</html>

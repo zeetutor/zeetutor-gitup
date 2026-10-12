@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Number Studio - Kids Mode</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- ============================================================
+         PART 1 — LIVETUTOR SYNC BLOCK
+         ============================================================ -->
+    <script>
+        window.isSimulating = false;
+        
+        const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#', '?'));
+        const roomId = urlParams.get('room') || '54321';
+        
+        let localSeed = 0;
+        for (let i = 0; i < roomId.length; i++) {
+            localSeed = roomId.charCodeAt(i) + ((localSeed << 5) - localSeed);
+        }
+        localSeed = Math.abs(localSeed);
+
+        window.seededRandom = function() {
+            let x = Math.sin(localSeed++) * 10000;
+            return x - Math.floor(x);
+        };
+        // Override global Math.random to enforce identical generation on both screens
+        Math.random = window.seededRandom;
+
+        function getUniqueSelector(el) {
+            if (!el) return null;
+            if (el.id) return '#' + el.id;
+            if (el === document.body) return 'body';
+            
+            let path = [];
+            while (el && el.nodeType === Node.ELEMENT_NODE) {
+                let selector = el.nodeName.toLowerCase();
+                if (el.id) {
+                    selector = '#' + el.id;
+                    path.unshift(selector);
+                    break;
+                } else {
+                    if (el.className && typeof el.className === 'string') {
+                        const classes = Array.from(el.classList)
+                            .filter(c => !c.includes(':') && !c.includes('[') && !c.includes(']') && !c.includes('/'))
+                            .join('.');
+                        if (classes) selector += '.' + classes;
+                    }
+                    let sibling = el;
+                    let nth = 1;
+                    while (sibling = sibling.previousElementSibling) {
+                        if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) { nth++; }
+                    }
+                    selector += ':nth-of-type(' + nth + ')';
+                    path.unshift(selector);
+                }
+                el = el.parentNode;
+            }
+            return path.join(' > ');
+        }
+
+        let actionIdCounter = 0;
+        document.addEventListener('click', (e) => {
+            if (e.isTrusted === false || window.isSimulating) return;
+            const selector = getUniqueSelector(e.target);
+            if (!selector) return;
+            
+            actionIdCounter++;
+            let pctX = (e.clientX / window.innerWidth) * 100;
+            let pctY = ((e.clientY + window.scrollY) / document.documentElement.scrollHeight) * 100;
+
+            window.parent.postMessage({
+                type: 'IFRAME_ACTION_TRIGGERED',
+                payload: {
+                    type: 'UNIVERSAL_CLICK',
+                    selector: selector,
+                    pctX: pctX,
+                    pctY: pctY,
+                    seed: localSeed,
+                    actionId: 'click_' + actionIdCounter + '_' + Date.now()
+                }
+            }, '*');
+        }, true);
+
+        // Track Settings Inputs (Using stepper buttons now, but keeping for compatibility)
+        document.addEventListener('input', (e) => {
+            if (window.isSimulating) return;
+            const selector = getUniqueSelector(e.target);
+            if (!selector) return;
+
+            window.parent.postMessage({
+                type: 'IFRAME_ACTION_TRIGGERED',
+                payload: {
+                    type: 'UNIVERSAL_INPUT',
+                    selector: selector,
+                    value: e.target.value
+                }
+            }, '*');
+        }, true);
+
+        let lastCursorTime = 0;
+        document.addEventListener('mousemove', (e) => {
+            const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+            let pctX = (e.clientX / window.innerWidth) * 100;
+            let pctY = ((e.clientY + window.scrollY) / document.documentElement.scrollHeight) * 100;
+            
+            window.parent.postMessage({
+                type: 'IFRAME_MOUSE_TRACK',
+                pctX: pctX,
+                pctY: pctY
+            }, '*');
+        });
+
+        // ==========================================
+        // BUG FIX: Improved Scaling Logic 
+        // ==========================================
+        function applyScale() {
+            const targetH = 650; 
+            const curH = window.innerHeight;
+            
+            // Ignore initial iframe 0-height or tiny height rendering glitches
+            if (!curH || curH < 50) return; 
+
+            document.documentElement.style.overflow = 'hidden'; 
+            document.body.style.overflow = 'hidden';
+            
+            if (curH < targetH) {
+              const s = curH / targetH; 
+              document.body.style.transform = 'scale(' + s + ')';
+              document.body.style.transformOrigin = 'top left'; 
+              document.body.style.width = (100 / s) + '%'; 
+              document.body.style.height = (100 / s) + '%';
+            } else { 
+              document.body.style.transform = 'none'; 
+              document.body.style.width = '100%'; 
+              document.body.style.height = '100%'; 
+            }
+        }
+        
+        window.addEventListener('resize', applyScale); 
+        window.addEventListener('load', () => {
+            applyScale();
+            // Retry scaling after a tiny delay to ensure iframe dimensions are fully loaded
+            setTimeout(applyScale, 100);
+            setTimeout(applyScale, 500);
+        });
+
+        let lastProcessedActionId = null;
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+                const action = event.data.action;
+                if (action.type === 'UNIVERSAL_CURSOR') return;
+                
+                const currentActionId = action.actionId || action.timestamp;
+                if (currentActionId && currentActionId === lastProcessedActionId) return;
+                lastProcessedActionId = currentActionId;
+
+                window.isSimulating = true;
+                
+                if (action.seed !== undefined) {
+                    localSeed = action.seed;
+                }
+
+                if (action.type === 'UNIVERSAL_CLICK') {
+                    const element = document.querySelector(action.selector);
+                    if (element) {
+                        element.click();
+                    }
+                }
+                else if (action.type === 'UNIVERSAL_INPUT') {
+                    const element = document.querySelector(action.selector);
+                    if (element) {
+                        element.value = action.value;
+                        element.dispatchEvent(new Event('input', { bubbles: true }));
+                        element.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+                
+                setTimeout(() => { window.isSimulating = false; }, 50);
+            }
+        });
+    </script>
+
+    <!-- ============================================================
+         PART 2 — CSS & UI
+         ============================================================ -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap');
+
+        :root {
+            --bg-color: #fdf2f8; 
+            --primary: #ec4899;
+            --secondary: #3b82f6;
+            --accent: #f59e0b;
+            --text-dark: #1f2937;
+            --card-bg: #ffffff;
+            --correct-bg: #86efac;
+            --wrong-bg: #fca5a5;
+            --shadow-soft: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        /* ANTI-FLICKER ARMOR */
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; -webkit-user-drag: none; }
+        
+        /* Protect IDs for accurate syncing */
+        button *, .answer-bubble *, .mode-btn *, .grid-opt *, .stepper-btn *, .colour-cell * { pointer-events: none; }
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#fbcfe8 4px, transparent 4px), radial-gradient(#fbcfe8 4px, transparent 4px);
+            background-size: 60px 60px; background-position: 0 0, 30px 30px;
+            color: var(--text-dark); height: 650px; min-height: 100vh; overflow: hidden; 
+            display: flex; flex-direction: column;
+        }
+
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s, transform 0.5s; opacity: 0; pointer-events: none; z-index: 1;
+        }
+        .screen.active { opacity: 1; pointer-events: all; z-index: 10; }
+
+        #start-screen { background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%); color: white; text-align: center; }
+        .game-title { font-size: clamp(2.5rem, 6vw, 4rem); text-shadow: 4px 4px 0 rgba(0,0,0,0.2); margin-bottom: 30px; animation: bounceIn 1s; }
+        @keyframes bounceIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        .menu-grid { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .play-btn {
+            background: #fef08a; color: #b45309; border: 6px solid #fff; border-radius: 30px;
+            padding: 20px 30px; font-size: 1.8rem; font-family: 'Fredoka', sans-serif; font-weight: 700;
+            cursor: pointer; box-shadow: 0 10px 0 rgba(0,0,0,0.1); transition: all 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px; width: 220px;
+        }
+        .play-btn:active { transform: translateY(10px); box-shadow: 0 0 0 rgba(0,0,0,0.1); }
+        .play-btn span { font-size: 3rem; }
+
+        #game-screen { padding: 20px; padding-top: 80px; justify-content: flex-start; }
+        .top-bar {
+            position: absolute; top: 0; left: 0; width: 100%; height: 70px; background: white;
+            box-shadow: var(--shadow-soft); display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; z-index: 20; border-bottom: 4px solid #f3f4f6;
+        }
+        .settings-btn, .refresh-btn {
+            background: var(--secondary); color: white; border: none; padding: 10px 20px; border-radius: 20px;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #2563eb; font-family: inherit;
+        }
+        .settings-btn:active, .refresh-btn:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+        .refresh-btn { background: #10b981; box-shadow: 0 4px 0 #059669; }
+
+        .score-board { font-size: 1.5rem; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+
+        /* Module Specific Grids */
+        .game-container { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; align-items: center; }
+        
+        /* Pattern Game */
+        .pattern-display { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;}
+        .pattern-box { width: 70px; height: 70px; background: white; border: 4px solid var(--secondary); border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; color: var(--text-dark); box-shadow: 0 4px 0 #93c5fd; }
+        .pattern-blank { border-style: dashed; background: #e0e7ff; color: #4f46e5; }
+        .options-grid { display: flex; gap: 20px; }
+        .option-btn { width: 80px; height: 80px; background: #fef08a; border: 4px solid #ca8a04; border-radius: 50%; font-size: 2.5rem; font-weight: bold; cursor: pointer; box-shadow: 0 6px 0 #a16207; display: flex; justify-content: center; align-items: center; color: #854d0e; }
+        .option-btn:active { transform: translateY(6px); box-shadow: none; }
+
+        /* Colour Game */
+        .colour-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
+        .colour-cell { width: 80px; height: 80px; background: white; border: 4px solid #cbd5e1; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 2.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #94a3b8; transition: background 0.2s; }
+        .palette { display: flex; gap: 15px; background: white; padding: 15px 30px; border-radius: 30px; box-shadow: var(--shadow-soft); border: 4px solid #e2e8f0; }
+        .color-swatch { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 4px solid transparent; box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
+        .color-swatch.active { border-color: var(--text-dark); transform: scale(1.1); }
+
+        /* Hunt Game */
+        .hunt-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; width: 100%; }
+        .hunt-card { background: white; border: 4px solid #cbd5e1; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #94a3b8; padding: 20px 0; }
+        .hunt-card:active { transform: translateY(4px); box-shadow: none; }
+        .hunt-card.found { background: var(--correct-bg); border-color: #16a34a; color: #14532d; pointer-events: none; }
+
+        /* Settings Modal */
+        #settings-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #settings-modal.active { opacity: 1; pointer-events: all; }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 450px;
+            border: 6px solid var(--secondary); transform: scale(0.8); transition: transform 0.3s; max-height: 90vh; overflow-y: auto;
+        }
+        #settings-modal.active .modal-content { transform: scale(1); }
+        .modal-content h2 { margin-bottom: 15px; color: var(--secondary); text-align: center; }
+        .settings-section { background: #f8fafc; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 2px solid #e2e8f0; display: none; }
+        .settings-section.active-panel { display: block; }
+        .settings-section h3 { font-size: 1.1rem; color: #475569; margin-bottom: 10px; text-align:center;}
+        
+        /* Stepper UI for sync compatibility */
+        .stepper-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px; }
+        .stepper-btn { background: var(--secondary); color: white; border: none; width: 35px; height: 35px; border-radius: 10px; font-size: 1.5rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #2563eb; }
+        .stepper-btn:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+        .stepper-val { font-size: 1.5rem; font-weight: bold; width: 40px; text-align: center; }
+
+        .close-modal { background: #ef4444; color: white; border: none; padding: 12px 0; width: 100%; border-radius: 15px; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #b91c1c; }
+        .close-modal:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .wrong-anim { animation: shake 0.4s; background: var(--wrong-bg) !important; border-color: #dc2626 !important; color: #7f1d1d !important; }
+        
+        /* Toggle specific styles */
+        .toggle-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .toggle-btn { background: white; border: 2px solid #cbd5e1; padding: 5px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; color: #64748b; }
+        .toggle-btn.active { background: var(--secondary); color: white; border-color: var(--secondary); }
+
+        @media (max-width: 600px) {
+            .colour-grid, .hunt-grid { grid-template-columns: repeat(3, 1fr); }
+            .pattern-box { width: 50px; height: 50px; font-size: 1.5rem; }
+            .option-btn { width: 60px; height: 60px; font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- RED DOT CURSOR -->
+    <div id="remote-cursor" style="position:fixed; width:20px; height:20px; background:red; border-radius:50%; pointer-events:none; z-index:99999; left:0; top:0; display:none; border: 3px solid white;"></div>
+
+    <div id="start-screen" class="screen active">
+        <h1 class="game-title">Number Studio</h1>
+        <div class="menu-grid">
+            <button class="play-btn" id="btn-menu-pattern" onclick="openSetup('pattern')">
+                <span>🧩</span> Missing Pattern
+            </button>
+            <button class="play-btn" id="btn-menu-colour" onclick="openSetup('colour')">
+                <span>🎨</span> Colour Count
+            </button>
+            <button class="play-btn" id="btn-menu-hunt" onclick="openSetup('hunt')">
+                <span>🔎</span> Number Hunt
+            </button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="top-bar">
+            <button class="settings-btn" id="btn-home" onclick="goHome()">🏠 Home</button>
+            <div class="score-board">
+                ⭐ <span id="score-text">0</span>
+            </div>
+            <button class="refresh-btn" id="btn-action" onclick="handleAction()">⚙️ Setup</button>
+        </div>
+
+        <div class="game-container" id="game-container">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Game Setup</h2>
+            
+            <div class="settings-section" id="panel-pattern">
+                <h3>Select Starting Number</h3>
+                <div class="stepper-row">
+                    <button class="stepper-btn" id="pat-start-minus" onclick="updateVal('patStart', -1)">-</button>
+                    <div class="stepper-val" id="val-patStart">1</div>
+                    <button class="stepper-btn" id="pat-start-plus" onclick="updateVal('patStart', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="settings-section" id="panel-colour">
+                <h3>Target Number to Colour</h3>
+                <div class="stepper-row">
+                    <button class="stepper-btn" id="col-target-minus" onclick="updateVal('colTarget', -1)">-</button>
+                    <div class="stepper-val" id="val-colTarget">5</div>
+                    <button class="stepper-btn" id="col-target-plus" onclick="updateVal('colTarget', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="settings-section" id="panel-hunt">
+                <h3>Digits Count</h3>
+                <div class="toggle-group">
+                    <button class="toggle-btn" id="btn-hunt-dig-1" onclick="setHuntDigits(1)">1</button>
+                    <button class="toggle-btn active" id="btn-hunt-dig-2" onclick="setHuntDigits(2)">2</button>
+                    <button class="toggle-btn" id="btn-hunt-dig-3" onclick="setHuntDigits(3)">3</button>
+                </div>
+                
+                <h3>Select Target Number</h3>
+                <div class="stepper-row" style="gap: 5px;">
+                    <div id="col-h1" style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+                        <button class="stepper-btn" id="h1-plus" onclick="updateVal('h1', 1)">▲</button>
+                        <div class="stepper-val" id="val-h1">5</div>
+                        <button class="stepper-btn" id="h1-minus" onclick="updateVal('h1', -1)">▼</button>
+                    </div>
+                    <div id="col-h2" style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+                        <button class="stepper-btn" id="h2-plus" onclick="updateVal('h2', 1)">▲</button>
+                        <div class="stepper-val" id="val-h2">6</div>
+                        <button class="stepper-btn" id="h2-minus" onclick="updateVal('h2', -1)">▼</button>
+                    </div>
+                    <div id="col-h3" style="display:none; flex-direction:column; align-items:center; gap:5px;">
+                        <button class="stepper-btn" id="h3-plus" onclick="updateVal('h3', 1)">▲</button>
+                        <div class="stepper-val" id="val-h3">2</div>
+                        <button class="stepper-btn" id="h3-minus" onclick="updateVal('h3', -1)">▼</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="close-modal" id="close-settings" onclick="startGame()">Save & Play 🚀</button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PART 3 — GAME LOGIC
+         ============================================================ -->
+    <script>
+        /* AUDIO SYSTEM */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration, vol=0.1) {
+            try {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+        function sfxCorrect() { playTone(523.25, 'sine', 0.1, 0.2); setTimeout(() => playTone(659.25, 'sine', 0.1, 0.2), 100); setTimeout(() => playTone(783.99, 'sine', 0.2, 0.2), 200); }
+        function sfxWrong() { playTone(200, 'sawtooth', 0.3, 0.1); }
+        function cft(big) {
+            try {
+                const end = Date.now() + (big ? 3500 : 2200);
+                (function f() {
+                    confetti({ particleCount:big?14:8, angle:60, spread:72, origin:{x:0} });
+                    confetti({ particleCount:big?14:8, angle:120, spread:72, origin:{x:1} });
+                    if (Date.now() < end) requestAnimationFrame(f);
+                })();
+            } catch(e) {}
+        }
+        function shuf(arr) {
+            arr = [...arr];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(window.seededRandom() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        /* STATE MANAGEMENT */
+        let activeGame = '';
+        let score = 0;
+        
+        let S = {
+            patStart: 1,
+            colTarget: 5,
+            huntDigits: 2,
+            h1: 5, h2: 6, h3: 2
+        };
+
+        document.addEventListener('click', () => { if(audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
+
+        window.goHome = function() {
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('start-screen').classList.add('active');
+        }
+
+        window.openSetup = function(gameType) {
+            activeGame = gameType;
+            document.querySelectorAll('.settings-section').forEach(el => el.classList.remove('active-panel'));
+            document.getElementById(`panel-${gameType}`).classList.add('active-panel');
+            
+            let titles = { 'pattern': 'Missing Pattern Setup', 'colour': 'Colour Count Setup', 'hunt': 'Number Hunt Setup' };
+            document.getElementById('modal-title').innerText = titles[gameType];
+            
+            document.getElementById('settings-modal').classList.add('active');
+        }
+
+        window.handleAction = function() {
+            if (activeGame === 'hunt' || activeGame === 'colour' || activeGame === 'pattern') {
+                openSetup(activeGame);
+            }
+        }
+
+        window.updateVal = function(key, delta) {
+            S[key] += delta;
+            // Limits
+            if(key === 'patStart' && S[key] < 1) S[key] = 1;
+            if(key === 'patStart' && S[key] > 50) S[key] = 50;
+            if(key === 'colTarget' && S[key] < 1) S[key] = 1;
+            if(key === 'colTarget' && S[key] > 20) S[key] = 20;
+            if(['h1','h2','h3'].includes(key)) {
+                if(S[key] < 0) S[key] = 9;
+                if(S[key] > 9) S[key] = 0;
+            }
+            document.getElementById(`val-${key}`).innerText = S[key];
+        }
+        
+        window.setHuntDigits = function(count) {
+            S.huntDigits = count;
+            document.getElementById('btn-hunt-dig-1').classList.toggle('active', count === 1);
+            document.getElementById('btn-hunt-dig-2').classList.toggle('active', count === 2);
+            document.getElementById('btn-hunt-dig-3').classList.toggle('active', count === 3);
+            
+            document.getElementById('col-h1').style.display = count >= 1 ? 'flex' : 'none';
+            document.getElementById('col-h2').style.display = count >= 2 ? 'flex' : 'none';
+            document.getElementById('col-h3').style.display = count >= 3 ? 'flex' : 'none';
+        }
+
+        function updateScore(pts) {
+            score += pts;
+            document.getElementById('score-text').innerText = score;
+        }
+
+        window.startGame = function() {
+            document.getElementById('settings-modal').classList.remove('active');
+            document.getElementById('start-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            
+            const actionBtn = document.getElementById('btn-action');
+            actionBtn.innerText = '⚙️ Setup';
+            actionBtn.style.background = '#10b981';
+            actionBtn.style.boxShadow = '0 4px 0 #059669';
+
+            if(activeGame === 'pattern') buildPattern();
+            if(activeGame === 'colour') buildColour();
+            if(activeGame === 'hunt') buildHunt();
+        }
+
+        /* MODULE 1: PATTERN */
+        let patAnswer = "";
+        function buildPattern() {
+            let start = S.patStart;
+            let seq = [start, start+1, start+2, start+3, start+4];
+            patAnswer = (start+5).toString();
+            
+            const container = document.getElementById('game-container');
+            
+            let html = `<div style="font-size: 2rem; font-weight: bold; color: var(--secondary); margin-bottom: 20px;">What comes next?</div>`;
+            html += `<div class="pattern-display">`;
+            seq.forEach((val, idx) => { html += `<div class="pattern-box" id="pbox-${idx}">${val}</div>`; });
+            html += `<div class="pattern-box pattern-blank" id="pbox-ans">?</div></div>`;
+
+            let opts = [patAnswer];
+            while(opts.length < 3) {
+                let noise = (parseInt(patAnswer) || 0) + Math.floor(window.seededRandom() * 10) - 4;
+                if(!opts.includes(noise.toString()) && noise > 0) opts.push(noise.toString());
+            }
+            opts = shuf(opts);
+
+            html += `<div class="options-grid">`;
+            opts.forEach((opt, i) => {
+                html += `<div class="option-btn" id="popt-${i}" onclick="checkPattern('${opt}')">${opt}</div>`;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        window.checkPattern = function(val) {
+            if(val === patAnswer) {
+                document.getElementById('pbox-ans').innerText = val;
+                document.getElementById('pbox-ans').style.background = 'var(--correct-bg)';
+                document.getElementById('pbox-ans').style.borderColor = '#16a34a';
+                sfxCorrect(); cft(true); updateScore(10);
+            } else {
+                sfxWrong();
+            }
+        }
+
+        /* MODULE 2: COLOUR COUNT */
+        let ccTarget = "";
+        let activeColor = "#ef4444";
+        let ccTotal = 5; let ccFound = 0;
+
+        function buildColour() {
+            ccTarget = S.colTarget.toString();
+            ccFound = 0;
+            const container = document.getElementById('game-container');
+            
+            let html = `<div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Target: <span style="color:var(--primary);">${ccTarget}</span> | Found: <span id="cc-score">0/${ccTotal}</span></div>`;
+            
+            // Palette
+            html += `<div class="palette">
+                <div class="color-swatch active" id="pal-red" style="background:#ef4444;" onclick="setCol('#ef4444', 'pal-red')"></div>
+                <div class="color-swatch" id="pal-blue" style="background:#3b82f6;" onclick="setCol('#3b82f6', 'pal-blue')"></div>
+                <div class="color-swatch" id="pal-green" style="background:#10b981;" onclick="setCol('#10b981', 'pal-green')"></div>
+                <div class="color-swatch" id="pal-yellow" style="background:#f59e0b;" onclick="setCol('#f59e0b', 'pal-yellow')"></div>
+            </div>`;
+
+            let board = [];
+            for(let i=0; i<ccTotal; i++) board.push({ val: ccTarget, isTarget: true });
+            while(board.length < 15) {
+                let noise = parseInt(ccTarget) + Math.floor(window.seededRandom() * 9) + 1;
+                board.push({ val: noise.toString(), isTarget: false });
+            }
+            board = shuf(board);
+
+            html += `<div class="colour-grid" style="margin-top:20px;">`;
+            board.forEach((item, i) => {
+                html += `<div class="colour-cell" id="ccell-${i}" onclick="colorCell('ccell-${i}', ${item.isTarget})">${item.val}</div>`;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        window.setCol = function(hex, id) {
+            activeColor = hex;
+            document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        window.colorCell = function(id, isTarget) {
+            const el = document.getElementById(id);
+            if (!el || el.dataset.filled === "true") return;
+            
+            if (isTarget) {
+                el.style.background = activeColor; el.style.color = "white";
+                el.dataset.filled = "true"; el.style.borderColor = activeColor;
+                ccFound++; document.getElementById('cc-score').innerText = `${ccFound}/${ccTotal}`;
+                updateScore(5);
+                if(ccFound >= ccTotal) { sfxCorrect(); cft(true); } else { sfxCorrect(); cft(false); }
+            } else {
+                el.classList.remove('wrong-anim'); void el.offsetWidth; el.classList.add('wrong-anim'); sfxWrong();
+            }
+        }
+
+        /* MODULE 3: NUMBER HUNT */
+        let huntTarget = "";
+        let huntTotal = 3; let huntFound = 0;
+        let huntBoard = [];
+
+        function buildHunt() {
+            if(S.huntDigits === 1) {
+                huntTarget = `${S.h1}`;
+            } else if(S.huntDigits === 2) {
+                huntTarget = `${S.h1}${S.h2}`;
+            } else {
+                huntTarget = `${S.h1}${S.h2}${S.h3}`;
+            }
+            huntFound = 0;
+            
+            huntBoard = [];
+            for(let i=0; i<huntTotal; i++) huntBoard.push({ val: huntTarget, found: false });
+            while(huntBoard.length < 15) { 
+                let noise = "";
+                if(S.huntDigits === 1) {
+                    noise = (Math.floor(window.seededRandom() * 9) + 1).toString();
+                } else if(S.huntDigits === 2) {
+                    let n1 = Math.floor(window.seededRandom() * 9) + 1;
+                    let n2 = Math.floor(window.seededRandom() * 10);
+                    noise = `${n1}${n2}`;
+                } else {
+                    let n1 = Math.floor(window.seededRandom() * 9) + 1;
+                    let n2 = Math.floor(window.seededRandom() * 10);
+                    let n3 = Math.floor(window.seededRandom() * 10);
+                    noise = `${n1}${n2}${n3}`;
+                }
+                
+                if(noise !== huntTarget) huntBoard.push({ val: noise, found: false });
+            }
+            renderHuntGrid();
+        }
+
+        window.renderHuntGrid = function() {
+            huntBoard = shuf(huntBoard);
+            const container = document.getElementById('game-container');
+            let html = `<div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 10px;">Find: <span style="color:var(--primary);">${huntTarget}</span> | Found: <span id="hunt-score">${huntFound}/${huntTotal}</span></div>`;
+            
+            html += `<div class="hunt-grid">`;
+            huntBoard.forEach((item, i) => {
+                let cls = item.found ? "hunt-card found" : "hunt-card";
+                html += `<div class="${cls}" id="hcard-${i}" onclick="checkHunt(${i}, '${item.val}')">${item.val}</div>`;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        window.checkHunt = function(idx, val) {
+            if (huntBoard[idx].found) return;
+            if (val === huntTarget) {
+                huntBoard[idx].found = true;
+                const el = document.getElementById(`hcard-${idx}`);
+                el.classList.add('found');
+                el.style.background = 'var(--correct-bg)';
+                el.style.borderColor = '#16a34a';
+                el.style.color = '#14532d';
+                
+                huntFound++; document.getElementById('hunt-score').innerText = `${huntFound}/${huntTotal}`;
+                updateScore(15);
+                if(huntFound >= huntTotal) { sfxCorrect(); cft(true); } else { sfxCorrect(); cft(false); }
+            } else {
+                const el = document.getElementById(`hcard-${idx}`);
+                el.classList.remove('wrong-anim'); void el.offsetWidth; el.classList.add('wrong-anim'); sfxWrong();
+            }
+        }
+    </script>
+</body>
+</html>

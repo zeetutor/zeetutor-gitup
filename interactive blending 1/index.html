@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Family Blending - Multi-Word Grid Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FFF8EA;
+    --sky: #6FC3E0;
+    --sun: #FFC93C;
+    --coral: #FF6F59;
+    --leaf: #7AB852;
+    --plum: #3D2C4E;
+    --plum-soft: #6B5A7D;
+    --card-shadow: 0 8px 0 rgba(61,44,78,0.15);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Nunito', sans-serif;
+    background: var(--cream);
+    color: var(--plum);
+    min-height: 100vh;
+    padding-bottom: 40px;
+    user-select: none;
+  }
+
+  header { text-align: center; padding: 16px 16px 8px; }
+  header h1 { font-family: 'Baloo 2', cursive; font-size: clamp(22px, 5vw, 32px); margin: 0; color: var(--coral); }
+  header p { margin: 2px 0; font-size: 13px; color: var(--plum-soft); font-weight: 700; }
+  #manifest-status { font-size: 11px; font-weight: 700; min-height: 16px; margin-top: 4px; }
+
+  .wave {
+    width: 100%; height: 16px;
+    background: repeating-linear-gradient(115deg, var(--sky) 0 20px, var(--sun) 20px 40px);
+    opacity: 0.35; border-radius: 0 0 50% 50%/0 0 100% 100%;
+  }
+
+  main { max-width: 800px; margin: 0 auto; padding: 12px 16px; }
+
+  /* Navigation Switcher Tabs */
+  .section-switch { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .section-btn {
+    font-family: 'Baloo 2', cursive; font-size: 15px; font-weight: 800;
+    padding: 8px 18px; border-radius: 18px; border: 3px solid var(--plum);
+    background: #fff; color: var(--plum); cursor: pointer; box-shadow: 0 4px 0 rgba(61,44,78,0.12);
+    transition: all 0.2s ease;
+  }
+  .section-btn.active { background: var(--coral); color: #fff; border-color: var(--coral); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Card Containers */
+  .card {
+    background: #fff; border: 4px solid var(--plum); border-radius: 24px;
+    box-shadow: var(--card-shadow); padding: 20px; text-align: center; margin-bottom: 16px;
+  }
+  .card-title { font-family: 'Baloo 2', cursive; font-size: 20px; color: var(--coral); margin-bottom: 6px; }
+  .card-sub { font-size: 13px; font-weight: 700; color: var(--plum-soft); margin-bottom: 16px; }
+
+  /* Word Picker Multi-Select Chips */
+  .grid-picker { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; }
+  .select-chip {
+    font-family: 'Baloo 2', cursive; font-size: 18px; font-weight: 800;
+    background: #fff; border: 3px solid var(--plum); border-radius: 14px;
+    padding: 8px 20px; cursor: pointer; box-shadow: 0 4px 0 rgba(61,44,78,0.1);
+    transition: transform 0.15s ease, background 0.2s ease;
+  }
+  .select-chip.selected { background: var(--leaf); color: #fff; border-color: var(--leaf); transform: translateY(-2px); }
+
+  /* Target Answer Boxes */
+  .target-container { display: flex; justify-content: center; gap: 12px; margin: 16px 0; min-height: 70px; align-items: center; }
+  .target-box {
+    width: clamp(50px, 12vmin, 70px); height: clamp(50px, 12vmin, 70px);
+    border: 4px dashed var(--plum-soft); border-radius: 16px; background: #FAF5EA;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Baloo 2', cursive; font-size: clamp(26px, 6.5vmin, 38px); font-weight: 800; color: var(--plum);
+    cursor: pointer;
+  }
+  .target-box.filled { border-style: solid; border-color: var(--plum); background: var(--sun); }
+  .target-box.correct { border-color: var(--leaf); background: var(--leaf); color: #fff; }
+
+  /* Letter Grid Container */
+  .letter-grid-wrapper { display: flex; justify-content: center; margin: 20px 0; }
+  .letter-grid {
+    display: grid; gap: 8px;
+    background: #FAF5EA; border: 4px solid var(--plum); border-radius: 20px;
+    padding: 12px; box-shadow: inset 0 4px 0 rgba(61,44,78,0.1);
+  }
+  .grid-dynamic { grid-template-columns: repeat(auto-fit, minmax(45px, 1fr)); width: 100%; max-width: 480px; }
+
+  .grid-cell {
+    aspect-ratio: 1; border: 3px solid var(--plum); border-radius: 14px;
+    background: #fff; font-family: 'Baloo 2', cursive; font-size: clamp(20px, 5vmin, 30px);
+    font-weight: 800; color: var(--coral); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; box-shadow: 0 4px 0 rgba(61,44,78,0.1);
+    transition: transform 0.15s ease, background 0.2s ease;
+  }
+  .grid-cell:active { transform: translateY(2px); box-shadow: none; }
+  .grid-cell.used { background: var(--sun); color: var(--plum); border-color: var(--plum); }
+  .grid-cell.hint { background: var(--sky); color: #fff; border-color: var(--sky); animation: pulse 1s infinite alternate; }
+
+  @keyframes pulse {
+    0% { transform: scale(0.96); }
+    100% { transform: scale(1.04); }
+  }
+
+  /* Related Image Display */
+  .word-image {
+    max-width: 160px; max-height: 160px; margin: 12px auto;
+    border-radius: 16px; border: 3px solid var(--plum); display: block; object-fit: cover;
+  }
+
+  /* Action Buttons */
+  .action-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+  button.btn {
+    font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 13px;
+    border: 3px solid var(--plum); background: #fff; color: var(--plum);
+    padding: 10px 18px; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 0 rgba(61,44,78,0.15);
+  }
+  button.btn.primary { background: var(--coral); color: #fff; border-color: var(--coral); }
+  button.btn.sound { background: var(--sun); border-color: var(--sun); }
+  button.btn.hint { background: var(--sky); border-color: var(--sky); color: #fff; }
+  button.btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+  .form-group { text-align: left; margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 900; color: var(--plum-soft); margin-bottom: 4px; }
+  .form-group input[type="file"] {
+    width: 100%; padding: 8px; border: 2px dashed var(--plum-soft); border-radius: 10px; background: #FAF5EA;
+  }
+</style>
+</head>
+<body>
+
+<div class="wave"></div>
+<header>
+  <h1>Word Family Blending</h1>
+  <p>LiveTutor Dual-Master Grid Search</p>
+  <div id="manifest-status"></div>
+</header>
+
+<main>
+  <!-- SECTION SWITCHER -->
+  <div class="section-switch">
+    <button class="section-btn active" id="btnSec2">2-Letter Words</button>
+    <button class="section-btn" id="btnSec3">3-Letter Words</button>
+    <button class="section-btn" id="btnSecManage">Manage JSON</button>
+  </div>
+
+  <!-- SECTION 1: TWO LETTER WORDS -->
+  <div class="panel active" id="panel2Letter">
+    <!-- PAGE 1: SELECTION PAGE -->
+    <div class="card" id="card2Selection">
+      <div class="card-title">Select 2-Letter Words</div>
+      <div class="card-sub">Choose one or multiple words to create the letter grid</div>
+      <div class="grid-picker" id="picker2List"></div>
+      <button class="btn primary" id="btn2GoToGrid" disabled>Next: Go to Grid Game ➔</button>
+    </div>
+
+    <!-- PAGE 2: SEPARATE GRID GAME PAGE -->
+    <div class="card" id="card2GridGame" style="display:none;">
+      <div class="card-title" id="title2Word">Word 1 of X</div>
+      <div class="card-sub">Find and tap letters in order from the grid</div>
+
+      <div class="target-container" id="targets2Container"></div>
+
+      <div class="letter-grid-wrapper">
+        <div class="letter-grid grid-dynamic" id="grid2Container"></div>
+      </div>
+
+      <div id="image2Wrapper" style="display:none;">
+        <img id="img2Display" class="word-image" alt="Word Image">
+      </div>
+
+      <div class="action-group">
+        <button class="btn sound" id="btn2HearWord">🔊 Hear Word</button>
+        <button class="btn hint" id="btn2Hint">💡 Hint</button>
+        <button class="btn" id="btn2Reset">Reset Grid</button>
+        <button class="btn primary" id="btn2NextWord" disabled>Next Word ➔</button>
+      </div>
+
+      <div class="action-group" style="margin-top:20px;">
+        <button class="btn" id="btn2BackToSelect">⬅ Back to Selection Page</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: THREE LETTER WORDS -->
+  <div class="panel" id="panel3Letter">
+    <!-- PAGE 1: SELECTION PAGE -->
+    <div class="card" id="card3Selection">
+      <div class="card-title">Select 3-Letter Words</div>
+      <div class="card-sub">Choose one or multiple words to create the letter grid</div>
+      <div class="grid-picker" id="picker3List"></div>
+      <button class="btn primary" id="btn3GoToGrid" disabled>Next: Go to Grid Game ➔</button>
+    </div>
+
+    <!-- PAGE 2: SEPARATE GRID GAME PAGE -->
+    <div class="card" id="card3GridGame" style="display:none;">
+      <div class="card-title" id="title3Word">Word 1 of X</div>
+      <div class="card-sub">Find and tap letters in order from the grid</div>
+
+      <div class="target-container" id="targets3Container"></div>
+
+      <div class="letter-grid-wrapper">
+        <div class="letter-grid grid-dynamic" id="grid3Container"></div>
+      </div>
+
+      <div id="image3Wrapper" style="display:none;">
+        <img id="img3Display" class="word-image" alt="Word Image">
+      </div>
+
+      <div class="action-group">
+        <button class="btn sound" id="btn3HearWord">🔊 Hear Word</button>
+        <button class="btn hint" id="btn3Hint">💡 Hint</button>
+        <button class="btn" id="btn3Reset">Reset Grid</button>
+        <button class="btn primary" id="btn3NextWord" disabled>Next Word ➔</button>
+      </div>
+
+      <div class="action-group" style="margin-top:20px;">
+        <button class="btn" id="btn3BackToSelect">⬅ Back to Selection Page</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: MANAGE JSON -->
+  <div class="panel" id="panelManage">
+    <div class="card">
+      <div class="card-title">Manifest Data Management</div>
+      <div class="card-sub">Upload your custom manifest.json file</div>
+      
+      <div class="form-group">
+        <label>Upload manifest.json</label>
+        <input type="file" id="jsonFileInput" accept=".json">
+      </div>
+      <button class="btn primary" id="btnUploadJson">Apply & Sync Manifest</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// ==========================================
+// 1. CONSOLE SYNC PROTOCOL ENGINE
+// ==========================================
+window.isRemoteUpdate = false;
+
+function sendAction(actionType, payload = {}) {
+  if (window.isRemoteUpdate) return;
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: {
+        type: 'ACTION_EVENT',
+        actionType: actionType,
+        ...payload
+      }
+    }, '*');
+  }
+}
+
+window.addEventListener('message', function(event) {
+  const data = event.data;
+  if (!data || data.type !== 'EXECUTE_UNIVERSAL_ACTION') return;
+  const action = data.action;
+
+  if (action && action.type === 'ACTION_EVENT') {
+    window.isRemoteUpdate = true;
+    
+    switch (action.actionType) {
+      case 'SWITCH_SECTION':
+        switchSection(action.section);
+        break;
+      case 'TOGGLE_2_SELECTION':
+        toggle2Selection(action.word);
+        break;
+      case 'GO_TO_2_GRID':
+        goTo2GridPage(action.gridCells);
+        break;
+      case 'TAP_2_GRID_CELL':
+        tap2GridCell(action.cellIdx);
+        break;
+      case 'HINT_2_WORD':
+        apply2Hint();
+        break;
+      case 'RESET_2_GRID':
+        setup2CurrentWordGrid(action.gridCells);
+        break;
+      case 'NEXT_2_WORD':
+        next2Word(action.gridCells);
+        break;
+      case 'BACK_TO_2_SELECT':
+        backTo2SelectPage();
+        break;
+      case 'TOGGLE_3_SELECTION':
+        toggle3Selection(action.word);
+        break;
+      case 'GO_TO_3_GRID':
+        goTo3GridPage(action.gridCells);
+        break;
+      case 'TAP_3_GRID_CELL':
+        tap3GridCell(action.cellIdx);
+        break;
+      case 'HINT_3_WORD':
+        apply3Hint();
+        break;
+      case 'RESET_3_GRID':
+        setup3CurrentWordGrid(action.gridCells);
+        break;
+      case 'NEXT_3_WORD':
+        next3Word(action.gridCells);
+        break;
+      case 'BACK_TO_3_SELECT':
+        backTo3SelectPage();
+        break;
+      case 'SPEAK_LETTER':
+        speakLetter(action.letter);
+        break;
+      case 'UPDATE_MANIFEST':
+        manifestData = action.manifest;
+        renderPickers();
+        break;
+    }
+
+    window.isRemoteUpdate = false;
+  }
+});
+
+// ==========================================
+// 2. SPEECH SYNTHESIS ENGINE
+// ==========================================
+let isSpeakingWord = false;
+
+function speakLetter(char) {
+  if (!('speechSynthesis' in window) || !char) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(char.toLowerCase());
+  u.rate = 0.7; u.pitch = 1.1;
+  window.speechSynthesis.speak(u);
+}
+
+function speakWord(word) {
+  if (!('speechSynthesis' in window) || !word) return;
+  if (isSpeakingWord || window.speechSynthesis.speaking) return;
+
+  isSpeakingWord = true;
+  const u = new SpeechSynthesisUtterance(word);
+  u.rate = 0.8; u.pitch = 1.0;
+  
+  u.onend = () => { isSpeakingWord = false; };
+  u.onerror = () => { isSpeakingWord = false; };
+  
+  window.speechSynthesis.speak(u);
+}
+
+// ==========================================
+// 3. DEFAULT DATA & STATE
+// ==========================================
+const DEFAULT_MANIFEST = [
+  {
+    id: "family_at",
+    group: "group1",
+    two_letter: "at",
+    three_letter_words: [
+      { word: "sat", prefix: "s", base: "at", image: "images/sat.png" },
+      { word: "pat", prefix: "p", base: "at", image: "images/pat.png" },
+      { word: "rat", prefix: "r", base: "at", image: "images/rat.png" },
+      { word: "mat", prefix: "m", base: "at", image: "images/mat.png" },
+      { word: "cat", prefix: "c", base: "at", image: "images/cat.png" }
+    ]
+  },
+  {
+    id: "family_an",
+    group: "group1",
+    two_letter: "an",
+    three_letter_words: [
+      { word: "pan", prefix: "p", base: "an", image: "images/pan.png" },
+      { word: "tan", prefix: "t", base: "an", image: "images/tan.png" }
+    ]
+  },
+  {
+    id: "family_in",
+    group: "group1",
+    two_letter: "in",
+    three_letter_words: [
+      { word: "pin", prefix: "p", base: "in", image: "images/pin.png" },
+      { word: "tin", prefix: "t", base: "in", image: "images/tin.png" }
+    ]
+  }
+];
+
+let manifestData = [];
+let activeSection = '2letter';
+
+// 2-Letter State
+let selected2Words = [];
+let idx2Active = 0;
+let state2Placed = [];
+let grid2Cells = [];
+
+// 3-Letter State
+let selected3Words = [];
+let idx3Active = 0;
+let state3Placed = [];
+let grid3Cells = [];
+
+// ==========================================
+// 4. MANIFEST LOADING & RENDER PICKERS
+// ==========================================
+async function initManifest() {
+  const statusEl = document.getElementById('manifest-status');
+  try {
+    const res = await fetch('manifest.json');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        manifestData = data;
+        statusEl.style.color = '#059669';
+        statusEl.innerText = `✅ Loaded ${manifestData.length} families from manifest.json`;
+        renderPickers();
+        return;
+      }
+    }
+  } catch(e) {}
+
+  manifestData = DEFAULT_MANIFEST;
+  statusEl.style.color = '#d97706';
+  statusEl.innerText = `⚠️ Using default sample manifest`;
+  renderPickers();
+}
+
+function renderPickers() {
+  // Render 2-Letter Selection Chips
+  const picker2 = document.getElementById('picker2List');
+  picker2.innerHTML = '';
+  const twoLetterSet = [...new Set(manifestData.map(f => f.two_letter))];
+
+  twoLetterSet.forEach(w => {
+    const chip = document.createElement('div');
+    chip.className = 'select-chip' + (selected2Words.includes(w) ? ' selected' : '');
+    chip.textContent = w.toUpperCase();
+    chip.onclick = () => {
+      toggle2Selection(w);
+      sendAction('TOGGLE_2_SELECTION', { word: w });
+    };
+    picker2.appendChild(chip);
+  });
+
+  // Render 3-Letter Selection Chips
+  const picker3 = document.getElementById('picker3List');
+  picker3.innerHTML = '';
+  let threeLetterWords = [];
+  manifestData.forEach(f => {
+    if (f.three_letter_words) {
+      f.three_letter_words.forEach(tw => threeLetterWords.push(tw));
+    }
+  });
+
+  threeLetterWords.forEach(obj => {
+    const chip = document.createElement('div');
+    const isSel = selected3Words.some(w => w.word === obj.word);
+    chip.className = 'select-chip' + (isSel ? ' selected' : '');
+    chip.textContent = obj.word.toUpperCase();
+    chip.onclick = () => {
+      toggle3Selection(obj.word);
+      sendAction('TOGGLE_3_SELECTION', { word: obj.word });
+    };
+    picker3.appendChild(chip);
+  });
+
+  updateSelectionButtons();
+}
+
+function updateSelectionButtons() {
+  document.getElementById('btn2GoToGrid').disabled = selected2Words.length === 0;
+  document.getElementById('btn3GoToGrid').disabled = selected3Words.length === 0;
+}
+
+// ==========================================
+// 5. SECTION SWITCHING
+// ==========================================
+function switchSection(sec) {
+  activeSection = sec;
+  document.getElementById('btnSec2').classList.toggle('active', sec === '2letter');
+  document.getElementById('btnSec3').classList.toggle('active', sec === '3letter');
+  document.getElementById('btnSecManage').classList.toggle('active', sec === 'manage');
+
+  document.getElementById('panel2Letter').classList.toggle('active', sec === '2letter');
+  document.getElementById('panel3Letter').classList.toggle('active', sec === '3letter');
+  document.getElementById('panelManage').classList.toggle('active', sec === 'manage');
+}
+
+document.getElementById('btnSec2').onclick = () => { switchSection('2letter'); sendAction('SWITCH_SECTION', { section: '2letter' }); };
+document.getElementById('btnSec3').onclick = () => { switchSection('3letter'); sendAction('SWITCH_SECTION', { section: '3letter' }); };
+document.getElementById('btnSecManage').onclick = () => { switchSection('manage'); sendAction('SWITCH_SECTION', { section: 'manage' }); };
+
+// ==========================================
+// 6. SECTION 1 LOGIC (2-LETTER WORDS GRID)
+// ==========================================
+function toggle2Selection(w) {
+  if (selected2Words.includes(w)) {
+    selected2Words = selected2Words.filter(item => item !== w);
+  } else {
+    selected2Words.push(w);
+  }
+  renderPickers();
+}
+
+function generate2GridCells(targetIndex) {
+  const currentWord = selected2Words[targetIndex].toUpperCase();
+  let pool = [];
+  selected2Words.forEach(w => pool.push(...w.toUpperCase().split('')));
+  
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  while (pool.length < 12) {
+    pool.push(alphabet[Math.floor(Math.random() * alphabet.length)]);
+  }
+
+  pool = pool.sort(() => 0.5 - Math.random());
+
+  return pool.map(char => ({
+    letter: char,
+    isTarget: currentWord.includes(char),
+    used: false,
+    isHint: false
+  }));
+}
+
+document.getElementById('btn2GoToGrid').onclick = () => {
+  const cells = generate2GridCells(0);
+  goTo2GridPage(cells);
+  sendAction('GO_TO_2_GRID', { gridCells: cells });
+};
+
+function goTo2GridPage(providedCells) {
+  idx2Active = 0;
+  document.getElementById('card2Selection').style.display = 'none';
+  document.getElementById('card2GridGame').style.display = 'block';
+  setup2CurrentWordGrid(providedCells);
+}
+
+function setup2CurrentWordGrid(providedCells) {
+  const currentWord = selected2Words[idx2Active].toUpperCase();
+  document.getElementById('title2Word').textContent = `Word ${idx2Active + 1} of ${selected2Words.length}: ${currentWord}`;
+  
+  state2Placed = ['', ''];
+  
+  if (providedCells) {
+    grid2Cells = JSON.parse(JSON.stringify(providedCells));
+  } else {
+    grid2Cells = generate2GridCells(idx2Active);
+  }
+
+  render2GridUI();
+}
+
+function render2GridUI() {
+  const currentWord = selected2Words[idx2Active].toUpperCase();
+  const targetCont = document.getElementById('targets2Container');
+  const gridCont = document.getElementById('grid2Container');
+  const imgWrapper = document.getElementById('image2Wrapper');
+
+  targetCont.innerHTML = '';
+  gridCont.innerHTML = '';
+
+  const isComplete = state2Placed.join('') === currentWord;
+
+  // Answer Target Boxes
+  state2Placed.forEach((char) => {
+    const box = document.createElement('div');
+    box.className = 'target-box' + (char ? (isComplete ? ' correct' : ' filled') : '');
+    box.textContent = char;
+    if (char) {
+      box.onclick = () => {
+        speakLetter(char);
+        sendAction('SPEAK_LETTER', { letter: char });
+      };
+    }
+    targetCont.appendChild(box);
+  });
+
+  // Dynamic Grid Styling (4 columns for 12 cells)
+  gridCont.style.gridTemplateColumns = 'repeat(4, clamp(45px, 11vmin, 60px))';
+
+  grid2Cells.forEach((cell, idx) => {
+    const cellEl = document.createElement('div');
+    let classList = 'grid-cell';
+    if (cell.used) classList += ' used';
+    if (cell.isHint && !cell.used) classList += ' hint';
+    cellEl.className = classList;
+    cellEl.textContent = cell.letter;
+
+    cellEl.onclick = () => {
+      if (cell.used || isComplete) return;
+      tap2GridCell(idx);
+      sendAction('TAP_2_GRID_CELL', { cellIdx: idx });
+    };
+
+    gridCont.appendChild(cellEl);
+  });
+
+  // Show image on completion
+  if (isComplete) {
+    imgWrapper.style.display = 'block';
+    document.getElementById('img2Display').src = `images/${selected2Words[idx2Active]}.png`;
+    speakWord(currentWord);
+  } else {
+    imgWrapper.style.display = 'none';
+  }
+
+  document.getElementById('btn2NextWord').disabled = !isComplete;
+}
+
+function tap2GridCell(cellIdx) {
+  const cell = grid2Cells[cellIdx];
+  const currentWord = selected2Words[idx2Active].toUpperCase();
+  const nextRequiredIdx = state2Placed.indexOf('');
+
+  if (nextRequiredIdx !== -1) {
+    if (cell.letter === currentWord[nextRequiredIdx]) {
+      state2Placed[nextRequiredIdx] = cell.letter;
+      cell.used = true;
+      render2GridUI();
+    }
+  }
+}
+
+function apply2Hint() {
+  const currentWord = selected2Words[idx2Active].toUpperCase();
+  grid2Cells.forEach(cell => {
+    if (currentWord.includes(cell.letter)) cell.isHint = true;
+  });
+  render2GridUI();
+}
+
+function next2Word(providedCells) {
+  if (idx2Active < selected2Words.length - 1) {
+    idx2Active++;
+    setup2CurrentWordGrid(providedCells);
+  } else {
+    backTo2SelectPage();
+  }
+}
+
+function backTo2SelectPage() {
+  document.getElementById('card2GridGame').style.display = 'none';
+  document.getElementById('card2Selection').style.display = 'block';
+}
+
+document.getElementById('btn2HearWord').onclick = () => speakWord(selected2Words[idx2Active]);
+document.getElementById('btn2Hint').onclick = () => { apply2Hint(); sendAction('HINT_2_WORD'); };
+document.getElementById('btn2Reset').onclick = () => { 
+  const cells = generate2GridCells(idx2Active);
+  setup2CurrentWordGrid(cells); 
+  sendAction('RESET_2_GRID', { gridCells: cells }); 
+};
+document.getElementById('btn2NextWord').onclick = () => { 
+  let cells = null;
+  if (idx2Active < selected2Words.length - 1) {
+    cells = generate2GridCells(idx2Active + 1);
+  }
+  next2Word(cells); 
+  sendAction('NEXT_2_WORD', { gridCells: cells }); 
+};
+document.getElementById('btn2BackToSelect').onclick = () => { backTo2SelectPage(); sendAction('BACK_TO_2_SELECT'); };
+
+// ==========================================
+// 7. SECTION 2 LOGIC (3-LETTER WORDS GRID)
+// ==========================================
+function toggle3Selection(wordStr) {
+  const exists = selected3Words.some(w => w.word === wordStr);
+  if (exists) {
+    selected3Words = selected3Words.filter(w => w.word !== wordStr);
+  } else {
+    let obj = null;
+    manifestData.forEach(f => {
+      if (f.three_letter_words) {
+        const found = f.three_letter_words.find(tw => tw.word === wordStr);
+        if (found) obj = found;
+      }
+    });
+    if (obj) selected3Words.push(obj);
+  }
+  renderPickers();
+}
+
+function generate3GridCells(targetIndex) {
+  const wordObj = selected3Words[targetIndex];
+  const currentWord = wordObj.word.toUpperCase();
+  let pool = [];
+  selected3Words.forEach(w => pool.push(...w.word.toUpperCase().split('')));
+  
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  while (pool.length < 16) {
+    pool.push(alphabet[Math.floor(Math.random() * alphabet.length)]);
+  }
+
+  pool = pool.sort(() => 0.5 - Math.random());
+
+  return pool.map(char => ({
+    letter: char,
+    isTarget: currentWord.includes(char),
+    used: false,
+    isHint: false
+  }));
+}
+
+document.getElementById('btn3GoToGrid').onclick = () => { 
+  const cells = generate3GridCells(0);
+  goTo3GridPage(cells); 
+  sendAction('GO_TO_3_GRID', { gridCells: cells }); 
+};
+
+function goTo3GridPage(providedCells) {
+  idx3Active = 0;
+  document.getElementById('card3Selection').style.display = 'none';
+  document.getElementById('card3GridGame').style.display = 'block';
+  setup3CurrentWordGrid(providedCells);
+}
+
+function setup3CurrentWordGrid(providedCells) {
+  const wordObj = selected3Words[idx3Active];
+  const currentWord = wordObj.word.toUpperCase();
+  document.getElementById('title3Word').textContent = `Word ${idx3Active + 1} of ${selected3Words.length}: ${currentWord}`;
+  
+  state3Placed = ['', '', ''];
+  
+  if (providedCells) {
+    grid3Cells = JSON.parse(JSON.stringify(providedCells));
+  } else {
+    grid3Cells = generate3GridCells(idx3Active);
+  }
+
+  render3GridUI();
+}
+
+function render3GridUI() {
+  const wordObj = selected3Words[idx3Active];
+  const currentWord = wordObj.word.toUpperCase();
+  const targetCont = document.getElementById('targets3Container');
+  const gridCont = document.getElementById('grid3Container');
+  const imgWrapper = document.getElementById('image3Wrapper');
+
+  targetCont.innerHTML = '';
+  gridCont.innerHTML = '';
+
+  const isComplete = state3Placed.join('') === currentWord;
+
+  // Answer Target Boxes
+  state3Placed.forEach((char) => {
+    const box = document.createElement('div');
+    box.className = 'target-box' + (char ? (isComplete ? ' correct' : ' filled') : '');
+    box.textContent = char;
+    if (char) {
+      box.onclick = () => {
+        speakLetter(char);
+        sendAction('SPEAK_LETTER', { letter: char });
+      };
+    }
+    targetCont.appendChild(box);
+  });
+
+  // Dynamic Grid Styling (4 columns for 16 cells)
+  gridCont.style.gridTemplateColumns = 'repeat(4, clamp(45px, 11vmin, 60px))';
+
+  grid3Cells.forEach((cell, idx) => {
+    const cellEl = document.createElement('div');
+    let classList = 'grid-cell';
+    if (cell.used) classList += ' used';
+    if (cell.isHint && !cell.used) classList += ' hint';
+    cellEl.className = classList;
+    cellEl.textContent = cell.letter;
+
+    cellEl.onclick = () => {
+      if (cell.used || isComplete) return;
+      tap3GridCell(idx);
+      sendAction('TAP_3_GRID_CELL', { cellIdx: idx });
+    };
+
+    gridCont.appendChild(cellEl);
+  });
+
+  // Show image on completion
+  if (isComplete) {
+    imgWrapper.style.display = 'block';
+    document.getElementById('img3Display').src = wordObj.image || `images/${wordObj.word}.png`;
+    speakWord(currentWord);
+  } else {
+    imgWrapper.style.display = 'none';
+  }
+
+  document.getElementById('btn3NextWord').disabled = !isComplete;
+}
+
+function tap3GridCell(cellIdx) {
+  const cell = grid3Cells[cellIdx];
+  const currentWord = selected3Words[idx3Active].word.toUpperCase();
+  const nextRequiredIdx = state3Placed.indexOf('');
+
+  if (nextRequiredIdx !== -1) {
+    if (cell.letter === currentWord[nextRequiredIdx]) {
+      state3Placed[nextRequiredIdx] = cell.letter;
+      cell.used = true;
+      render3GridUI();
+    }
+  }
+}
+
+function apply3Hint() {
+  const currentWord = selected3Words[idx3Active].word.toUpperCase();
+  grid3Cells.forEach(cell => {
+    if (currentWord.includes(cell.letter)) cell.isHint = true;
+  });
+  render3GridUI();
+}
+
+function next3Word(providedCells) {
+  if (idx3Active < selected3Words.length - 1) {
+    idx3Active++;
+    setup3CurrentWordGrid(providedCells);
+  } else {
+    backTo3SelectPage();
+  }
+}
+
+function backTo3SelectPage() {
+  document.getElementById('card3GridGame').style.display = 'none';
+  document.getElementById('card3Selection').style.display = 'block';
+}
+
+document.getElementById('btn3HearWord').onclick = () => speakWord(selected3Words[idx3Active].word);
+document.getElementById('btn3Hint').onclick = () => { apply3Hint(); sendAction('HINT_3_WORD'); };
+document.getElementById('btn3Reset').onclick = () => { 
+  const cells = generate3GridCells(idx3Active);
+  setup3CurrentWordGrid(cells); 
+  sendAction('RESET_3_GRID', { gridCells: cells }); 
+};
+document.getElementById('btn3NextWord').onclick = () => { 
+  let cells = null;
+  if (idx3Active < selected3Words.length - 1) {
+    cells = generate3GridCells(idx3Active + 1);
+  }
+  next3Word(cells); 
+  sendAction('NEXT_3_WORD', { gridCells: cells }); 
+};
+document.getElementById('btn3BackToSelect').onclick = () => { backTo3SelectPage(); sendAction('BACK_TO_3_SELECT'); };
+
+// ==========================================
+// 8. MANAGE JSON UPLOAD
+// ==========================================
+document.getElementById('btnUploadJson').onclick = () => {
+  const fileInput = document.getElementById('jsonFileInput');
+  if (!fileInput.files || !fileInput.files[0]) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (Array.isArray(parsed)) {
+        manifestData = parsed;
+        renderPickers();
+        sendAction('UPDATE_MANIFEST', { manifest: manifestData });
+        alert('Manifest updated and synced successfully!');
+        switchSection('2letter');
+      } else {
+        alert('Invalid JSON structure. Must be an array of word families.');
+      }
+    } catch(err) {
+      alert('Error parsing JSON file.');
+    }
+  };
+  reader.readAsText(fileInput.files[0]);
+};
+
+// ==========================================
+// 9. INITIALIZATION
+// ==========================================
+initManifest();
+</script>
+</body>
+</html>

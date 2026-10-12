@@ -1,0 +1,62 @@
+[
+  {
+    "id": "pair_1",
+    "name": "Carrot",
+    "image": "images/carrot.png",
+    "matchImage": "images/carrot.png"
+  },
+  {
+    "id": "pair_1788268425810_slah",
+    "name": "Beetroot",
+    "image": "images/beetroot.png",
+    "matchImage": "images/beetroot.png"
+  },
+  {
+    "id": "pair_1788268425810_f38e",
+    "name": "Cabbage",
+    "image": "images/cabbage.png",
+    "matchImage": "images/cabbage.png"
+  },
+  {
+    "id": "pair_1788268425810_g5gh",
+    "name": "Chili",
+    "image": "images/chili.png",
+    "matchImage": "images/chili.png"
+  },
+  {
+    "id": "pair_1788268425810_qs1d",
+    "name": "Corn",
+    "image": "images/corn.png",
+    "matchImage": "images/corn.png"
+  },
+  {
+    "id": "pair_1788268425810_r2cs",
+    "name": "Lady Finger",
+    "image": "images/lady finger.png",
+    "matchImage": "images/lady finger.png"
+  },
+  {
+    "id": "pair_1788268425810_231r",
+    "name": "Onion",
+    "image": "images/onion.png",
+    "matchImage": "images/onion.png"
+  },
+  {
+    "id": "pair_1788268425810_n7v3",
+    "name": "Patato",
+    "image": "images/patato.png",
+    "matchImage": "images/patato.png"
+  },
+  {
+    "id": "pair_1788268425810_k3fk",
+    "name": "Pumpkin",
+    "image": "images/pumpkin.png",
+    "matchImage": "images/pumpkin.png"
+  },
+  {
+    "id": "pair_1788268425810_kge1",
+    "name": "Tomato",
+    "image": "images/tomato.png",
+    "matchImage": "images/tomato.png"
+  }
+]

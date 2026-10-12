@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cut & Join - Creator Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<!-- ============================================================
+     PART 1 — UNIVERSAL SYNC BRIDGE (GOLDEN MASTER)
+     ============================================================ -->
+<script>
+    window.isSimulating = false;
+    const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#', '?'));
+    const roomId = urlParams.get('room') || '54321';
+    let localSeed = 0;
+    
+    window.setSeed = function(str) {
+        let tempSeed = 0;
+        for (let i = 0; i < str.length; i++) { tempSeed = str.charCodeAt(i) + ((tempSeed << 5) - tempSeed); }
+        localSeed = Math.abs(tempSeed);
+    };
+    window.setSeed(roomId);
+    
+    window.seededRandom = function() {
+        let x = Math.sin(localSeed++) * 10000;
+        return x - Math.floor(x);
+    };
+
+    function getUniqueSelector(el) {
+        if (!el) return null;
+        if (el.id) return '#' + el.id;
+        if (el === document.body) return 'body';
+        let path = [];
+        while (el && el.nodeType === Node.ELEMENT_NODE) {
+            let selector = el.nodeName.toLowerCase();
+            if (el.id) { selector = '#' + el.id; path.unshift(selector); break; } 
+            else {
+                if (el.className && typeof el.className === 'string') {
+                    const classes = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+                    if (classes) selector += '.' + classes;
+                }
+                let sibling = el, nth = 1;
+                while (sibling = sibling.previousElementSibling) { if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++; }
+                selector += ':nth-of-type(' + nth + ')';
+                path.unshift(selector);
+            }
+            el = el.parentNode;
+        }
+        return path.join(' > ');
+    }
+
+    let actionIdCounter = 0;
+    document.addEventListener('click', (e) => {
+        if (e.isTrusted === false || window.isSimulating) return;
+        const selector = getUniqueSelector(e.target); if (!selector) return;
+        actionIdCounter++;
+        window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: { type: 'UNIVERSAL_CLICK', selector: selector, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+        }, '*');
+    }, true);
+
+    document.addEventListener('input', (e) => {
+        if (window.isSimulating) return;
+        const selector = getUniqueSelector(e.target); if (!selector) return;
+        window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: { type: 'UNIVERSAL_INPUT', selector: selector, value: e.target.value }
+        }, '*');
+    }, true);
+
+    let lastCursorTime = 0;
+    document.addEventListener('mousemove', (e) => {
+        const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+        window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload: { type: 'UNIVERSAL_CURSOR', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 } }, '*');
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+            const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+            window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload: { type: 'UNIVERSAL_CURSOR', pctX: (e.touches[0].clientX / window.innerWidth) * 100, pctY: (e.touches[0].clientY / window.innerHeight) * 100 } }, '*');
+        }
+    }, { passive: true });
+
+    let lastProcessedActionId = null;
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+            const action = event.data.action;
+            if (action.type === 'UNIVERSAL_CURSOR') {
+                const c = document.getElementById('remote-cursor');
+                if (c) {
+                    c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+                    c.style.top = (action.pctY / 100 * window.innerHeight) + 'px';
+                    c.style.display = 'block';
+                }
+                return;
+            }
+            const currentActionId = action.actionId || action.timestamp;
+            if (currentActionId && currentActionId === lastProcessedActionId) return;
+            lastProcessedActionId = currentActionId;
+
+            window.isSimulating = true;
+            if (action.seed !== undefined) localSeed = action.seed;
+            
+            if (action.type === 'UNIVERSAL_CLICK') {
+                const element = document.querySelector(action.selector);
+                if (element) element.click();
+            } else if (action.type === 'UNIVERSAL_INPUT') {
+                const element = document.querySelector(action.selector);
+                if (element) {
+                    element.value = action.value;
+                    element.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+            setTimeout(() => { window.isSimulating = false; }, 50);
+        }
+    });
+</script>
+
+<!-- ============================================================
+     PART 2 — STYLES & SIZING CONSTRAINTS
+     ============================================================ -->
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+    font-family: 'Nunito', sans-serif;
+    width: 100vw; height: 100vh; overflow: hidden; 
+    display: flex; justify-content: center; align-items: center; 
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); 
+    user-select: none; -webkit-user-drag: none;
+}
+
+#app-wrapper {
+    width: 98%; max-width: 1000px; height: 98%; max-height: 700px; 
+    position: relative; display: flex; flex-direction: column;
+    overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    border-radius: 16px; background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px); border: 4px solid white;
+}
+
+/* Pointer Events Protection for Sync Elements */
+button *, .lib-card *, .grid-cell *, .hole *, .tray-piece *, .reaction-btn * { pointer-events: none; }
+
+/* Gamified Buttons */
+.btn-3d {
+    border: none; border-radius: 20px; font-family: 'Fredoka One', cursive; font-size: 0.9rem; 
+    color: white; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.15); 
+    transition: transform 0.1s, box-shadow 0.1s; padding: 10px 16px; 
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    text-transform: uppercase; letter-spacing: 1px;
+}
+.btn-3d:active { transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0.15); }
+.btn-active { box-shadow: 0 0 15px rgba(255,255,255,0.8), 0 4px 0 rgba(0,0,0,0.15) !important; transform: scale(1.05); filter: brightness(1.1); }
+
+/* Header & Controls */
+.top-bar { display: flex; gap: 8px; justify-content: center; align-items: center; padding: 12px; background: rgba(255,255,255,0.85); border-bottom: 3px solid white; z-index: 10; flex-wrap: wrap; }
+
+/* Screens */
+.screen { display: none; flex: 1; flex-direction: column; position: relative; overflow: hidden; }
+.screen.active { display: flex; }
+
+/* --- Library Screen --- */
+#library-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; 
+    padding: 20px; overflow-y: auto; flex: 1; align-content: flex-start;
+}
+.lib-card {
+    background: white; border-radius: 20px; border: 4px solid white; padding: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.1s;
+    display: flex; flex-direction: column; align-items: center; position: relative;
+}
+.lib-card:active { transform: scale(0.95); }
+.lib-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 12px; background: #f0f0f0; }
+.lib-title { font-family: 'Fredoka One', cursive; color: #4A90D9; margin-top: 10px; font-size: 1.1rem; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.lib-badge { position: absolute; top: 15px; right: 15px; background: #FF6B9D; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 900; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+/* --- Workspace Screen --- */
+.workspace-area { flex: 1; display: flex; justify-content: center; align-items: center; padding: 15px; position: relative; overflow: hidden; }
+#image-container { position: relative; max-width: 100%; max-height: 100%; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; display: flex; justify-content: center; align-items: center;}
+#main-image { display: block; max-width: 100%; max-height: 400px; object-fit: contain; }
+
+/* Cut Overlay (The 10x10 Grid) */
+#grid-overlay { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr); z-index: 10; display: none; }
+.grid-cell { border: 1px dashed rgba(255,255,255,0.4); cursor: crosshair; }
+.grid-cell:hover { background: rgba(255, 255, 255, 0.5); }
+.grid-cell.selected { background: rgba(74, 144, 217, 0.6); }
+
+/* Play Holes */
+.hole { position: absolute; background: rgba(0,0,0,0.85); border: 2px dashed rgba(255,255,255,0.8); z-index: 5; }
+
+/* Placed Pieces */
+.placed-piece { position: absolute; z-index: 6; overflow: hidden; }
+.placed-piece img { position: absolute; max-width: none; }
+
+/* Tray Area */
+#tray-area { height: 110px; background: rgba(255,255,255,0.9); border-top: 4px solid white; display: flex; align-items: center; padding: 10px; gap: 15px; overflow-x: auto; z-index: 20; display: none; }
+.tray-piece { 
+    height: 80px; border-radius: 8px; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+    cursor: pointer; position: relative; overflow: hidden; flex-shrink: 0; background: #eee;
+    transition: transform 0.1s, border-color 0.1s;
+}
+.tray-piece img { position: absolute; max-width: none; pointer-events: none; }
+.tray-piece:active { transform: scale(0.9); }
+.tray-piece.selected { border-color: #F5A623; transform: scale(1.1); box-shadow: 0 0 15px #F5A623; z-index: 10; }
+.tray-piece.used { opacity: 0; pointer-events: none; transform: scale(0); }
+
+/* Banners & Modals */
+.hint-banner { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: white; color: #4A90D9; font-family: 'Fredoka One', cursive; padding: 8px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 30; font-size: 0.9rem; white-space: nowrap; pointer-events: none; border: 2px solid #4A90D9;}
+
+.custom-modal { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+.modal-card { background: white; padding: 25px; border-radius: 20px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: pop 0.3s ease; width: 90%; max-width: 400px; border: 4px solid #4A90D9;}
+@keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+.custom-input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 12px; border: 2px solid #ddd; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+.custom-input:focus { border-color: #4A90D9; }
+
+/* Grid Drawing Highlight */
+#cut-selection { position: absolute; border: 3px dashed #FF6B9D; background: rgba(255, 107, 157, 0.4); pointer-events: none; display: none; z-index: 15; }
+
+/* Toast Notification */
+#toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-family: 'Nunito', sans-serif; font-weight: bold; z-index: 999; display: none; opacity: 0; transition: opacity 0.3s; }
+
+</style>
+</head>
+<body>
+
+<!-- RULE 2: MANDATORY RED CURSOR -->
+<div id="remote-cursor"></div>
+
+<!-- APP WRAPPER FOR RELATIVE SCROLLING & SIZING -->
+<div id="app-wrapper">
+    
+    <!-- TOP CONTROLS -->
+    <div class="top-bar">
+        <button id="btn-library" class="btn-3d" style="background: #8B5CF6;" onclick="switchScreen('library')"><i class="fas fa-folder-open"></i> Library</button>
+        <button id="btn-new" class="btn-3d" style="background: #00C896;" onclick="showModal('new-modal')"><i class="fas fa-image"></i> New</button>
+        <div style="width: 2px; height: 30px; background: rgba(0,0,0,0.1); margin: 0 5px;"></div>
+        <button id="btn-cut" class="btn-3d btn-active" style="background: #4A90D9; display: none;" onclick="setMode('cut')"><i class="fas fa-cut"></i> Cut</button>
+        <button id="btn-play" class="btn-3d" style="background: #F5A623; display: none;" onclick="setMode('play')"><i class="fas fa-gamepad"></i> Play</button>
+        <div id="divider-2" style="width: 2px; height: 30px; background: rgba(0,0,0,0.1); margin: 0 5px; display: none;"></div>
+        <button id="btn-reset" class="btn-3d" style="background: #EF4444; display: none;" onclick="resetCuts()"><i class="fas fa-redo"></i> Reset Cuts</button>
+    </div>
+
+    <!-- SCREEN: LIBRARY -->
+    <div id="screen-library" class="screen active">
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 15px; background: rgba(255,255,255,0.5); border-bottom: 2px solid white;">
+            <h2 style="font-family: 'Fredoka One', cursive; color: #F5A623; font-size: 2rem; margin-bottom: 5px;">⭐ My Puzzles</h2>
+            <p style="font-size: 0.9rem; color: #555; font-weight: 700;">Select a puzzle to play or cut.</p>
+        </div>
+        <div id="library-grid"></div>
+    </div>
+
+    <!-- SCREEN: WORKSPACE (CUT & PLAY) -->
+    <div id="screen-workspace" class="screen">
+        <div id="hint-banner" class="hint-banner">✂️ Tap two squares to cut a piece!</div>
+        
+        <div class="workspace-area">
+            <div id="image-container">
+                <!-- If image fails to load, fallback to placeholder -->
+                <img id="main-image" src="" alt="Puzzle Image" onerror="this.src='https://placehold.co/600x400/eee/999?text=Image+Not+Found'">
+                <div id="grid-overlay"></div>
+                <div id="holes-container"></div>
+                <div id="placed-container"></div>
+                <div id="cut-selection"></div>
+            </div>
+        </div>
+
+        <div id="tray-area"></div>
+    </div>
+
+    <!-- MODAL: NEW PUZZLE (SESSION ONLY) -->
+    <div id="new-modal" class="custom-modal">
+        <div class="modal-card">
+            <h2 style="font-family: 'Fredoka One', cursive; color: #4A90D9; font-size: 1.6rem; margin-bottom: 15px;">🖼️ Create Session Puzzle</h2>
+            <input type="text" id="inp-puz-name" class="custom-input" placeholder="Puzzle Name (e.g. My Dog)">
+            <input type="text" id="inp-puz-img" class="custom-input" placeholder="Image File (e.g. images/dog.jpg)">
+            <p style="font-size: 0.85rem; color: #EF4444; margin-bottom: 20px; font-weight: bold;">Note: Puzzles created here will reset when you refresh. To save permanently, add them to the "PERMANENT PUZZLE DATABASE" in the source code.</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-3d" style="background: #EF4444; flex: 1;" onclick="hideModal('new-modal')">Cancel</button>
+                <button class="btn-3d" style="background: #00C896; flex: 1;" id="btn-create-puz" onclick="confirmNewPuzzle()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: VICTORY -->
+    <div id="victory-modal" class="custom-modal">
+        <div class="modal-card" style="border-color: #00C896;">
+            <div style="font-size: 4rem;">🏆</div>
+            <h2 style="font-family: 'Fredoka One', cursive; color: #00C896; font-size: 2rem; margin: 10px 0;">Puzzle Complete!</h2>
+            <button class="btn-3d" id="btn-vic-replay" style="background: #4A90D9; width: 100%;" onclick="hideModal('victory-modal'); setMode('play');">🔄 Play Again</button>
+        </div>
+    </div>
+
+    <div id="toast">Message</div>
+</div>
+
+<!-- ============================================================
+     PART 3 — LOGIC & SEEDED DETERMINISM
+     ============================================================ -->
+<script>
+// --- AUDIO SYSTEM ---
+let audioCtx = null;
+function ac(){ if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function tone(f,t,d,v=0.2){ try{ const c=ac(), o=c.createOscillator(), g=c.createGain(); o.connect(g); g.connect(c.destination); o.type=t; o.frequency.value=f; g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(v,c.currentTime+0.02); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d); o.start(c.currentTime); o.stop(c.currentTime+d+0.1); }catch(e){} }
+function sfxSelect(){ tone(400,'sine',0.1); }
+function sfxCut(){ tone(800,'triangle',0.15,0.1); }
+function sfxPlace(){ tone(600,'sine',0.1); tone(800,'sine',0.15,0.1,0.08); }
+function sfxWrong(){ tone(200,'sawtooth',0.2); }
+function sfxWin(){ [523,659,784,1047,1319].forEach((n,i)=>setTimeout(()=>tone(n,'sine',0.25),i*100)); }
+
+// ============================================================
+// PERMANENT PUZZLE DATABASE (ADD YOUR IMAGES HERE!)
+// ============================================================
+// Instruction: To save an image permanently, copy one of the blocks below 
+// and change the 'name' and 'url'. The ID must be unique (e.g., 'p3', 'p4').
+let db = [
+    {
+
+    id: 'p1',
+
+    name: 'dog and cat',
+
+    url: 'images/cat and dog.jpg',
+
+    pieces: [{id:'pc_p1_1', x:2, y:4, w:2, h:1}, {id:'pc_p1_2', x:2, y:5, w:2, h:1}, {id:'pc_p1_3', x:2, y:6, w:2, h:1}, {id:'pc_p1_4', x:5, y:9, w:2, h:1}, {id:'pc_p1_5', x:7, y:9, w:2, h:1}, {id:'pc_p1_6', x:6, y:1, w:2, h:1}, {id:'pc_p1_7', x:6, y:2, w:2, h:1}, {id:'pc_p1_8', x:6, y:3, w:2, h:1}]
+
+},
+{
+
+    id: 'p2',
+
+    name: 'lion and elephant ',
+
+    url: 'images/lion and elphant.webp',
+
+    pieces: [{id:'pc_p2_1', x:3, y:3, w:2, h:1}, {id:'pc_p2_2', x:3, y:4, w:2, h:1}, {id:'pc_p2_3', x:3, y:8, w:2, h:1}, {id:'pc_p2_4', x:6, y:3, w:2, h:1}, {id:'pc_p2_5', x:7, y:4, w:2, h:1}, {id:'pc_p2_6', x:7, y:6, w:2, h:1}, {id:'pc_p2_7', x:8, y:7, w:1, h:2}]
+
+},
+
+{
+
+    id: 'p3',
+
+    name: 'rabit and torotise ',
+
+    url: 'images/rabbit.webp',
+
+    pieces: [{id:'pc_p3_1', x:1, y:5, w:2, h:1}, {id:'pc_p3_2', x:1, y:6, w:2, h:1}, {id:'pc_p3_3', x:2, y:8, w:2, h:1}, {id:'pc_p3_4', x:7, y:5, w:2, h:1}, {id:'pc_p3_5', x:7, y:6, w:2, h:1}, {id:'pc_p3_6', x:8, y:7, w:1, h:2}]
+
+},
+{
+    id: 'p4',
+    name: 'ABC',
+    url: 'images/abc.png',
+    pieces: [
+        {id:'pc_p4_1', x:2, y:2, w:2, h:2},
+        {id:'pc_p4_2', x:5, y:2, w:2, h:2},
+        {id:'pc_p4_3', x:2, y:6, w:2, h:2},
+        {id:'pc_p4_4', x:6, y:6, w:2, h:2}
+    ]
+},
+
+{
+    id: 'p5',
+    name: 'Number',
+    url: 'images/number.png',
+    pieces: [
+        {id:'pc_p5_1', x:1, y:1, w:2, h:2},
+        {id:'pc_p5_2', x:4, y:1, w:2, h:2},
+        {id:'pc_p5_3', x:7, y:1, w:2, h:2},
+        {id:'pc_p5_4', x:2, y:6, w:2, h:2},
+        {id:'pc_p5_5', x:6, y:6, w:2, h:2}
+    ]
+},
+
+{
+    id: 'p6',
+    name: 'Number 2',
+    url: 'images/number2.png',
+    pieces: [
+        {id:'pc_p6_1', x:1, y:2, w:2, h:2},
+        {id:'pc_p6_2', x:4, y:2, w:2, h:2},
+        {id:'pc_p6_3', x:7, y:2, w:2, h:2},
+        {id:'pc_p6_4', x:2, y:6, w:2, h:2},
+        {id:'pc_p6_5', x:6, y:6, w:2, h:2}
+    ]
+}
+];
+// ============================================================
+
+
+// --- STATE ---
+const GRID_SIZE = 10;
+let activePuzzle = null;
+let currentMode = 'library'; // library, cut, play
+let cutState = { startCell: null };
+let playState = { selectedPiece: null, placedCount: 0 };
+let locked = false;
+
+// Determinsitic ID counters for sync safety
+let customPuzCounter = 0;
+let customPieceCounter = 0;
+
+// --- UTILS ---
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg; t.style.display = 'block';
+    setTimeout(() => t.style.opacity = '1', 10);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(()=>t.style.display='none', 300); }, 2500);
+}
+window.showModal = function(id) { document.getElementById(id).style.display = 'flex'; sfxSelect(); };
+window.hideModal = function(id) { document.getElementById(id).style.display = 'none'; sfxSelect(); };
+
+// --- CORE FUNCTIONS ---
+window.switchScreen = function(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + screenId).classList.add('active');
+    
+    const isWs = screenId === 'workspace';
+    document.getElementById('btn-cut').style.display = isWs ? 'inline-flex' : 'none';
+    document.getElementById('btn-play').style.display = isWs ? 'inline-flex' : 'none';
+    document.getElementById('divider-2').style.display = isWs ? 'block' : 'none';
+    document.getElementById('btn-reset').style.display = isWs ? 'inline-flex' : 'none';
+    
+    if(screenId === 'library') renderLibrary();
+    sfxSelect();
+};
+
+function renderLibrary() {
+    const grid = document.getElementById('library-grid');
+    grid.innerHTML = '';
+    db.forEach(puz => {
+        const card = document.createElement('div');
+        card.id = 'lib-card-' + puz.id;
+        card.className = 'lib-card';
+        card.innerHTML = `
+            <div class="lib-badge">${puz.pieces.length} Pieces</div>
+            <img src="${puz.url}" class="lib-img" onerror="this.src='https://placehold.co/300x200/eee/999?text=Image+Missing'">
+            <div class="lib-title">${puz.name}</div>
+        `;
+        card.onclick = () => loadPuzzle(puz.id);
+        grid.appendChild(card);
+    });
+}
+
+// --- PUZZLE CREATION ---
+window.confirmNewPuzzle = function() {
+    const name = document.getElementById('inp-puz-name').value.trim() || 'My Session Puzzle';
+    const imgUrl = document.getElementById('inp-puz-img').value.trim();
+    
+    if (!imgUrl) { showToast("Please enter an image file name!"); return; }
+
+    // Use deterministic counter instead of Date.now() for PERFECT SYNC
+    customPuzCounter++;
+    const newPuz = {
+        id: 'puz_custom_' + customPuzCounter,
+        name: name,
+        url: imgUrl,
+        pieces: []
+    };
+    
+    db.push(newPuz);
+    hideModal('new-modal');
+    document.getElementById('inp-puz-name').value = '';
+    document.getElementById('inp-puz-img').value = '';
+    loadPuzzle(newPuz.id);
+    showToast("Session Puzzle Created!");
+};
+
+window.loadPuzzle = function(id) {
+    activePuzzle = db.find(p => p.id === id);
+    if(!activePuzzle) return;
+    document.getElementById('main-image').src = activePuzzle.url;
+    
+    // Wait for image to load to get dimensions correctly
+    document.getElementById('main-image').onload = () => {
+        setupGrid();
+        setMode(activePuzzle.pieces.length > 0 ? 'play' : 'cut');
+        switchScreen('workspace');
+    };
+};
+
+window.resetCuts = function() {
+    if (!activePuzzle) return;
+    sfxWrong();
+    activePuzzle.pieces = [];
+    setMode('cut');
+    showToast("Pieces Reset!");
+};
+
+// --- MODES ---
+window.setMode = function(mode) {
+    currentMode = mode;
+    document.getElementById('btn-cut').classList.toggle('btn-active', mode === 'cut');
+    document.getElementById('btn-play').classList.toggle('btn-active', mode === 'play');
+    
+    document.getElementById('grid-overlay').style.display = mode === 'cut' ? 'grid' : 'none';
+    document.getElementById('tray-area').style.display = mode === 'play' ? 'flex' : 'none';
+    document.getElementById('cut-selection').style.display = 'none';
+    hideModal('victory-modal');
+    
+    cutState.startCell = null;
+    playState.selectedPiece = null;
+    playState.placedCount = 0;
+    
+    if (mode === 'cut') {
+        document.getElementById('hint-banner').innerText = '✂️ Tap two squares to cut a piece!';
+        document.getElementById('hint-banner').style.borderColor = '#FF6B9D';
+        renderCutOverlays();
+    } else {
+        document.getElementById('hint-banner').innerText = '🧩 Tap a piece below, then tap the missing spot!';
+        document.getElementById('hint-banner').style.borderColor = '#F5A623';
+        renderPlayMode();
+    }
+    sfxSelect();
+};
+
+function setupGrid() {
+    const grid = document.getElementById('grid-overlay');
+    grid.innerHTML = '';
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            const cell = document.createElement('div');
+            cell.id = `cell-${x}-${y}`;
+            cell.className = 'grid-cell';
+            cell.onclick = () => handleGridClick(x, y);
+            grid.appendChild(cell);
+        }
+    }
+}
+
+// --- CUT MODE LOGIC (Tap & Tap) ---
+window.handleGridClick = function(x, y) {
+    if (currentMode !== 'cut') return;
+    sfxSelect();
+    
+    if (!cutState.startCell) {
+        cutState.startCell = {x, y};
+        const sel = document.getElementById('cut-selection');
+        sel.style.display = 'block';
+        sel.style.left = `${(x/GRID_SIZE)*100}%`;
+        sel.style.top = `${(y/GRID_SIZE)*100}%`;
+        sel.style.width = `${(1/GRID_SIZE)*100}%`;
+        sel.style.height = `${(1/GRID_SIZE)*100}%`;
+    } else {
+        // Complete the cut
+        let x1 = Math.min(cutState.startCell.x, x);
+        let y1 = Math.min(cutState.startCell.y, y);
+        let x2 = Math.max(cutState.startCell.x, x);
+        let y2 = Math.max(cutState.startCell.y, y);
+        
+        let w = x2 - x1 + 1;
+        let h = y2 - y1 + 1;
+        
+        customPieceCounter++; // Deterministic piece counter for sync
+        activePuzzle.pieces.push({
+            id: 'pc_custom_' + customPieceCounter,
+            x: x1, y: y1, w: w, h: h
+        });
+        
+        cutState.startCell = null;
+        document.getElementById('cut-selection').style.display = 'none';
+        sfxCut();
+        renderCutOverlays();
+    }
+};
+
+function renderCutOverlays() {
+    const holes = document.getElementById('holes-container');
+    const placed = document.getElementById('placed-container');
+    holes.innerHTML = ''; placed.innerHTML = '';
+    
+    activePuzzle.pieces.forEach(p => {
+        const h = document.createElement('div');
+        h.className = 'hole';
+        h.style.left = `${(p.x/GRID_SIZE)*100}%`; h.style.top = `${(p.y/GRID_SIZE)*100}%`;
+        h.style.width = `${(p.w/GRID_SIZE)*100}%`; h.style.height = `${(p.h/GRID_SIZE)*100}%`;
+        h.style.background = 'rgba(255, 107, 157, 0.4)';
+        h.style.border = '2px solid #FF6B9D';
+        holes.appendChild(h);
+    });
+}
+
+// --- PLAY MODE LOGIC (Tap & Tap) ---
+function renderPlayMode() {
+    const holes = document.getElementById('holes-container');
+    const placed = document.getElementById('placed-container');
+    const tray = document.getElementById('tray-area');
+    
+    holes.innerHTML = ''; placed.innerHTML = ''; tray.innerHTML = '';
+    playState.placedCount = 0;
+    
+    if (activePuzzle.pieces.length === 0) {
+        tray.innerHTML = '<div style="width:100%; text-align:center; color:#888; font-weight:bold;">No pieces cut yet! Go to Cut Mode.</div>';
+        return;
+    }
+    
+    // Use Seeded Random for framework safety
+    const shuffledPieces = [...activePuzzle.pieces];
+    for (let i = shuffledPieces.length - 1; i > 0; i--) {
+        const j = Math.floor(window.seededRandom() * (i + 1));
+        [shuffledPieces[i], shuffledPieces[j]] = [shuffledPieces[j], shuffledPieces[i]];
+    }
+    
+    shuffledPieces.forEach(p => {
+        // 1. Create Hole
+        const h = document.createElement('div');
+        h.id = 'hole-' + p.id;
+        h.className = 'hole';
+        h.style.left = `${(p.x/GRID_SIZE)*100}%`; h.style.top = `${(p.y/GRID_SIZE)*100}%`;
+        h.style.width = `${(p.w/GRID_SIZE)*100}%`; h.style.height = `${(p.h/GRID_SIZE)*100}%`;
+        h.onclick = () => handleHoleClick(p.id);
+        holes.appendChild(h);
+        
+        // 2. Create Tray Piece (Using CSS clip technique)
+        const tp = document.createElement('div');
+        tp.id = 'tray-piece-' + p.id;
+        tp.className = 'tray-piece';
+        
+        const imgEl = document.getElementById('main-image');
+        const trueImgW = imgEl.naturalWidth || 600;
+        const trueImgH = imgEl.naturalHeight || 400;
+        
+        const pieceTrueW = (p.w / GRID_SIZE) * trueImgW;
+        const pieceTrueH = (p.h / GRID_SIZE) * trueImgH;
+        tp.style.width = `${(pieceTrueW / pieceTrueH) * 80}px`; // 80px is tray height
+        
+        tp.innerHTML = `<img src="${activePuzzle.url}" style="
+            width: ${(GRID_SIZE/p.w)*100}%; 
+            height: ${(GRID_SIZE/p.h)*100}%; 
+            left: ${-(p.x/p.w)*100}%; 
+            top: ${-(p.y/p.h)*100}%;
+        ">`;
+        
+        tp.onclick = () => handleTrayClick(p.id);
+        tray.appendChild(tp);
+    });
+}
+
+window.handleTrayClick = function(id) {
+    if (currentMode !== 'play' || locked) return;
+    sfxSelect();
+    playState.selectedPiece = id;
+    document.querySelectorAll('.tray-piece').forEach(el => el.classList.remove('selected'));
+    document.getElementById('tray-piece-' + id).classList.add('selected');
+};
+
+window.handleHoleClick = function(targetId) {
+    if (currentMode !== 'play' || !playState.selectedPiece || locked) return;
+    
+    if (playState.selectedPiece === targetId) {
+        locked = true; // Prevent desync multi-clicks
+        const p = activePuzzle.pieces.find(pc => pc.id === targetId);
+        document.getElementById('hole-' + targetId).style.display = 'none';
+        document.getElementById('tray-piece-' + targetId).classList.add('used');
+        
+        const placed = document.createElement('div');
+        placed.className = 'placed-piece';
+        placed.style.left = `${(p.x/GRID_SIZE)*100}%`; placed.style.top = `${(p.y/GRID_SIZE)*100}%`;
+        placed.style.width = `${(p.w/GRID_SIZE)*100}%`; placed.style.height = `${(p.h/GRID_SIZE)*100}%`;
+        placed.innerHTML = `<img src="${activePuzzle.url}" style="
+            width: ${(GRID_SIZE/p.w)*100}%; 
+            height: ${(GRID_SIZE/p.h)*100}%; 
+            left: ${-(p.x/p.w)*100}%; 
+            top: ${-(p.y/p.h)*100}%;
+        ">`;
+        document.getElementById('placed-container').appendChild(placed);
+        
+        playState.selectedPiece = null;
+        playState.placedCount++;
+        sfxPlace();
+        
+        const holeRect = document.getElementById('hole-' + targetId).getBoundingClientRect();
+        try { confetti({ particleCount: 30, spread: 60, origin: { x: (holeRect.left + holeRect.width/2)/window.innerWidth, y: (holeRect.top + holeRect.height/2)/window.innerHeight } }); } catch(e){}
+
+        if (playState.placedCount === activePuzzle.pieces.length) {
+            setTimeout(() => {
+                showModal('victory-modal');
+                sfxWin(); cft(true);
+                locked = false;
+            }, 600);
+        } else {
+            locked = false;
+        }
+    } else {
+        sfxWrong();
+        const tp = document.getElementById('tray-piece-' + playState.selectedPiece);
+        tp.style.transform = 'translateX(-8px)';
+        setTimeout(()=>tp.style.transform = 'translateX(8px)', 100);
+        setTimeout(()=>tp.style.transform = 'scale(1.1)', 200);
+    }
+};
+
+function cft(big) {
+    const end = Date.now() + (big ? 3500 : 2200);
+    const cols = ['#FF6B6B','#FFE66D','#4ECDC4','#A855F7','#22C55E'];
+    (function f() {
+        try {
+            confetti({ particleCount:big?14:8, angle:60,  spread:72, origin:{x:0}, colors:cols });
+            confetti({ particleCount:big?14:8, angle:120, spread:72, origin:{x:1}, colors:cols });
+        } catch(e){}
+        if (Date.now() < end) requestAnimationFrame(f);
+    })();
+}
+
+// Initialize
+document.addEventListener('click', () => ac(), {once: true});
+renderLibrary();
+</script>
+</body>
+</html>

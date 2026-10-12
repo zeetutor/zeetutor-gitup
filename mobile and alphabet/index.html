@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kids Typing Pro - LiveTutor</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<!-- ============================================================
+     PART 1 — UNIVERSAL SYNC BRIDGE (GOLDEN MASTER)
+     ============================================================ -->
+<script>
+    window.isSimulating = false;
+    const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#', '?'));
+    const roomId = urlParams.get('room') || '54321';
+    let localSeed = 0;
+    
+    window.setSeed = function(str) {
+        let tempSeed = 0;
+        for (let i = 0; i < str.length; i++) { tempSeed = str.charCodeAt(i) + ((tempSeed << 5) - tempSeed); }
+        localSeed = Math.abs(tempSeed);
+    };
+    window.setSeed(roomId);
+    
+    window.seededRandom = function() {
+        let x = Math.sin(localSeed++) * 10000;
+        return x - Math.floor(x);
+    };
+
+    function getUniqueSelector(el) {
+        if (!el) return null;
+        if (el.id) return '#' + el.id;
+        if (el === document.body) return 'body';
+        let path = [];
+        while (el && el.nodeType === Node.ELEMENT_NODE) {
+            let selector = el.nodeName.toLowerCase();
+            if (el.id) { selector = '#' + el.id; path.unshift(selector); break; } 
+            else {
+                if (el.className && typeof el.className === 'string') {
+                    const classes = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+                    if (classes) selector += '.' + classes;
+                }
+                let sibling = el, nth = 1;
+                while (sibling = sibling.previousElementSibling) { if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++; }
+                selector += ':nth-of-type(' + nth + ')';
+                path.unshift(selector);
+            }
+            el = el.parentNode;
+        }
+        return path.join(' > ');
+    }
+
+    let actionIdCounter = 0;
+    document.addEventListener('click', (e) => {
+        if (e.isTrusted === false || window.isSimulating) return;
+        const selector = getUniqueSelector(e.target); if (!selector) return;
+        actionIdCounter++;
+        window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: { type: 'UNIVERSAL_CLICK', selector: selector, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+        }, '*');
+    }, true);
+
+    document.addEventListener('input', (e) => {
+        if (window.isSimulating) return;
+        const selector = getUniqueSelector(e.target); if (!selector) return;
+        window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: { type: 'UNIVERSAL_INPUT', selector: selector, value: e.target.value }
+        }, '*');
+    }, true);
+
+    let lastCursorTime = 0;
+    document.addEventListener('mousemove', (e) => {
+        const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+        window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 }, '*');
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+            const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+            window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.touches[0].clientX / window.innerWidth) * 100, pctY: (e.touches[0].clientY / window.innerHeight) * 100 }, '*');
+        }
+    }, { passive: true });
+
+    let lastProcessedActionId = null;
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+            const action = event.data.action;
+            if (action.type === 'UNIVERSAL_CURSOR') {
+                const c = document.getElementById('remote-cursor');
+                if (c) {
+                    c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+                    c.style.top = (action.pctY / 100 * window.innerHeight) + 'px';
+                    c.style.display = 'block';
+                }
+                return;
+            }
+            const currentActionId = action.actionId || action.timestamp;
+            if (currentActionId && currentActionId === lastProcessedActionId) return;
+            lastProcessedActionId = currentActionId;
+
+            window.isSimulating = true;
+            if (action.seed !== undefined) localSeed = action.seed;
+            
+            if (action.type === 'UNIVERSAL_CLICK') {
+                const element = document.querySelector(action.selector);
+                if (element) element.click();
+            } else if (action.type === 'UNIVERSAL_INPUT') {
+                const element = document.querySelector(action.selector);
+                if (element) {
+                    element.value = action.value;
+                    element.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+            setTimeout(() => { window.isSimulating = false; }, 50);
+        }
+    });
+</script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+    font-family: 'Nunito', sans-serif;
+    width: 100vw; height: 100vh; overflow: hidden; 
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); 
+    user-select: none; -webkit-user-drag: none;
+    position: relative;
+}
+
+#app-wrapper {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 96%; max-width: 900px; 
+    height: 96%; max-height: 680px; 
+    display: flex; flex-direction: column;
+    overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    border-radius: 24px; background: #ffffff;
+    border: 5px solid #334155;
+}
+
+button *, .kid-key * { pointer-events: none; }
+
+.screen { display: none; flex: 1; flex-direction: column; position: relative; overflow: hidden; }
+.screen.active { display: flex; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px; background: #f8fafc; border-b: 2px solid #e2e8f0; z-index: 10; flex-shrink: 0; }
+.btn-back { background: #e2e8f0; border: none; color: #334155; padding: 7px 14px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.1s; display: flex; align-items: center; gap: 6px; font-size: 0.9rem;}
+.btn-back:active { transform: scale(0.95); background: #cbd5e1; }
+
+.menu-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; padding: 20px; overflow-y: auto; }
+.title { font-family: 'Fredoka One', cursive; font-size: clamp(2rem, 6vw, 3.2rem); color: #4338ca; text-shadow: 0 3px 0 #c7d2fe; margin-bottom: 8px; text-align: center; line-height: 1.1; }
+
+.big-btn { 
+    border: none; border-radius: 18px; padding: 14px 28px; font-family: 'Fredoka One', cursive; 
+    font-size: clamp(1.1rem, 3.2vw, 1.6rem); color: white; cursor: pointer; 
+    box-shadow: 0 6px 0 rgba(0,0,0,0.15); transition: transform 0.1s; width: 100%; max-width: 380px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.big-btn:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(0,0,0,0); }
+.bg-num { background: linear-gradient(135deg, #f97316, #ea580c); }
+.bg-alpha { background: linear-gradient(135deg, #0284c7, #0369a1); }
+.bg-admin { background: linear-gradient(135deg, #7c3aed, #6d28d9); font-size: 1.05rem; }
+.bg-test { background: linear-gradient(135deg, #059669, #047857); font-size: 1.05rem; }
+.bg-json { background: linear-gradient(135deg, #4f46e5, #4338ca); font-size: 1.05rem; }
+
+.display-area { 
+    width: 90%; max-width: 600px; background: #0f172a; border-radius: 18px; margin: 12px auto; 
+    padding: 12px 20px; display: flex; flex-direction: column; align-items: center; border: 4px solid #334155;
+    box-shadow: inset 0 8px 16px rgba(0,0,0,0.5); flex-shrink: 0;
+}
+.target-text { font-family: 'Fredoka One', cursive; font-size: 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+.display-text { 
+    font-family: 'Fredoka One', cursive; font-size: clamp(2rem, 6vw, 3.6rem); color: #fff; 
+    letter-spacing: 4px; min-height: 60px; display: flex; align-items: center; justify-content: center;
+    text-shadow: 0 0 12px rgba(255,255,255,0.4); word-break: break-all; text-align: center;
+    white-space: pre-wrap;
+}
+.display-text.success { color: #4ade80; text-shadow: 0 0 20px #4ade80; animation: pop 0.4s ease; }
+.display-text.error { color: #f87171; text-shadow: 0 0 20px #f87171; animation: shake 0.4s ease; }
+
+@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+.keyboard-area { flex: 1; padding: 6px 12px 16px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; width: 100%;}
+.numpad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(6px, 1.5vw, 10px); width: 100%; max-width: 320px; margin: auto;}
+.alpha-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(5px, 1.2vw, 8px); width: 100%; max-width: 720px; margin: auto;}
+
+.kid-key {
+    background: #fff; border: 3px solid #cbd5e1; border-radius: 14px; 
+    font-family: 'Fredoka One', cursive; color: #1e293b; cursor: pointer;
+    box-shadow: 0 5px 0 #94a3b8; transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
+    display: flex; align-items: center; justify-content: center;
+}
+.kid-key:active, .kid-key.sim-active { transform: translateY(5px); box-shadow: 0 0 0 #94a3b8; background: #f1f5f9; }
+
+.num-key { padding: 12px 4px; font-size: 1.8rem; }
+.key-zero { grid-column: 2; }
+.key-clear { grid-column: 3; background: #fee2e2; border-color: #fca5a5; color: #dc2626; box-shadow: 0 5px 0 #f87171; font-size: 1.1rem;}
+.alpha-key { width: clamp(36px, 9vw, 60px); height: clamp(44px, 11vw, 68px); font-size: clamp(1.3rem, 3.5vw, 2rem); }
+.alpha-controls { display: flex; gap: 8px; margin-top: 10px; width: 100%; max-width: 480px; justify-content: center;}
+.ctrl-key { padding: 10px 16px; font-size: 1.05rem; background: #e0e7ff; border-color: #c7d2fe; color: #4338ca; box-shadow: 0 5px 0 #a5b4fc; }
+
+.form-group { width: 100%; max-width: 450px; margin-bottom: 10px; }
+.form-input { width: 100%; padding: 10px 14px; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Nunito'; font-size: 1rem; font-weight: 800; outline: none; text-align: center;}
+.form-input:focus { border-color: #4f46e5; }
+.test-list { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; overflow-y: auto; max-height: 220px; padding-bottom: 8px;}
+.test-item { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;}
+.test-item:hover { border-color: #4f46e5; background: #eff6ff; }
+.test-name { font-weight: 800; color: #1e293b; font-size: 0.95rem;}
+.test-seq { font-weight: 900; color: #64748b; font-family: 'Fredoka One'; letter-spacing: 1px;}
+.test-del { background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer;}
+</style>
+</head>
+<body>
+
+<div id="remote-cursor"></div>
+
+<div id="app-wrapper">
+    
+    <!-- 1. HOME SCREEN -->
+    <div id="screen-home" class="screen active">
+        <div class="menu-container">
+            <div class="title">Kids Typing Pro<br><span style="font-size: 0.45em; color: #64748b;">Word & Number Vault</span></div>
+            <button id="btn-home-alpha" class="big-btn bg-alpha" onclick="switchScreen('alpha-menu')">
+                <i class="fas fa-font"></i> Words & Student Names
+            </button>
+            <button id="btn-home-num" class="big-btn bg-num" onclick="switchScreen('num-menu')">
+                <i class="fas fa-sort-numeric-up-alt"></i> Numbers
+            </button>
+            <button id="btn-home-json" class="big-btn bg-json" onclick="switchScreen('json-manager')">
+                <i class="fas fa-file-code"></i> Download / Import JSON
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. JSON DATA VAULT SCREEN -->
+    <div id="screen-json-manager" class="screen">
+        <div class="topbar">
+            <button class="btn-back" onclick="switchScreen('home')"><i class="fas fa-arrow-left"></i> Home</button>
+            <h2 style="font-family: 'Fredoka One'; color: #1e293b;">JSON Data Vault</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="menu-container">
+            <p style="text-align: center; color: #475569; font-weight: 800; font-size: 0.9rem; max-width: 460px;">
+                Download your manifest.json to keep all words and numbers in your folder permanently.
+            </p>
+            <button id="btn-download-json" class="big-btn bg-json" onclick="downloadManifestJson()">
+                <i class="fas fa-download"></i> Download manifest.json
+            </button>
+            <label class="big-btn bg-admin" style="cursor: pointer;">
+                <i class="fas fa-upload"></i> Import manifest.json
+                <input type="file" accept=".json,application/json" style="display: none;" onchange="importManifestJson(event)">
+            </label>
+            <div style="color: #059669; font-weight: 900;" id="json-status-msg"></div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         WORDS & ALPHABETS SECTION
+         ============================================== -->
+
+    <!-- 3. ALPHABET MENU -->
+    <div id="screen-alpha-menu" class="screen">
+        <div class="topbar">
+            <button class="btn-back" onclick="switchScreen('home')"><i class="fas fa-arrow-left"></i> Home</button>
+            <h2 style="font-family: 'Fredoka One'; color: #1e293b;">Words & Alphabets</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="menu-container">
+            <button id="btn-alpha-prac" class="big-btn bg-alpha" onclick="startAlphaPractice()">
+                <i class="fas fa-keyboard"></i> Free Alphabet Practice
+            </button>
+            <button id="btn-alpha-tests" class="big-btn bg-test" onclick="openTestList('alpha')">
+                <i class="fas fa-clipboard-check"></i> Play Saved Words (<span id="alpha-count-badge">0</span>)
+            </button>
+            <button id="btn-alpha-admin" class="big-btn bg-admin" onclick="switchScreen('alpha-admin')">
+                <i class="fas fa-plus-circle"></i> Add Single / Bulk Words
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. ALPHABET ADMIN (SINGLE & BULK SAVE) -->
+    <div id="screen-alpha-admin" class="screen">
+        <div class="topbar">
+            <button class="btn-back" onclick="switchScreen('alpha-menu')"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2 style="font-family: 'Fredoka One'; color: #1e293b;">Add Words & Names</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="menu-container" style="justify-content: flex-start; padding-top: 10px;">
+            
+            <div class="form-group">
+                <input type="text" id="inp-alpha-category" class="form-input" placeholder="Category Name (e.g., CVC Words, Students, Animals)">
+            </div>
+
+            <!-- Single or Bulk Words Input -->
+            <div class="form-group">
+                <textarea id="inp-alpha-bulk-words" class="form-input" rows="2" style="resize: none;" placeholder="Type single word (pin) OR bulk words separated by space or comma (pin, mat, rat, cat, Vihana)"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; width: 100%; max-width: 450px;">
+                <button id="btn-save-alpha-bulk" class="big-btn bg-alpha" style="padding: 12px; font-size: 1rem; flex: 1;" onclick="saveAlphaWords()">
+                    <i class="fas fa-plus"></i> Save Word(s)
+                </button>
+                <button class="big-btn bg-json" style="padding: 12px; font-size: 1rem; width: auto;" onclick="downloadManifestJson()" title="Download directly to manifest.json">
+                    <i class="fas fa-download"></i> JSON
+                </button>
+            </div>
+
+            <div class="test-list" id="admin-alpha-test-list"></div>
+        </div>
+    </div>
+
+    <!-- 5. ALPHABET TEST LIST -->
+    <div id="screen-alpha-test-list" class="screen">
+        <div class="topbar">
+            <button class="btn-back" onclick="switchScreen('alpha-menu')"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2 style="font-family: 'Fredoka One'; color: #1e293b;">Select Word to Type</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="menu-container" style="justify-content: flex-start;">
+            <div class="test-list" id="play-alpha-test-list" style="max-height: 100%;"></div>
+        </div>
+    </div>
+
+    <!-- 6. ALPHABET TYPING PAD -->
+    <div id="screen-alpha-pad" class="screen">
+        <div class="topbar">
+            <button class="btn-back" onclick="switchScreen('alpha-menu')"><i class="fas fa-arrow-left"></i> Exit</button>
+            <h2 id="alpha-pad-title" style="font-family: 'Fredoka One'; color: #1e293b;">Practice</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        
+        <div class="display-area">
+            <div class="target-text" id="alpha-target-label">Type This:</div>
+            <div class="display-text" id="alpha-display">_</div>
+        </div>
+
+        <div class="keyboard-area">
+            <div class="alpha-grid" id="alphapad-container"></div>
+            <div class="alpha-controls">
+                <button id="btn-alpha-case" class="kid-key ctrl-key" onclick="toggleAlphaCase()"><i class="fas fa-font"></i> a/A</button>
+                <button id="btn-alpha-space" class="kid-key ctrl-key" style="flex:1;" onclick="handleAlphaPress(' ')"><i class="fas fa-arrows-alt-h"></i> Space</button>
+                <button id="btn-alpha-clear" class="kid-key ctrl-key key-clear" onclick="clearAlpha()"><i class="fas fa-backspace"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         NUMBERS SECTION
+         ============================================== -->
+
+    <!-- 7. NUMBER MENU -->
+    <div id="screen-num-menu" class="screen">
+        <div class="topbar">
+            <button class="btn-back" onclick="switchScreen('home')"><i class="fas fa-arrow-left"></i> Home</button>
+            <h2 style="font-family: 'Fredoka One'; color: #1e293b;">Numbers</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="menu-container">
+            <button id="btn-num-prac" class="big-btn bg-num" onclick="startNumPractice()">
+                <i class="fas fa-keyboard"></i> Free Practice
+            </button>
+            <button id="btn-num-tests" class="big-btn bg-test" onclick="openTestList('num')">
+                <i class="fas fa-clipboard-check"></i> Play Number Tests (<span id="num-count-badge">0</span>)
+            </button>
+            <button id="btn-num-admin" class="big-btn bg-admin" onclick="switchScreen('num-admin')">
+                <i class="fas fa-plus-circle"></i> Add Single / Bulk Numbers
+            </button>
+        </div>
+    </div>
+
+    <!-- 8. NUMBER ADMIN (SINGLE & BULK SAVE) -->
+    <div id="screen-num-admin" class="screen">
+        <div class="topbar">
+            <button class="btn-back" onclick="switchScreen('num-menu')"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2 style="font-family: 'Fredoka One'; color: #1e293b;">Add Numbers</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="menu-container" style="justify-content: flex-start; padding-top: 10px;">
+            <div class="form-group">
+                <input type="text" id="inp-num-category" class="form-input" placeholder="Category (e.g. Counting, Even, Phone)">
+            </div>
+            <div class="form-group">
+                <textarea id="inp-num-bulk-seq" class="form-input" rows="2" style="resize: none;" placeholder="Type single sequence (123) OR bulk numbers (12, 34, 56, 12345)" oninput="this.value = this.value.replace(/[^0-9,\s]/g, '')"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; width: 100%; max-width: 450px;">
+                <button id="btn-save-num-bulk" class="big-btn bg-num" style="padding: 12px; font-size: 1rem; flex: 1;" onclick="saveNumSequences()">
+                    <i class="fas fa-plus"></i> Save Number(s)
+                </button>
+                <button class="big-btn bg-json" style="padding: 12px; font-size: 1rem; width: auto;" onclick="downloadManifestJson()" title="Download directly to manifest.json">
+                    <i class="fas fa-download"></i> JSON
+                </button>
+            </div>
+
+            <div class="test-list" id="admin-num-test-list"></div>
+        </div>
+    </div>
+
+    <!-- 9. NUMBER TEST LIST -->
+    <div id="screen-num-test-list" class="screen">
+        <div class="topbar">
+            <button class="btn-back" onclick="switchScreen('num-menu')"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2 style="font-family: 'Fredoka One'; color: #1e293b;">Select Number Test</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        <div class="menu-container" style="justify-content: flex-start;">
+            <div class="test-list" id="play-num-test-list" style="max-height: 100%;"></div>
+        </div>
+    </div>
+
+    <!-- 10. NUMBER TYPING PAD -->
+    <div id="screen-num-pad" class="screen">
+        <div class="topbar">
+            <button class="btn-back" onclick="switchScreen('num-menu')"><i class="fas fa-arrow-left"></i> Exit</button>
+            <h2 id="num-pad-title" style="font-family: 'Fredoka One'; color: #1e293b;">Practice</h2>
+            <div style="width: 70px;"></div>
+        </div>
+        
+        <div class="display-area">
+            <div class="target-text" id="num-target-label">Type This:</div>
+            <div class="display-text" id="num-display">_</div>
+        </div>
+
+        <div class="keyboard-area">
+            <div class="numpad-grid" id="numpad-container"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============================================================
+     PART 3 — LOGIC & MANIFEST DATA PIPELINE
+     ============================================================ -->
+<script>
+let audioCtx = null;
+function ac(){ if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function tone(f,t,d,v=0.2,type='sine'){ try{ const c=ac(), o=c.createOscillator(), g=c.createGain(); o.connect(g); g.connect(c.destination); o.type=type; o.frequency.value=f; g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(v,c.currentTime+0.02); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d); o.start(c.currentTime); o.stop(c.currentTime+d+0.1); }catch(e){} }
+function sfxType(){ tone(600,'sine',0.08,0.1); }
+function sfxWin(){ [[523,0],[659,.1],[784,.2],[1047,.3]].forEach(([f,d])=>setTimeout(()=>tone(f,'sine',0.2,0.2),d*1000)); }
+function sfxWrong(){ tone(200,'sawtooth',0.2,0.2); }
+
+document.addEventListener('click', () => ac(), {once: true});
+
+let locked = false;
+
+// Default Datasets
+let numDB = [
+    { id: 't_num_1', name: 'Basic 123', seq: '123' },
+    { id: 't_num_2', name: 'Count to 5', seq: '12345' }
+];
+
+let alphaDB = [
+    { id: 't_alp_1', name: 'Student: Vihana', seq: 'Vihana' },
+    { id: 't_alp_2', name: 'Student: Ruthvan', seq: 'Ruthvan' },
+    { id: 't_alp_3', name: 'Student: Mahasri', seq: 'Mahasri' },
+    { id: 't_alp_4', name: 'Student: Manusri', seq: 'Manusri' },
+    { id: 't_alp_5', name: 'CVC: pin', seq: 'pin' },
+    { id: 't_alp_6', name: 'CVC: mat', seq: 'mat' },
+    { id: 't_alp_7', name: 'CVC: rat', seq: 'rat' },
+    { id: 't_alp_8', name: 'CVC: cat', seq: 'cat' }
+];
+
+let currentNumTarget = "";
+let currentNumInput = "";
+let numMode = 'practice'; 
+
+let isUppercase = true;
+let currentAlphaTarget = "";
+let currentAlphaInput = "";
+let alphaMode = 'practice';
+
+// --- MANIFEST BOOT LOADER ---
+async function loadManifestOnBoot() {
+    try {
+        const res = await fetch('./manifest.json');
+        if (!res.ok) throw new Error('No local manifest');
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+            if (Array.isArray(data.numbers) && data.numbers.length) numDB = data.numbers;
+            if (Array.isArray(data.alphabets) && data.alphabets.length) alphaDB = data.alphabets;
+        }
+    } catch(e) {}
+    updateCounts();
+    renderTestList('admin-num-test-list', false, 'num');
+    renderTestList('admin-alpha-test-list', false, 'alpha');
+}
+
+function updateCounts() {
+    document.getElementById('alpha-count-badge').innerText = alphaDB.length;
+    document.getElementById('num-count-badge').innerText = numDB.length;
+}
+
+window.switchScreen = function(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+    sfxType();
+};
+
+function cft() {
+    try { confetti({ particleCount: 60, spread: 80, origin: { y: 0.6 }, zIndex: 9999 }); } catch(e){}
+}
+
+// ==========================================
+// NUMBER PAD LOGIC
+// ==========================================
+function buildNumpad() {
+    const cont = document.getElementById('numpad-container');
+    cont.innerHTML = '';
+    for(let i=1; i<=9; i++) {
+        const b = document.createElement('button');
+        b.id = 'key-num-' + i; b.className = 'kid-key num-key'; b.innerText = i;
+        b.onclick = () => handleNumPress(i.toString());
+        cont.appendChild(b);
+    }
+    const b0 = document.createElement('button');
+    b0.id = 'key-num-0'; b0.className = 'kid-key num-key key-zero'; b0.innerText = '0';
+    b0.onclick = () => handleNumPress('0');
+    cont.appendChild(b0);
+
+    const bClear = document.createElement('button');
+    bClear.id = 'key-num-clear'; bClear.className = 'kid-key num-key key-clear'; bClear.innerHTML = '<i class="fas fa-backspace"></i>';
+    bClear.onclick = () => clearNum();
+    cont.appendChild(bClear);
+}
+
+window.startNumPractice = function() {
+    numMode = 'practice';
+    document.getElementById('num-pad-title').innerText = "Free Practice";
+    document.getElementById('num-target-label').innerText = "Find Number:";
+    generateNumTarget();
+    switchScreen('num-pad');
+};
+
+window.openTestList = function(type) {
+    if(type === 'num') {
+        renderTestList('play-num-test-list', true, 'num');
+        switchScreen('num-test-list');
+    } else {
+        renderTestList('play-alpha-test-list', true, 'alpha');
+        switchScreen('alpha-test-list');
+    }
+};
+
+window.startNumTest = function(id) {
+    const test = numDB.find(t => t.id === id);
+    if(!test) return;
+    numMode = 'test';
+    document.getElementById('num-pad-title').innerText = test.name;
+    document.getElementById('num-target-label').innerText = "Type Sequence:";
+    currentNumTarget = test.seq;
+    currentNumInput = "";
+    updateNumDisplay();
+    switchScreen('num-pad');
+};
+
+function generateNumTarget() {
+    const len = Math.floor(window.seededRandom() * 3) + 1;
+    let res = "";
+    for(let i=0; i<len; i++) { res += Math.floor(window.seededRandom() * 10).toString(); }
+    currentNumTarget = res;
+    currentNumInput = "";
+    updateNumDisplay();
+}
+
+window.handleNumPress = function(char) {
+    if(locked) return;
+    sfxType();
+    
+    const btn = document.getElementById('key-num-' + char);
+    if(btn) { btn.classList.add('sim-active'); setTimeout(()=>btn.classList.remove('sim-active'), 100); }
+
+    currentNumInput += char;
+    
+    if(currentNumTarget.startsWith(currentNumInput)) {
+        updateNumDisplay();
+        if(currentNumInput === currentNumTarget) handleNumSuccess();
+    } else {
+        updateNumDisplay();
+        handleNumError();
+    }
+};
+
+window.clearNum = function() {
+    if(locked) return;
+    sfxType();
+    currentNumInput = currentNumInput.slice(0, -1);
+    updateNumDisplay();
+};
+
+function updateNumDisplay() {
+    const disp = document.getElementById('num-display');
+    disp.className = 'display-text'; 
+    if(currentNumInput === "") {
+        disp.innerHTML = `<span style="opacity:0.3">${currentNumTarget}</span>`;
+    } else {
+        let html = `<span style="color:#4ade80">${currentNumInput}</span>`;
+        let rem = currentNumTarget.substring(currentNumInput.length);
+        if(rem) html += `<span style="opacity:0.3">${rem}</span>`;
+        disp.innerHTML = html;
+    }
+}
+
+function handleNumSuccess() {
+    locked = true; sfxWin(); cft();
+    const disp = document.getElementById('num-display');
+    disp.classList.add('success');
+    setTimeout(() => {
+        locked = false;
+        disp.classList.remove('success');
+        if(numMode === 'practice') generateNumTarget();
+        else switchScreen('num-menu');
+    }, 1500);
+}
+
+function handleNumError() {
+    locked = true; sfxWrong();
+    const disp = document.getElementById('num-display');
+    disp.classList.add('error');
+    setTimeout(() => {
+        currentNumInput = ""; disp.classList.remove('error'); updateNumDisplay(); locked = false;
+    }, 500);
+}
+
+// Single and Bulk Number Saving
+window.saveNumSequences = function() {
+    const category = document.getElementById('inp-num-category').value.trim() || 'Numbers';
+    const rawInput = document.getElementById('inp-num-bulk-seq').value.trim();
+    if(!rawInput) return;
+    
+    // Split by commas, newlines, or spaces
+    const items = rawInput.split(/[\n,]+/).map(s => s.trim().replace(/[^0-9]/g, '')).filter(s => s.length > 0);
+    
+    items.forEach(seq => {
+        numDB.push({
+            id: 't_n_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            name: `${category}: ${seq}`,
+            seq: seq
+        });
+    });
+    
+    document.getElementById('inp-num-bulk-seq').value = '';
+    sfxWin();
+    updateCounts();
+    renderTestList('admin-num-test-list', false, 'num');
+};
+
+window.deleteNumTest = function(id) {
+    numDB = numDB.filter(t => t.id !== id);
+    sfxType();
+    updateCounts();
+    renderTestList('admin-num-test-list', false, 'num');
+};
+
+// ==========================================
+// ALPHABET & WORDS PAD LOGIC
+// ==========================================
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+function buildAlphapad() {
+    const cont = document.getElementById('alphapad-container');
+    cont.innerHTML = '';
+    ALPHABET.forEach(char => {
+        const b = document.createElement('button');
+        b.id = 'key-alpha-' + char; 
+        b.className = 'kid-key alpha-key'; 
+        b.innerText = isUppercase ? char : char.toLowerCase();
+        b.onclick = () => handleAlphaPress(char);
+        cont.appendChild(b);
+    });
+}
+
+window.toggleAlphaCase = function() {
+    if(locked) return; sfxType();
+    isUppercase = !isUppercase;
+    ALPHABET.forEach(char => {
+        const b = document.getElementById('key-alpha-' + char);
+        if(b) b.innerText = isUppercase ? char : char.toLowerCase();
+    });
+    if(alphaMode === 'practice') generateAlphaTarget();
+};
+
+window.startAlphaPractice = function() {
+    alphaMode = 'practice';
+    document.getElementById('alpha-pad-title').innerText = "Free Practice";
+    document.getElementById('alpha-target-label').innerText = "Find Alphabet:";
+    generateAlphaTarget();
+    switchScreen('alpha-pad');
+};
+
+window.startAlphaTest = function(id) {
+    const test = alphaDB.find(t => t.id === id);
+    if(!test) return;
+    alphaMode = 'test';
+    document.getElementById('alpha-pad-title').innerText = test.name;
+    document.getElementById('alpha-target-label').innerText = "Type Word:";
+    currentAlphaTarget = test.seq;
+    currentAlphaInput = "";
+    updateAlphaDisplay();
+    switchScreen('alpha-pad');
+};
+
+function generateAlphaTarget() {
+    const len = Math.floor(window.seededRandom() * 3) + 1;
+    let res = "";
+    for(let i=0; i<len; i++) {
+        let c = ALPHABET[Math.floor(window.seededRandom() * ALPHABET.length)];
+        res += isUppercase ? c : c.toLowerCase();
+    }
+    currentAlphaTarget = res;
+    currentAlphaInput = "";
+    updateAlphaDisplay();
+}
+
+window.handleAlphaPress = function(baseChar) {
+    if(locked) return; sfxType();
+    
+    let char = baseChar;
+    if (baseChar !== ' ') {
+        char = isUppercase ? baseChar : baseChar.toLowerCase();
+        const btn = document.getElementById('key-alpha-' + baseChar);
+        if(btn) { btn.classList.add('sim-active'); setTimeout(()=>btn.classList.remove('sim-active'), 100); }
+    } else {
+        const btn = document.getElementById('btn-alpha-space');
+        if(btn) { btn.classList.add('sim-active'); setTimeout(()=>btn.classList.remove('sim-active'), 100); }
+    }
+
+    currentAlphaInput += char;
+    
+    if(currentAlphaTarget.toLowerCase().startsWith(currentAlphaInput.toLowerCase())) {
+        updateAlphaDisplay();
+        if(currentAlphaInput.toLowerCase() === currentAlphaTarget.toLowerCase()) handleAlphaSuccess();
+    } else {
+        updateAlphaDisplay(); handleAlphaError();
+    }
+};
+
+window.clearAlpha = function() {
+    if(locked) return; sfxType();
+    currentAlphaInput = currentAlphaInput.slice(0, -1);
+    updateAlphaDisplay();
+};
+
+function updateAlphaDisplay() {
+    const disp = document.getElementById('alpha-display');
+    disp.className = 'display-text';
+    if(currentAlphaInput === "") {
+        disp.innerHTML = `<span style="opacity:0.3">${currentAlphaTarget}</span>`;
+    } else {
+        let html = `<span style="color:#4ade80">${currentAlphaTarget.substring(0, currentAlphaInput.length)}</span>`;
+        let rem = currentAlphaTarget.substring(currentAlphaInput.length);
+        if(rem) html += `<span style="opacity:0.3">${rem}</span>`;
+        disp.innerHTML = html;
+    }
+}
+
+function handleAlphaSuccess() {
+    locked = true; sfxWin(); cft();
+    const disp = document.getElementById('alpha-display');
+    disp.classList.add('success');
+    setTimeout(() => { 
+        locked = false; 
+        disp.classList.remove('success');
+        if(alphaMode === 'practice') generateAlphaTarget(); 
+        else switchScreen('alpha-menu');
+    }, 1500);
+}
+
+function handleAlphaError() {
+    locked = true; sfxWrong();
+    const disp = document.getElementById('alpha-display');
+    disp.classList.add('error');
+    setTimeout(() => { 
+        currentAlphaInput = ""; disp.classList.remove('error'); updateAlphaDisplay(); locked = false; 
+    }, 500);
+}
+
+// Single and Bulk Words Saving (pin, mat, rat, cat, Vihana)
+window.saveAlphaWords = function() {
+    const category = document.getElementById('inp-alpha-category').value.trim() || 'Word';
+    const rawInput = document.getElementById('inp-alpha-bulk-words').value.trim();
+    if(!rawInput) return;
+    
+    // Split by commas, newlines, or multiple spaces
+    const words = rawInput.split(/[\n,]+/).map(w => w.trim().replace(/[^a-zA-Z\s]/g, '')).filter(w => w.length > 0);
+    
+    words.forEach(word => {
+        alphaDB.push({
+            id: 't_a_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            name: `${category}: ${word}`,
+            seq: word
+        });
+    });
+    
+    document.getElementById('inp-alpha-bulk-words').value = '';
+    sfxWin();
+    updateCounts();
+    renderTestList('admin-alpha-test-list', false, 'alpha');
+};
+
+window.deleteAlphaTest = function(id) {
+    alphaDB = alphaDB.filter(t => t.id !== id);
+    sfxType();
+    updateCounts();
+    renderTestList('admin-alpha-test-list', false, 'alpha');
+};
+
+// ==========================================
+// SHARED UI UTILS & JSON IMPORT/EXPORT
+// ==========================================
+function renderTestList(containerId, isPlayMode, type) {
+    const cont = document.getElementById(containerId);
+    if(!cont) return;
+    cont.innerHTML = '';
+    
+    const dbArray = type === 'num' ? numDB : alphaDB;
+    
+    dbArray.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'test-item';
+        let html = `<div><div class="test-name">${t.name}</div><div class="test-seq">${t.seq}</div></div>`;
+        if(isPlayMode) {
+            item.innerHTML = html; 
+            item.onclick = () => {
+                if(type === 'num') startNumTest(t.id);
+                else startAlphaTest(t.id);
+            };
+        } else {
+            html += `<button class="test-del" onclick="${type === 'num' ? `deleteNumTest('${t.id}')` : `deleteAlphaTest('${t.id}')`}"><i class="fas fa-trash"></i></button>`;
+            item.innerHTML = html;
+        }
+        cont.appendChild(item);
+    });
+}
+
+window.downloadManifestJson = function() {
+    const exportData = {
+        numbers: numDB,
+        alphabets: alphaDB
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'manifest.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    document.getElementById('json-status-msg').innerText = "✅ manifest.json downloaded!";
+    setTimeout(() => { document.getElementById('json-status-msg').innerText = ""; }, 3000);
+};
+
+window.importManifestJson = function(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const parsed = JSON.parse(reader.result);
+            if(parsed && typeof parsed === 'object') {
+                if(Array.isArray(parsed.numbers)) numDB = parsed.numbers;
+                if(Array.isArray(parsed.alphabets)) alphaDB = parsed.alphabets;
+                updateCounts();
+                renderTestList('admin-num-test-list', false, 'num');
+                renderTestList('admin-alpha-test-list', false, 'alpha');
+                document.getElementById('json-status-msg').innerText = "✅ manifest.json loaded successfully!";
+                setTimeout(() => { document.getElementById('json-status-msg').innerText = ""; }, 3000);
+            }
+        } catch(e) {
+            alert('Invalid JSON file');
+        }
+    };
+    reader.readAsText(file);
+};
+
+// --- INIT ---
+buildNumpad();
+buildAlphapad();
+loadManifestOnBoot();
+</script>
+</body>
+</html>

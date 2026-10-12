@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>தமிழ் உயிர் எழுத்துக்கள் — முழுமையான பயிற்சி</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800;900&family=Mukta+Malar:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- ============================================================
+       PART 1 — UNIVERSAL SYNC BRIDGE (GOLDEN MASTER)
+       ============================================================ -->
+  <script>
+      window.isSimulating = false;
+      const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#', '?'));
+      const roomId = urlParams.get('room') || '54321';
+      let localSeed = 0;
+      
+      window.setSeed = function(str) {
+          let tempSeed = 0;
+          for (let i = 0; i < str.length; i++) { tempSeed = str.charCodeAt(i) + ((tempSeed << 5) - tempSeed); }
+          localSeed = Math.abs(tempSeed);
+      };
+      window.setSeed(roomId);
+      
+      // Deterministic PRNG
+      window.seededRandom = function() {
+          localSeed = (localSeed * 9301 + 49297) % 233280;
+          return localSeed / 233280;
+      };
+
+      function getUniqueSelector(el) {
+          if (!el) return null;
+          if (el.id) return '#' + el.id;
+          if (el === document.body) return 'body';
+          let path = [];
+          while (el && el.nodeType === Node.ELEMENT_NODE) {
+              let selector = el.nodeName.toLowerCase();
+              if (el.id) { selector = '#' + el.id; path.unshift(selector); break; } 
+              else {
+                  if (el.className && typeof el.className === 'string') {
+                      const classes = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+                      if (classes) selector += '.' + classes;
+                  }
+                  let sibling = el, nth = 1;
+                  while (sibling = sibling.previousElementSibling) { if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++; }
+                  selector += ':nth-of-type(' + nth + ')';
+                  path.unshift(selector);
+              }
+              el = el.parentNode;
+          }
+          return path.join(' > ');
+      }
+
+      let actionIdCounter = 0;
+      
+      // 1. CLICK SYNC
+      document.addEventListener('click', (e) => {
+          if (e.isTrusted === false || window.isSimulating) return;
+          const selector = getUniqueSelector(e.target); if (!selector) return;
+          actionIdCounter++;
+          window.parent.postMessage({
+              type: 'IFRAME_ACTION_TRIGGERED',
+              payload: { type: 'UNIVERSAL_CLICK', selector: selector, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+          }, '*');
+      }, true);
+
+      // 2. INPUT & SELECT SYNC
+      document.addEventListener('input', (e) => {
+          if (window.isSimulating) return;
+          const selector = getUniqueSelector(e.target); if (!selector) return;
+          window.parent.postMessage({
+              type: 'IFRAME_ACTION_TRIGGERED',
+              payload: { type: 'UNIVERSAL_INPUT', selector: selector, value: e.target.value }
+          }, '*');
+      }, true);
+
+      document.addEventListener('change', (e) => {
+          if (window.isSimulating) return;
+          const selector = getUniqueSelector(e.target); if (!selector) return;
+          window.parent.postMessage({
+              type: 'IFRAME_ACTION_TRIGGERED',
+              payload: { type: 'UNIVERSAL_INPUT', selector: selector, value: e.target.value }
+          }, '*');
+      }, true);
+
+      // 3. CURSOR TRACKING
+      let lastCursorTime = 0;
+      document.addEventListener('mousemove', (e) => {
+          const now = Date.now(); if (now - lastCursorTime < 180) return; lastCursorTime = now;
+          window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 }, '*');
+      });
+
+      document.addEventListener('touchmove', (e) => {
+          if (e.touches.length > 0) {
+              const now = Date.now(); if (now - lastCursorTime < 180) return; lastCursorTime = now;
+              window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.touches[0].clientX / window.innerWidth) * 100, pctY: (e.touches[0].clientY / window.innerHeight) * 100 }, '*');
+          }
+      }, { passive: true });
+
+      let lastProcessedActionId = null;
+      window.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+              const action = event.data.action;
+              if (action.type === 'UNIVERSAL_CURSOR') return;
+              
+              const currentActionId = action.actionId || action.timestamp;
+              if (currentActionId && currentActionId === lastProcessedActionId) return;
+              lastProcessedActionId = currentActionId;
+
+              window.isSimulating = true;
+              if (action.seed !== undefined) localSeed = action.seed;
+              
+              if (action.type === 'UNIVERSAL_CLICK') {
+                  const element = document.querySelector(action.selector);
+                  if (element) element.click();
+              } else if (action.type === 'UNIVERSAL_INPUT') {
+                  const element = document.querySelector(action.selector);
+                  if (element) {
+                      element.value = action.value;
+                      element.dispatchEvent(new Event('input', { bubbles: true }));
+                      element.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+              }
+              setTimeout(() => { window.isSimulating = false; }, 50);
+          }
+      });
+  </script>
+
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Mukta Malar', 'Nunito', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .font-fredoka { font-family: 'Fredoka One', cursive; }
+    .letter-hero { font-size: clamp(3.2rem, 7vw, 5.5rem); }
+    
+    /* 🖼️ BIG PICTURE SIZING */
+    .big-image-card {
+      height: 100%;
+      min-height: 240px;
+      max-height: 420px;
+      aspect-ratio: 1 / 1;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @media (min-width: 768px) {
+      .big-image-card {
+        min-height: 300px;
+      }
+    }
+    .big-image-card:active { transform: scale(0.97); }
+    
+    .gallery-img-box {
+      aspect-ratio: 1 / 1;
+      transition: all 0.2s ease;
+    }
+    .gallery-img-box:hover { transform: translateY(-4px); }
+
+    .grid-card {
+      background: #0f172a;
+      border: 3px solid #334155;
+      border-radius: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: clamp(1.6rem, 4.5vw, 2.8rem);
+      font-weight: 900;
+      color: #f8fafc;
+      box-shadow: 0 6px 0 #1e293b;
+      aspect-ratio: 1 / 1;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .grid-card:active { transform: translateY(5px); box-shadow: 0 1px 0 #1e293b; }
+    .grid-card.found {
+      background: #064e3b !important;
+      border-color: #10b981 !important;
+      color: #a7f3d0 !important;
+      box-shadow: none !important;
+      transform: translateY(5px);
+      pointer-events: none;
+    }
+    .grid-card.wrong {
+      background: #7f1d1d !important;
+      border-color: #ef4444 !important;
+      color: #fecaca !important;
+      animation: wobbleFail 0.4s ease-in-out;
+    }
+
+    .correct-pop { animation: popSuccess 0.5s ease-out; }
+    .wrong-wobble { animation: wobbleFail 0.4s ease-in-out; }
+
+    @keyframes popSuccess { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+    @keyframes wobbleFail { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+  </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col justify-between p-2 md:p-4 overflow-hidden">
+
+  <!-- ==================== HEADER & SECTION TABS ==================== -->
+  <header class="w-full flex flex-wrap items-center justify-between border-b border-slate-800 pb-2.5 gap-2 shrink-0">
+    <div class="flex items-center gap-2">
+      <span class="bg-amber-400/20 text-amber-300 font-fredoka px-3 py-1 rounded-xl text-xs uppercase tracking-wider border border-amber-400/30">தமிழ் உயிர்</span>
+      <span id="card-counter" class="text-xs md:text-sm font-bold text-slate-400">எழுத்து 1 / 13</span>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-1.5 md:gap-2">
+      <button id="tab-btn-practice" onclick="switchMainTab('practice')" class="bg-blue-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition shadow">
+        🖼 படம் தேர்வு
+      </button>
+      <button id="tab-btn-gallery" onclick="switchMainTab('gallery')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition">
+        📖 பல படங்கள்
+      </button>
+      <button id="tab-btn-grid" onclick="switchMainTab('grid')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition">
+        🎯 கட்டத்தில் கண்டுபிடி
+      </button>
+      <button id="tab-btn-manage" onclick="switchMainTab('manage')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition">
+        ⚙ JSON மேலாளர்
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== SECTION 1: PICTURE CHOICE PRACTICE (BIG IMAGES) ==================== -->
+  <section id="practice-section" class="flex-1 flex flex-col items-center justify-between my-auto max-w-5xl mx-auto w-full px-2">
+    <div class="w-full flex justify-between items-center mb-1">
+      <button id="btn-practice-prev" onclick="handlePracticeNav(-1)" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-xs md:text-sm border border-slate-700">◀ முந்தையது</button>
+      <p class="text-xs md:text-sm font-bold text-amber-400 uppercase tracking-widest font-fredoka">சரியான பெரிய படத்தை தேர்ந்தெடு</p>
+      <button id="btn-practice-next" onclick="handlePracticeNav(1)" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-xs md:text-sm border border-slate-700">அடுத்தது ▶</button>
+    </div>
+
+    <div id="target-letter" class="letter-hero font-black text-amber-300 leading-none my-1 drop-shadow-lg">அ</div>
+
+    <!-- 2 Choice Big Image Cards -->
+    <div id="options-grid" class="grid grid-cols-2 gap-4 md:gap-8 w-full max-w-3xl px-2 my-auto items-center justify-center"></div>
+  </section>
+
+  <!-- ==================== SECTION 2: MULTI-IMAGE GALLERY (பல படங்கள்) ==================== -->
+  <section id="gallery-section" class="hidden flex-1 flex flex-col my-auto max-w-5xl mx-auto w-full px-2 overflow-y-auto">
+    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 mb-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-bold text-slate-400 uppercase">எழுத்து:</span>
+        <select id="gallery-letter-picker" onchange="renderGalleryForLetter(this.value)" class="bg-slate-900 border border-slate-700 text-amber-300 font-black px-4 py-1.5 rounded-xl text-lg focus:outline-none">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+      <div class="text-xs font-bold text-slate-400">
+        இந்த எழுத்திற்கான சொற்கள்: <span id="gallery-items-count" class="text-amber-300 font-extrabold text-sm">0</span>
+      </div>
+    </div>
+
+    <!-- Dynamic Big Gallery Grid -->
+    <div id="gallery-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-2"></div>
+  </section>
+
+  <!-- ==================== SECTION 3: FIND LETTER GRID (4x6 PERFECT SYNC) ==================== -->
+  <section id="grid-section" class="hidden flex-1 flex flex-col items-center justify-between my-auto max-w-4xl mx-auto w-full">
+    
+    <!-- Top Status Row -->
+    <div class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-2.5 md:p-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-slate-400 uppercase">தேர்ந்தெடு:</span>
+        <select id="grid-letter-picker" onchange="changeGridLetter(this.value)" class="bg-slate-900 border border-slate-700 text-amber-300 font-extrabold px-3 py-1 rounded-xl text-base focus:outline-none">
+          <!-- Populated with அ to ஔ -->
+        </select>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="bg-slate-900 border border-slate-700 px-3 py-1 rounded-xl text-xs md:text-sm font-bold">
+          கண்டுபிடி: <strong id="grid-target-badge" class="text-amber-300 font-extrabold text-lg ml-1">அ</strong>
+        </div>
+        <div class="bg-emerald-950 border border-emerald-700 px-3 py-1 rounded-xl text-xs md:text-sm font-bold text-emerald-300">
+          மதிப்பெண்: <span id="grid-score" class="font-extrabold text-base">0 / 6</span>
+        </div>
+        <button id="btn-grid-restart" onclick="restartCurrentGrid()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1 rounded-xl text-xs">
+          🔄 புதிய கட்டம்
+        </button>
+      </div>
+    </div>
+
+    <!-- 24 Items Grid (4x6 Desktop & Mobile) -->
+    <div id="letter-cards-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-2.5 md:gap-3.5 w-full max-w-3xl px-2 my-auto"></div>
+
+    <div id="grid-feedback" class="text-xs md:text-sm font-bold text-slate-400 text-center">
+      👆 கொடுக்கப்பட்டுள்ள எழுத்தை கட்டத்தில் கண்டுபிடித்து தொடவும்!
+    </div>
+  </section>
+
+  <!-- ==================== SECTION 4: JSON & IMAGE MANAGER ==================== -->
+  <section id="manage-section" class="hidden flex-1 flex flex-col max-w-4xl mx-auto w-full bg-slate-950 border border-slate-800 rounded-3xl p-4 overflow-y-auto my-2">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+      <div>
+        <h2 class="text-lg md:text-xl font-bold text-amber-300">உயிர் எழுத்து படங்களின் நிர்வாகம்</h2>
+        <p class="text-xs text-slate-400">Manage Practice 2-Images and Multiple Gallery Images (Base64)</p>
+      </div>
+      <button onclick="switchMainTab('practice')" class="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs">பயிற்சிக்கு செல் ▶</button>
+    </div>
+
+    <!-- Letter Selector -->
+    <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl mb-4 flex flex-wrap items-center gap-3">
+      <label class="text-xs font-bold text-slate-300 uppercase">எழுத்தை தேர்வு செய்:</label>
+      <select id="editor-letter-select" onchange="loadLetterIntoEditor(this.value)" class="bg-slate-950 border border-slate-700 text-amber-300 font-bold px-3 py-2 rounded-xl text-base focus:outline-none">
+        <!-- Populated by JS -->
+      </select>
+      <span id="editor-status" class="text-xs text-emerald-400 font-bold ml-auto"></span>
+    </div>
+
+    <!-- Part A: Practice 2-Images Manager -->
+    <div class="bg-slate-900/80 border border-slate-800 p-3.5 rounded-2xl mb-4 space-y-3">
+      <p class="font-fredoka text-amber-400 text-sm">1. படம் தேர்வு பயிற்சி (2 Options)</p>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Option 1 -->
+        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold uppercase text-slate-400">படம் 1</span>
+            <label class="flex items-center gap-1.5 text-xs text-emerald-400 font-bold cursor-pointer">
+              <input type="radio" name="correct_pick" id="opt0-correct" onchange="setCorrectIndex(0)">
+              சரியான விடை
+            </label>
+          </div>
+          <input id="opt0-name" type="text" placeholder="வார்த்தை (e.g. அணில்)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-xs">
+          <label class="block text-center bg-slate-800 hover:bg-slate-700 py-2 rounded-xl text-xs cursor-pointer border border-slate-700 font-bold">
+            <span id="opt0-status">📷 படம் ஏற்று</span>
+            <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, 0)">
+          </label>
+        </div>
+
+        <!-- Option 2 -->
+        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold uppercase text-slate-400">படம் 2</span>
+            <label class="flex items-center gap-1.5 text-xs text-emerald-400 font-bold cursor-pointer">
+              <input type="radio" name="correct_pick" id="opt1-correct" onchange="setCorrectIndex(1)">
+              சரியான விடை
+            </label>
+          </div>
+          <input id="opt1-name" type="text" placeholder="வார்த்தை (e.g. ஆடு)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-xs">
+          <label class="block text-center bg-slate-800 hover:bg-slate-700 py-2 rounded-xl text-xs cursor-pointer border border-slate-700 font-bold">
+            <span id="opt1-status">📷 படம் ஏற்று</span>
+            <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, 1)">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Part B: Multi-Image Gallery Manager -->
+    <div class="bg-slate-900/80 border border-slate-800 p-3.5 rounded-2xl mb-4 space-y-3">
+      <div class="flex justify-between items-center">
+        <p class="font-fredoka text-teal-400 text-sm">2. பல படங்கள் அகராதி (Gallery Words)</p>
+        <button onclick="addGalleryWordPrompt()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1 rounded-xl text-xs flex items-center gap-1">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> புதிய சொல் சேர்
+        </button>
+      </div>
+
+      <div id="editor-gallery-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+    </div>
+
+    <button onclick="saveCurrentLetterData()" class="w-full bg-blue-600 hover:bg-blue-500 font-bold py-2.5 rounded-2xl text-white mb-4">
+      இந்த எழுத்தின் மாற்றங்களை சேமி (Save Letter)
+    </button>
+
+    <!-- Import / Download manifest.json -->
+    <div class="mt-auto border-t border-slate-800 pt-3 flex flex-wrap gap-2 justify-between items-center bg-slate-950">
+      <div class="flex gap-2">
+        <label class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-2 rounded-xl text-xs cursor-pointer border border-slate-700">
+          JSON இறக்குமதி (Import)
+          <input type="file" accept=".json,application/json" class="hidden" onchange="importManifest(event)">
+        </label>
+        <button onclick="downloadManifest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-xl text-xs border border-emerald-400">
+          JSON பதிவிறக்கு (Download)
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom Feedback Status -->
+  <footer class="text-center py-1 shrink-0">
+    <div id="feedback-badge" class="inline-block px-4 py-1 rounded-full font-bold text-sm transition-all opacity-0"></div>
+  </footer>
+
+  <script>
+    /* ==========================================================================
+       1. DATA & STATE MANAGEMENT
+       ========================================================================== */
+    const TAMIL_LETTERS = ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'ஓ', 'ஔ', 'ஃ'];
+    let manifest = [];
+    let currentIndex = 0;
+
+    // Grid Game State
+    let currentGridTarget = 'அ';
+    let gridFoundCount = 0;
+    let gridTotalTargets = 6;
+    let gridRound = 1;
+
+    // Audio SFX
+    let audioCtx = null;
+    function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+    document.addEventListener('click', () => initAudio(), { once: true });
+
+    function snd_win() {
+      try {
+        const A = initAudio();
+        const n = (f,t,dur) => {
+          const o=A.createOscillator(), g=A.createGain();
+          o.type='sine'; o.frequency.setValueAtTime(f,A.currentTime+t);
+          g.gain.setValueAtTime(0,A.currentTime+t);
+          g.gain.linearRampToValueAtTime(0.3,A.currentTime+t+.04);
+          g.gain.exponentialRampToValueAtTime(.001,A.currentTime+t+dur);
+          o.connect(g); g.connect(A.destination);
+          o.start(A.currentTime+t); o.stop(A.currentTime+t+dur+.05);
+        };
+        [[523,0],[659,.1],[784,.2],[1047,.32],[1319,.44]].forEach(([f,t])=>n(f,t,.4));
+      } catch(e) {}
+    }
+
+    function snd_bad() {
+      try {
+        const A = initAudio();
+        const o=A.createOscillator(), g=A.createGain();
+        o.type='sawtooth'; o.frequency.setValueAtTime(200,A.currentTime);
+        o.frequency.exponentialRampToValueAtTime(60,A.currentTime+.35);
+        g.gain.setValueAtTime(.35,A.currentTime);
+        g.gain.exponentialRampToValueAtTime(.001,A.currentTime+.35);
+        o.connect(g); g.connect(A.destination);
+        o.start(); o.stop(A.currentTime+.4);
+      } catch(e) {}
+    }
+
+    // Default Fallback Dataset with Gallery words
+    const defaultData = TAMIL_LETTERS.map((letter, i) => ({
+      id: `uyir_${i}`,
+      letter: letter,
+      name: `${letter} வார்த்தை`,
+      options: [
+        { name: `${letter} சொல்`, image: "", isCorrect: true },
+        { name: `மாற்று சொல்`, image: "", isCorrect: false }
+      ],
+      gallery: [
+        { word: `${letter} சொல் 1`, image: "" },
+        { word: `${letter} சொல் 2`, image: "" }
+      ]
+    }));
+
+    async function initData() {
+      try {
+        const res = await fetch('./manifest.json');
+        if (!res.ok) throw new Error('manifest.json not found');
+        const data = await res.json();
+        manifest = (Array.isArray(data) && data.length) ? data : defaultData;
+      } catch (e) {
+        manifest = defaultData;
+      }
+      populateDropdowns();
+      renderCurrentPracticeCard();
+      renderGalleryForLetter('அ');
+      buildSynchronizedGrid('அ', 1);
+      lucide.createIcons();
+    }
+
+    function populateDropdowns() {
+      const editorSelect = document.getElementById('editor-letter-select');
+      editorSelect.innerHTML = manifest.map(m => `
+        <option value="${m.letter}">${m.letter} (${m.options[0]?.name || ''})</option>
+      `).join('');
+
+      const gridPicker = document.getElementById('grid-letter-picker');
+      gridPicker.innerHTML = TAMIL_LETTERS.map(l => `<option value="${l}">${l}</option>`).join('');
+
+      const galleryPicker = document.getElementById('gallery-letter-picker');
+      galleryPicker.innerHTML = TAMIL_LETTERS.map(l => `<option value="${l}">${l}</option>`).join('');
+    }
+
+    /* ==========================================================================
+       2. TAB NAVIGATION FLOW
+       ========================================================================== */
+    function switchMainTab(tab) {
+      ['practice', 'gallery', 'grid', 'manage'].forEach(t => {
+        const sec = document.getElementById(`${t}-section`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tab) {
+          sec.classList.remove('hidden');
+          btn.className = "bg-blue-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition shadow";
+        } else {
+          sec.classList.add('hidden');
+          btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition";
+        }
+      });
+
+      if (tab === 'practice') renderCurrentPracticeCard();
+      if (tab === 'gallery') renderGalleryForLetter(document.getElementById('gallery-letter-picker').value || 'அ');
+      if (tab === 'manage') loadLetterIntoEditor(document.getElementById('editor-letter-select').value || 'அ');
+      lucide.createIcons();
+    }
+
+    /* ==========================================================================
+       3. PRACTICE SECTION ENGINE (BIG IMAGES)
+       ========================================================================== */
+    function renderCurrentPracticeCard() {
+      if (!manifest.length) return;
+      if (currentIndex >= manifest.length) currentIndex = 0;
+      if (currentIndex < 0) currentIndex = manifest.length - 1;
+
+      const item = manifest[currentIndex];
+      document.getElementById('target-letter').innerText = item.letter;
+      document.getElementById('card-counter').innerText = `எழுத்து ${currentIndex + 1} / ${manifest.length}`;
+
+      const grid = document.getElementById('options-grid');
+      grid.innerHTML = item.options.map((opt, idx) => {
+        const imgDisplay = opt.image
+          ? `<img src="${opt.image}" class="w-full h-full object-contain p-2" alt="${opt.name}" />`
+          : `<div class="w-full h-full flex items-center justify-center font-bold text-slate-500 text-2xl md:text-4xl">${opt.name || 'படம் இல்லை'}</div>`;
+
+        return `
+          <button
+            id="choice-${idx}"
+            onclick="handlePracticeOptionClick(${idx})"
+            class="big-image-card relative bg-slate-950 border-3 border-slate-800 hover:border-indigo-500 rounded-3xl flex flex-col items-center justify-center overflow-hidden p-3 shadow-2xl"
+          >
+            <div class="flex-1 w-full flex items-center justify-center overflow-hidden">
+              ${imgDisplay}
+            </div>
+            <span class="mt-auto py-2 font-black text-slate-200 text-xl md:text-3xl">${opt.name}</span>
+          </button>
+        `;
+      }).join('');
+
+      clearFeedback();
+    }
+
+    function handlePracticeOptionClick(idx) {
+      const item = manifest[currentIndex];
+      const opt = item.options[idx];
+      const targetCard = document.getElementById(`choice-${idx}`);
+
+      if (opt.isCorrect) {
+        if (targetCard) {
+          targetCard.classList.remove('border-slate-800', 'hover:border-indigo-500');
+          targetCard.classList.add('border-emerald-400', 'bg-emerald-950/40', 'correct-pop');
+        }
+        snd_win();
+        showFeedback("🎉 நன்று! சரியான விடை", "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40");
+      } else {
+        if (targetCard) {
+          targetCard.classList.remove('border-slate-800', 'hover:border-indigo-500');
+          targetCard.classList.add('border-rose-500', 'bg-rose-950/40', 'wrong-wobble');
+          setTimeout(() => {
+            targetCard.classList.remove('border-rose-500', 'bg-rose-950/40', 'wrong-wobble');
+            targetCard.classList.add('border-slate-800', 'hover:border-indigo-500');
+          }, 500);
+        }
+        snd_bad();
+        showFeedback("❌ மீண்டும் முயற்சி செய்", "bg-rose-500/20 text-rose-300 border border-rose-500/40");
+      }
+    }
+
+    function handlePracticeNav(offset) {
+      currentIndex += offset;
+      if (currentIndex >= manifest.length) currentIndex = 0;
+      if (currentIndex < 0) currentIndex = manifest.length - 1;
+      renderCurrentPracticeCard();
+    }
+
+    function showFeedback(text, classes) {
+      const badge = document.getElementById('feedback-badge');
+      badge.className = `inline-block px-4 py-1.5 rounded-full font-bold text-sm md:text-base opacity-100 transition-all ${classes}`;
+      badge.innerText = text;
+    }
+
+    function clearFeedback() {
+      const badge = document.getElementById('feedback-badge');
+      badge.className = "inline-block px-4 py-1.5 rounded-full font-bold text-sm opacity-0";
+      badge.innerText = "";
+    }
+
+    /* ==========================================================================
+       4. MULTI-IMAGE GALLERY (பல படங்கள்)
+       ========================================================================== */
+    function renderGalleryForLetter(letter) {
+      document.getElementById('gallery-letter-picker').value = letter;
+      const found = manifest.find(m => m.letter === letter);
+      const galleryList = (found && Array.isArray(found.gallery)) ? found.gallery : [];
+      document.getElementById('gallery-items-count').innerText = galleryList.length;
+
+      const grid = document.getElementById('gallery-cards-grid');
+      if (!galleryList.length) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 font-bold">இந்த எழுத்திற்கான கூடுதல் படங்கள் இல்லை. JSON மேலாளரில் சேர்க்கவும்!</div>`;
+        return;
+      }
+
+      grid.innerHTML = galleryList.map((item, idx) => {
+        const imgTag = item.image
+          ? `<img src="${item.image}" class="w-full h-full object-contain p-2" alt="${item.word}"/>`
+          : `<div class="w-full h-full flex items-center justify-center font-bold text-slate-600 text-xl">${item.word}</div>`;
+
+        return `
+          <div class="gallery-img-box bg-slate-950 border-2 border-slate-800 rounded-3xl p-3 flex flex-col items-center justify-center shadow-xl">
+            <div class="flex-1 w-full flex items-center justify-center overflow-hidden">
+              ${imgTag}
+            </div>
+            <span class="mt-2 font-bold text-amber-300 text-lg md:text-xl text-center">${item.word}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* ==========================================================================
+       5. FIND LETTER GRID (DETERMINISTIC SHUFFLE & SYNC REPAIR)
+       ========================================================================== */
+    function changeGridLetter(val) {
+      currentGridTarget = val;
+      gridRound = 1;
+      buildSynchronizedGrid(currentGridTarget, gridRound);
+    }
+
+    function restartCurrentGrid() {
+      gridRound++;
+      buildSynchronizedGrid(currentGridTarget, gridRound);
+    }
+
+    function buildSynchronizedGrid(targetLetter, round) {
+      currentGridTarget = targetLetter;
+      document.getElementById('grid-letter-picker').value = targetLetter;
+      document.getElementById('grid-target-badge').innerText = targetLetter;
+
+      // 🛡️ REPAIR: Identical deterministic seed for Teacher and Student
+      window.setSeed(roomId + "_" + targetLetter + "_R" + round);
+
+      gridFoundCount = 0;
+      gridTotalTargets = 6;
+      document.getElementById('grid-score').innerText = `0 / ${gridTotalTargets}`;
+
+      let deck = [];
+      for (let i = 0; i < gridTotalTargets; i++) {
+        deck.push({ val: targetLetter, isTarget: true });
+      }
+
+      const distractors = TAMIL_LETTERS.filter(l => l !== targetLetter);
+      while (deck.length < 24) {
+        const randLetter = distractors[Math.floor(window.seededRandom() * distractors.length)];
+        deck.push({ val: randLetter, isTarget: false });
+      }
+
+      // Fisher-Yates deterministic shuffle
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(window.seededRandom() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+
+      const gridContainer = document.getElementById('letter-cards-grid');
+      gridContainer.innerHTML = '';
+
+      deck.forEach((card, idx) => {
+        const btn = document.createElement('button');
+        btn.id = `grid-card-${idx}`;
+        btn.className = 'grid-card';
+        btn.innerText = card.val;
+        btn.onclick = () => handleGridCardClick(btn, card.isTarget);
+        gridContainer.appendChild(btn);
+      });
+    }
+
+    function handleGridCardClick(btn, isTarget) {
+      if (btn.classList.contains('found')) return;
+
+      if (isTarget) {
+        btn.classList.add('found');
+        gridFoundCount++;
+        document.getElementById('grid-score').innerText = `${gridFoundCount} / ${gridTotalTargets}`;
+        snd_win();
+
+        if (gridFoundCount >= gridTotalTargets) {
+          try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } }); } catch(e){}
+        }
+      } else {
+        btn.classList.remove('wrong');
+        void btn.offsetWidth;
+        btn.classList.add('wrong');
+        snd_bad();
+      }
+    }
+
+    /* ==========================================================================
+       6. JSON & MULTI-IMAGE MANAGER
+       ========================================================================== */
+    let activeEditItem = null;
+
+    function loadLetterIntoEditor(letter) {
+      activeEditItem = manifest.find(m => m.letter === letter);
+      if (!activeEditItem) return;
+      if (!Array.isArray(activeEditItem.gallery)) activeEditItem.gallery = [];
+
+      document.getElementById('opt0-name').value = activeEditItem.options[0]?.name || '';
+      document.getElementById('opt0-correct').checked = !!activeEditItem.options[0]?.isCorrect;
+      document.getElementById('opt0-status').innerText = activeEditItem.options[0]?.image ? '✅ படம் உள்ளது' : '📷 படம் ஏற்று';
+
+      document.getElementById('opt1-name').value = activeEditItem.options[1]?.name || '';
+      document.getElementById('opt1-correct').checked = !!activeEditItem.options[1]?.isCorrect;
+      document.getElementById('opt1-status').innerText = activeEditItem.options[1]?.image ? '✅ படம் உள்ளது' : '📷 படம் ஏற்று';
+
+      renderEditorGalleryList();
+      document.getElementById('editor-status').innerText = '';
+    }
+
+    function setCorrectIndex(idx) {
+      if (!activeEditItem) return;
+      activeEditItem.options[0].isCorrect = (idx === 0);
+      activeEditItem.options[1].isCorrect = (idx === 1);
+    }
+
+    function handleImageUpload(event, optionIdx) {
+      const file = event.target.files[0];
+      if (!file || !activeEditItem) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        activeEditItem.options[optionIdx].image = reader.result;
+        document.getElementById(`opt${optionIdx}-status`).innerText = '✅ படம் முடிந்தது';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderEditorGalleryList() {
+      const list = document.getElementById('editor-gallery-list');
+      if (!activeEditItem || !activeEditItem.gallery.length) {
+        list.innerHTML = `<p class="text-slate-600 text-xs py-2">கூடுதல் சொற்கள் எதுவும் இல்லை.</p>`;
+        return;
+      }
+
+      list.innerHTML = activeEditItem.gallery.map((g, idx) => `
+        <div class="flex items-center justify-between bg-slate-950 p-2 rounded-xl border border-slate-800">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <span class="text-xs font-bold text-amber-300">${idx + 1}.</span>
+            <input type="text" value="${g.word}" onchange="updateGalleryWord(${idx}, this.value)" class="bg-slate-900 border border-slate-700 px-2 py-1 rounded text-white font-bold text-xs">
+            <label class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[11px] font-bold cursor-pointer border border-slate-700">
+              ${g.image ? '✅ படம் உள்ளது' : '📷 படம்'}
+              <input type="file" accept="image/*" class="hidden" onchange="handleGalleryImageUpload(event, ${idx})">
+            </label>
+          </div>
+          <button onclick="removeGalleryWord(${idx})" class="text-rose-400 font-bold hover:text-rose-300 text-xs px-2">நீக்கு</button>
+        </div>
+      `).join('');
+    }
+
+    function addGalleryWordPrompt() {
+      if (!activeEditItem) return;
+      const word = prompt('புதிய சொல்லின் பெயரை உள்ளிடவும் (e.g. அம்மா, அன்னம்):');
+      if (!word || !word.trim()) return;
+
+      activeEditItem.gallery.push({
+        word: word.trim(),
+        image: ""
+      });
+      renderEditorGalleryList();
+    }
+
+    function updateGalleryWord(idx, val) {
+      if (activeEditItem && activeEditItem.gallery[idx]) {
+        activeEditItem.gallery[idx].word = val.trim();
+      }
+    }
+
+    function handleGalleryImageUpload(event, idx) {
+      const file = event.target.files[0];
+      if (!file || !activeEditItem) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        activeEditItem.gallery[idx].image = reader.result;
+        renderEditorGalleryList();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeGalleryWord(idx) {
+      if (!activeEditItem) return;
+      activeEditItem.gallery.splice(idx, 1);
+      renderEditorGalleryList();
+    }
+
+    function saveCurrentLetterData() {
+      if (!activeEditItem) return;
+      activeEditItem.options[0].name = document.getElementById('opt0-name').value.trim();
+      activeEditItem.options[1].name = document.getElementById('opt1-name').value.trim();
+      activeEditItem.options[0].isCorrect = document.getElementById('opt0-correct').checked;
+      activeEditItem.options[1].isCorrect = document.getElementById('opt1-correct').checked;
+
+      populateDropdowns();
+      document.getElementById('editor-letter-select').value = activeEditItem.letter;
+      document.getElementById('editor-status').innerText = 'சேமிக்கப்பட்டது! (Saved)';
+      setTimeout(() => { document.getElementById('editor-status').innerText = ''; }, 2000);
+    }
+
+    function importManifest(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (Array.isArray(parsed) && parsed.length) {
+            manifest = parsed;
+            currentIndex = 0;
+            populateDropdowns();
+            loadLetterIntoEditor(manifest[0].letter);
+            alert('manifest.json வெற்றிகரமாக ஏற்றப்பட்டது!');
+          }
+        } catch (err) {
+          alert('தவறான JSON கோப்பு');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadManifest() {
+      const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'manifest.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // Launch on boot
+    initData();
+  </script>
+</body>
+</html>

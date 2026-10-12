@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Grid Explorer Pro - LiveTutor</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<!-- ============================================================
+     PART 1 — UNIVERSAL SYNC BRIDGE (GOLDEN MASTER)
+     ============================================================ -->
+<script>
+    window.isSimulating = false;
+    const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#', '?'));
+    const roomId = urlParams.get('room') || '54321';
+    let localSeed = 0;
+    
+    // Room ID aadharamga seed generator (Room ID aadharamga seed generator)
+    window.setSeed = function(str) {
+        let tempSeed = 0;
+        for (let i = 0; i < str.length; i++) { tempSeed = str.charCodeAt(i) + ((tempSeed << 5) - tempSeed); }
+        localSeed = Math.abs(tempSeed);
+    };
+    window.setSeed(roomId);
+    
+    window.seededRandom = function() {
+        let x = Math.sin(localSeed++) * 10000;
+        return x - Math.floor(x);
+    };
+
+    function getUniqueSelector(el) {
+        if (!el) return null;
+        if (el.id) return '#' + el.id;
+        if (el === document.body) return 'body';
+        let path = [];
+        while (el && el.nodeType === Node.ELEMENT_NODE) {
+            let selector = el.nodeName.toLowerCase();
+            if (el.id) { selector = '#' + el.id; path.unshift(selector); break; } 
+            else {
+                if (el.className && typeof el.className === 'string') {
+                    const classes = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+                    if (classes) selector += '.' + classes;
+                }
+                let sibling = el, nth = 1;
+                while (sibling = sibling.previousElementSibling) { if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++; }
+                selector += ':nth-of-type(' + nth + ')';
+                path.unshift(selector);
+            }
+            el = el.parentNode;
+        }
+        return path.join(' > ');
+    }
+
+    let actionIdCounter = 0;
+    document.addEventListener('click', (e) => {
+        if (e.isTrusted === false || window.isSimulating) return;
+        const selector = getUniqueSelector(e.target); if (!selector) return;
+        actionIdCounter++;
+        window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: { type: 'UNIVERSAL_CLICK', selector: selector, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+        }, '*');
+    }, true);
+
+    document.addEventListener('input', (e) => {
+        if (window.isSimulating) return;
+        const selector = getUniqueSelector(e.target); if (!selector) return;
+        window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: { type: 'UNIVERSAL_INPUT', selector: selector, value: e.target.value }
+        }, '*');
+    }, true);
+
+    let lastCursorTime = 0;
+    document.addEventListener('mousemove', (e) => {
+        const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+        window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload: { type: 'UNIVERSAL_CURSOR', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 } }, '*');
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+            const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+            window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload: { type: 'UNIVERSAL_CURSOR', pctX: (e.touches[0].clientX / window.innerWidth) * 100, pctY: (e.touches[0].clientY / window.innerHeight) * 100 } }, '*');
+        }
+    }, { passive: true });
+
+    let lastProcessedActionId = null;
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+            const action = event.data.action;
+            if (action.type === 'UNIVERSAL_CURSOR') {
+                const c = document.getElementById('remote-cursor');
+                if (c) {
+                    c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+                    c.style.top = (action.pctY / 100 * window.innerHeight) + 'px';
+                    c.style.display = 'block';
+                }
+                return;
+            }
+            const currentActionId = action.actionId || action.timestamp;
+            if (currentActionId && currentActionId === lastProcessedActionId) return;
+            lastProcessedActionId = currentActionId;
+
+            window.isSimulating = true;
+            if (action.seed !== undefined) localSeed = action.seed;
+            
+            if (action.type === 'UNIVERSAL_CLICK') {
+                const element = document.querySelector(action.selector);
+                if (element) element.click();
+            } else if (action.type === 'UNIVERSAL_INPUT') {
+                const element = document.querySelector(action.selector);
+                if (element) {
+                    element.value = action.value;
+                    element.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+            setTimeout(() => { window.isSimulating = false; }, 50);
+        }
+    });
+</script>
+
+<style>
+/* ============================================================
+   PART 2 — CSS ARMOR & RESPONSIVENESS (CSS kavasam mariyu prathispandana)
+   ============================================================ */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+    display: flex; justify-content: center; align-items: center;
+    overflow: hidden; user-select: none;
+}
+
+/* 🎯 The Golden App Wrapper (Bangaru app wrapper) */
+#app-wrapper {
+    width: 98%; max-width: 800px; height: 98%; max-height: 850px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 30px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+    border: 6px solid white;
+    display: flex; flex-direction: column;
+    overflow: hidden; position: relative;
+}
+
+.heading-title { font-family: 'Fredoka One', cursive; color: #3b82f6; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+/* Prevent click stealing (Click dongalatananni nivaarinchandi) */
+button * { pointer-events: none; }
+
+/* 3D Buttons (3D Batanlu) */
+.btn-3d {
+    border: none; border-radius: 16px; font-family: 'Fredoka One', cursive;
+    color: white; cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+    transition: transform 0.1s, box-shadow 0.1s; padding: 12px 20px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-transform: uppercase;
+}
+.btn-3d:active { transform: translateY(6px); box-shadow: 0 0px 0 rgba(0,0,0,0.15); }
+.btn-primary { background: #3b82f6; }
+
+/* Input Fields (Input kshetraalu) */
+.custom-input {
+    width: 100%; padding: 10px; border-radius: 12px; border: 3px solid #cbd5e1;
+    font-family: 'Fredoka One', cursive; font-size: 1.5rem; text-align: center;
+    outline: none; color: #1e293b; transition: border-color 0.2s;
+}
+.custom-input:focus { border-color: #3b82f6; }
+
+/* Avatar Selection (Avatar empika) */
+.avatar-btn {
+    background: white; border: 3px solid #cbd5e1; border-radius: 16px;
+    padding: 8px; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 0 #cbd5e1;
+    display: flex; align-items: center; justify-content: center;
+    width: 60px; height: 60px; font-size: 2.2rem;
+}
+.avatar-btn:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+.avatar-btn.active { border-color: #3b82f6; background: #eff6ff; box-shadow: 0 4px 0 #3b82f6; transform: scale(1.1); }
+
+/* Screens ( తెరలు ) */
+.screen { display: none; flex: 1; flex-direction: column; align-items: center; padding: 15px; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; }
+.screen.active { display: flex; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+/* --- GAME GRID SYSTEM (Game grid vyavastha) --- */
+.game-area { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; min-height: 0; }
+
+.grid-board {
+    display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr);
+    gap: 8px; background: #cbd5e1; padding: 10px; border-radius: 20px; border: 4px solid #94a3b8;
+    width: 100%; max-width: 400px; aspect-ratio: 1;
+}
+
+.grid-cell {
+    background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-family: 'Fredoka One', cursive; 
+    font-size: clamp(1rem, 4vw, 1.8rem); /* Adapts to word length */
+    text-align: center; word-break: break-word; padding: 2px;
+    color: #ef4444;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.05); transition: background 0.2s;
+    position: relative; overflow: hidden; /* Important for player containment */
+}
+
+/* 🌟 REMOVED .target-cell green styling so it blends in perfectly! */
+
+/* The Avatar itself inside the cell (Avatar cell lōpala) */
+.cell-avatar {
+    font-size: 2.5rem; 
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); 
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* 🌟 NEW: SVG Floating Animation (SVG thele animation) */
+@keyframes floatAvatar {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+.cell-avatar svg {
+    animation: floatAvatar 1.5s ease-in-out infinite;
+}
+
+/* Animations (Animeshanlu) */
+.bump-anim { animation: bumpBack 0.3s ease; }
+@keyframes bumpBack { 0% { transform: scale(1); } 50% { transform: scale(1.2) rotate(-15deg); filter: hue-rotate(90deg); } 100% { transform: scale(1); } }
+
+/* --- D-PAD CONTROLS (D-pad niyantranalu) --- */
+.d-pad-container {
+    display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+    gap: 10px; width: 180px; height: 180px; margin-bottom: 10px;
+}
+.d-btn {
+    background: #3b82f6; border: none; border-radius: 15px; color: white;
+    font-size: 2rem; cursor: pointer; box-shadow: 0 6px 0 #1d4ed8;
+    display: flex; align-items: center; justify-content: center; transition: all 0.1s;
+}
+.d-btn:active { transform: translateY(6px); box-shadow: 0 0 0 #1d4ed8; }
+.d-up { grid-column: 2; grid-row: 1; border-radius: 15px 15px 5px 5px; }
+.d-left { grid-column: 1; grid-row: 2; border-radius: 15px 5px 5px 15px; }
+.d-right { grid-column: 3; grid-row: 2; border-radius: 5px 15px 15px 5px; }
+.d-down { grid-column: 2; grid-row: 3; border-radius: 5px 5px 15px 15px; }
+.d-center { grid-column: 2; grid-row: 2; background: #93c5fd; box-shadow: none; border-radius: 50%; width: 80%; justify-self: center; align-self: center; height: 80%; pointer-events: none;}
+
+/* Top Info Bar (Pai samachara bar) */
+.info-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #f8fafc; border-bottom: 3px solid #e2e8f0; border-radius: 30px 30px 0 0; }
+.target-display { background: #ffedd5; border: 2px solid #f97316; padding: 5px 15px; border-radius: 20px; font-family: 'Fredoka One'; color: #ea580c; font-size: 1.2rem; }
+
+/* Modal (Namuuna) */
+.modal-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-card { background: white; padding: 30px; border-radius: 24px; text-align: center; border: 4px solid #10b981; animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); width: 90%; max-width: 350px;}
+@keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+@media (max-width: 600px) {
+    .grid-board { max-width: 300px; gap: 5px; border-width: 3px; }
+    .grid-cell { border-radius: 8px; }
+    .d-pad-container { width: 150px; height: 150px; }
+    .d-btn { font-size: 1.5rem; border-radius: 10px; }
+    .cell-avatar { font-size: 2rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="remote-cursor" style="position:fixed; width:20px; height:20px; background:red; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(255,0,0,.6); pointer-events:none; z-index:9999; transform:translate(-50%,-50%); display:none;"></div>
+
+<div id="app-wrapper">
+    
+    <!-- SCREEN 1: SETUP -->
+    <div id="scr-setup" class="screen active" style="justify-content: center;">
+        <div class="text-center mb-6">
+            <h1 class="heading-title text-4xl mb-2">🚀 Grid Explorer!</h1>
+            <p class="text-gray-500 font-bold text-lg">Teacher Setup</p>
+        </div>
+
+        <div class="w-full max-w-sm bg-blue-50 p-5 rounded-3xl border-4 border-blue-200 shadow-inner flex flex-col gap-5">
+            <div>
+                <label class="block font-bold text-gray-700 mb-2 text-center text-lg">Target to Find:</label>
+                <!-- 🔥 NEW: Removed maxlength="1" to allow words and multi-digit numbers -->
+                <input type="text" id="inp-target" class="custom-input" placeholder="e.g. A, 99, CAT" maxlength="5" value="A">
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 mb-2 text-center text-lg">Select Mode:</label>
+                <!-- 🔥 NEW: 3 Modes Support (ABC, 123, WORD) -->
+                <div class="flex gap-2">
+                    <button id="btn-type-alpha" class="btn-3d btn-primary flex-1" style="background:#10b981; box-shadow:0 5px 0 #059669; padding:10px 5px;" onclick="setMode('alpha')">ABC</button>
+                    <button id="btn-type-num" class="btn-3d flex-1" style="background:#cbd5e1; color:#475569; box-shadow:0 5px 0 #94a3b8; padding:10px 5px;" onclick="setMode('num')">123</button>
+                    <button id="btn-type-word" class="btn-3d flex-1" style="background:#cbd5e1; color:#475569; box-shadow:0 5px 0 #94a3b8; padding:10px 5px;" onclick="setMode('word')">WORD</button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 mb-2 text-center text-lg">Choose Character:</label>
+                <div class="flex gap-2 justify-center flex-wrap" id="avatar-selector">
+                    <button class="avatar-btn active" onclick="setAvatar('ufo', this)" id="btn-ufo"></button>
+                    <button class="avatar-btn" onclick="setAvatar('rocket', this)" id="btn-rocket"></button>
+                    <button class="avatar-btn" onclick="setAvatar('car', this)" id="btn-car"></button>
+                    <button class="avatar-btn" onclick="setAvatar('cat', this)" id="btn-cat"></button>
+                    <button class="avatar-btn" onclick="setAvatar('dog', this)" id="btn-dog"></button>
+                </div>
+            </div>
+
+            <button class="btn-3d btn-primary w-full text-xl mt-2" onclick="startGame()">
+                <i class="fas fa-play"></i> Let's Go!
+            </button>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: GAMEPLAY -->
+    <div id="scr-game" class="screen" style="padding: 0;">
+        <div class="info-bar">
+            <button class="btn-3d" style="background: #ef4444; padding: 6px 14px; font-size:0.9rem; box-shadow: 0 4px 0 #b91c1c;" onclick="goHome()"><i class="fas fa-arrow-left"></i> Setup</button>
+            <div class="target-display">🎯 Find: <span id="display-target" class="font-black text-2xl ml-2">A</span></div>
+        </div>
+
+        <div class="game-area">
+            <div class="grid-board" id="board">
+                <!-- Grid Cells injected via JS -->
+            </div>
+
+            <div class="d-pad-container">
+                <button class="d-btn d-up" id="btn-up" onclick="movePlayer(0, -1)"><i class="fas fa-arrow-up"></i></button>
+                <button class="d-btn d-left" id="btn-left" onclick="movePlayer(-1, 0)"><i class="fas fa-arrow-left"></i></button>
+                <div class="d-center"></div>
+                <button class="d-btn d-right" id="btn-right" onclick="movePlayer(1, 0)"><i class="fas fa-arrow-right"></i></button>
+                <button class="d-btn d-down" id="btn-down" onclick="movePlayer(0, 1)"><i class="fas fa-arrow-down"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: VICTORY -->
+    <div id="modal-win" class="modal-overlay">
+        <div class="modal-card">
+            <div class="text-6xl mb-4" id="win-emoji" style="display: flex; justify-content: center;"></div>
+            <h2 class="heading-title text-3xl text-green-500 mb-2">Awesome Job!</h2>
+            <p class="text-gray-600 font-bold mb-6">You found the right path!</p>
+            <button class="btn-3d btn-primary w-full text-xl" onclick="goHome()">Play Again</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// --- Custom SVG Avatars (Anikaritha SVG Avatarlu) ---
+const SVGS = {
+    ufo: `<svg viewBox="0 0 64 64" width="1em" height="1em"><ellipse cx="32" cy="38" rx="28" ry="10" fill="#94a3b8"/><path d="M16 34 C 16 14, 48 14, 48 34 Z" fill="#38bdf8" opacity="0.9"/><circle cx="32" cy="28" r="6" fill="#10b981"/><circle cx="20" cy="38" r="3" fill="#fcd34d"/><circle cx="32" cy="41" r="3" fill="#fcd34d"/><circle cx="44" cy="38" r="3" fill="#fcd34d"/></svg>`,
+    rocket: `<svg viewBox="0 0 64 64" width="1em" height="1em"><path d="M32 6 L42 24 L42 45 L32 55 L22 45 L22 24 Z" fill="#3b82f6"/><polygon points="22,45 10,55 22,35" fill="#ef4444"/><polygon points="42,45 54,55 42,35" fill="#ef4444"/><circle cx="32" cy="25" r="5" fill="white"/></svg>`,
+    car: `<svg viewBox="0 0 64 64" width="1em" height="1em"><path d="M10 40 L10 30 L20 20 L44 20 L54 30 L54 40 Z" fill="#ef4444"/><circle cx="20" cy="45" r="7" fill="#1e293b"/><circle cx="44" cy="45" r="7" fill="#1e293b"/><path d="M22 22 L42 22 L46 28 L18 28 Z" fill="#93c5fd"/></svg>`,
+    cat: `<svg viewBox="0 0 64 64" width="1em" height="1em"><circle cx="32" cy="36" r="20" fill="#f59e0b"/><polygon points="12,16 26,36 16,36" fill="#f59e0b"/><polygon points="52,16 38,36 48,36" fill="#f59e0b"/><circle cx="24" cy="32" r="3" fill="white"/><circle cx="24" cy="32" r="1.5" fill="black"/><circle cx="40" cy="32" r="3" fill="white"/><circle cx="40" cy="32" r="1.5" fill="black"/><polygon points="32,40 28,36 36,36" fill="#ef4444"/></svg>`,
+    dog: `<svg viewBox="0 0 64 64" width="1em" height="1em"><path d="M20 20 Q 32 10 44 20 L 44 44 Q 32 54 20 44 Z" fill="#854d0e"/><ellipse cx="14" cy="30" rx="6" ry="14" fill="#713f12"/><ellipse cx="50" cy="30" rx="6" ry="14" fill="#713f12"/><circle cx="26" cy="28" r="3" fill="white"/><circle cx="26" cy="28" r="1.5" fill="black"/><circle cx="38" cy="28" r="3" fill="white"/><circle cx="38" cy="28" r="1.5" fill="black"/><circle cx="32" cy="38" r="4" fill="black"/></svg>`
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-ufo').innerHTML = SVGS.ufo;
+    document.getElementById('btn-rocket').innerHTML = SVGS.rocket;
+    document.getElementById('btn-car').innerHTML = SVGS.car;
+    document.getElementById('btn-cat').innerHTML = SVGS.cat;
+    document.getElementById('btn-dog').innerHTML = SVGS.dog;
+    document.getElementById('win-emoji').innerHTML = SVGS.ufo;
+});
+
+// --- AUDIO ENGINE (Audio engine) ---
+let actx;
+function a(){ if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); return actx; }
+function tone(f,t,d,v=0.1, type='sine'){ 
+    try{ 
+        const c=a(), o=c.createOscillator(), g=c.createGain(); 
+        o.connect(g); g.connect(c.destination); 
+        o.type=type; o.frequency.value=f; 
+        g.gain.setValueAtTime(0,c.currentTime); 
+        g.gain.linearRampToValueAtTime(v,c.currentTime+0.02); 
+        g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d); 
+        o.start(c.currentTime); o.stop(c.currentTime+d+0.1); 
+    }catch(e){} 
+}
+function sfxMove(){ tone(600,'sine',0.1, 0.1); }
+function sfxBump(){ tone(150,'sawtooth',0.3, 0.2); }
+function sfxWin(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,'sine',0.3,0.15),i*120)); }
+
+document.addEventListener('click', () => a(), {once: true});
+
+// --- STATE (Sthithi) ---
+const GRID_SIZE = 5;
+let state = {
+    target: 'A',
+    mode: 'alpha', // 'alpha', 'num' or 'word'
+    avatar: 'ufo',
+    grid: [],      
+    playerX: 0,
+    playerY: 0,
+    targetX: 4,
+    targetY: 4,
+    locked: false,
+    sessionCounter: 0 
+};
+
+// --- SETUP (Eerpatu) ---
+window.setMode = function(m) {
+    state.mode = m;
+    const btnA = document.getElementById('btn-type-alpha');
+    const btnN = document.getElementById('btn-type-num');
+    const btnW = document.getElementById('btn-type-word');
+    
+    const activeBg = '#10b981', activeShadow = '0 5px 0 #059669', activeCol = 'white';
+    const inactiveBg = '#cbd5e1', inactiveShadow = '0 5px 0 #94a3b8', inactiveCol = '#475569';
+
+    btnA.style.background = m==='alpha'?activeBg:inactiveBg; btnA.style.boxShadow = m==='alpha'?activeShadow:inactiveShadow; btnA.style.color = m==='alpha'?activeCol:inactiveCol;
+    btnN.style.background = m==='num'?activeBg:inactiveBg; btnN.style.boxShadow = m==='num'?activeShadow:inactiveShadow; btnN.style.color = m==='num'?activeCol:inactiveCol;
+    btnW.style.background = m==='word'?activeBg:inactiveBg; btnW.style.boxShadow = m==='word'?activeShadow:inactiveShadow; btnW.style.color = m==='word'?activeCol:inactiveCol;
+
+    if(m === 'alpha') document.getElementById('inp-target').value = 'A';
+    if(m === 'num') document.getElementById('inp-target').value = '99';
+    if(m === 'word') document.getElementById('inp-target').value = 'CAT';
+    
+    tone(400,'sine',0.1);
+};
+
+window.setAvatar = function(key, btnEl) {
+    state.avatar = key;
+    document.querySelectorAll('.avatar-btn').forEach(btn => btn.classList.remove('active'));
+    btnEl.classList.add('active');
+    document.getElementById('win-emoji').innerHTML = SVGS[key];
+    tone(500,'sine',0.1);
+};
+
+window.goHome = function() {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('scr-setup').classList.add('active');
+    document.getElementById('modal-win').style.display = 'none';
+    state.locked = false;
+    tone(300,'triangle',0.1);
+};
+
+window.startGame = function() {
+    let rawInput = document.getElementById('inp-target').value.trim();
+    if(!rawInput) return;
+    
+    // Automatically uppercase words for consistency
+    state.target = state.mode === 'word' ? rawInput.toUpperCase() : rawInput; 
+    document.getElementById('display-target').innerText = state.target;
+    
+    // Reset seed deterministically (Khachitaminatvanni nirdharinchadam koraku seed reset cheyandi)
+    state.sessionCounter++;
+    window.setSeed(roomId + "_" + state.sessionCounter);
+    
+    generateGrid();
+    
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('scr-game').classList.add('active');
+    tone(600,'sine',0.2);
+};
+
+// --- GAME LOGIC (Game tharkam) ---
+function getNoise() {
+    if (state.mode === 'num') {
+        const len = state.target.length;
+        let n = '';
+        // Generate a random number of the same length (Ade podavu gala random number generate cheyandi)
+        for(let i=0; i<len; i++) {
+            n += Math.floor(window.seededRandom() * 10);
+        }
+        return n === state.target ? getNoise() : n;
+    } 
+    else if (state.mode === 'word') {
+        // Predefined list of simple kid words (Pillala padala jabita)
+        const words = ["DOG", "BAT", "SUN", "PEN", "HAT", "RAT", "BOX", "CAR", "FOX", "ANT", "COW", "PIG", "OWL", "BUG", "CUP", "BUS"];
+        let w = words[Math.floor(window.seededRandom() * words.length)];
+        return w === state.target ? getNoise() : w;
+    } 
+    else {
+        const alphas = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        let char = alphas[Math.floor(window.seededRandom() * alphas.length)];
+        return char === state.target ? getNoise() : char;
+    }
+}
+
+function generateGrid() {
+    state.grid = [];
+    state.playerX = 0;
+    state.playerY = 0;
+    
+    // Randomize target location (Target sthananni randomize cheyandi)
+    do {
+        state.targetX = Math.floor(window.seededRandom() * GRID_SIZE);
+        state.targetY = Math.floor(window.seededRandom() * GRID_SIZE);
+    } while (state.targetX === 0 && state.targetY === 0);
+
+    // Creates an L-shaped clear path (L-aakara clear path srushtisthundi)
+    let safePath = new Set();
+    let cx = 0, cy = 0;
+    
+    // Force immediate surroundings to be empty (Chuttu pakkala khaaliga unchandi)
+    safePath.add(`0,0`);
+    safePath.add(`1,0`);
+    safePath.add(`0,1`);
+    safePath.add(`1,1`);
+    
+    while(cx !== state.targetX || cy !== state.targetY) {
+        if (window.seededRandom() > 0.5) {
+            if (cx < state.targetX) cx++;
+            else if (cx > state.targetX) cx--;
+            else if (cy < state.targetY) cy++;
+            else if (cy > state.targetY) cy--;
+        } else {
+            if (cy < state.targetY) cy++;
+            else if (cy > state.targetY) cy--;
+            else if (cx < state.targetX) cx++;
+            else if (cx > state.targetX) cx--;
+        }
+        safePath.add(`${cx},${cy}`);
+    }
+
+    const boardEl = document.getElementById('board');
+    boardEl.innerHTML = '';
+
+    for (let y = 0; y < GRID_SIZE; y++) {
+        let row = [];
+        for (let x = 0; x < GRID_SIZE; x++) {
+            const cell = document.createElement('div');
+            cell.id = `cell-${x}-${y}`;
+            cell.className = 'grid-cell';
+            
+            let val = '';
+            
+            if (x === state.targetX && y === state.targetY) {
+                val = state.target;
+                // 🌟 .target-cell class can stay for logic, but CSS styling is removed
+                cell.classList.add('target-cell');
+            } else if (safePath.has(`${x},${y}`)) {
+                val = ''; 
+            } else {
+                if (window.seededRandom() > 0.8) {
+                    val = getNoise();
+                    cell.classList.add('decoy-cell');
+                }
+            }
+            
+            cell.innerText = val;
+            boardEl.appendChild(cell);
+            row.push(val);
+        }
+        state.grid.push(row);
+    }
+
+    updatePlayerPosition();
+}
+
+function updatePlayerPosition() {
+    // 1. Remove player from all cells (Anni cell la nundi player ni theesiveyandi)
+    document.querySelectorAll('.cell-avatar').forEach(el => el.remove());
+    
+    // 2. Add player to the current cell (Prasthutha cell ki player ni add cheyandi)
+    const currentCell = document.getElementById(`cell-${state.playerX}-${state.playerY}`);
+    if (currentCell) {
+        const playerHtml = `<span class="cell-avatar" id="player-sprite">${SVGS[state.avatar]}</span>`;
+        if (currentCell.innerText.trim() !== '') {
+             currentCell.innerHTML = playerHtml; 
+        } else {
+             currentCell.innerHTML = playerHtml;
+        }
+    }
+}
+
+window.movePlayer = function(dx, dy) {
+    if(state.locked) return;
+
+    let nx = state.playerX + dx;
+    let ny = state.playerY + dy;
+
+    // Wall Check (Goda check)
+    if(nx < 0 || nx >= GRID_SIZE || ny < 0 || ny >= GRID_SIZE) {
+        sfxBump();
+        bumpAnimation();
+        return;
+    }
+
+    let targetVal = state.grid[ny][nx];
+
+    // Decoy Check (Thappu option check)
+    if(targetVal !== '' && targetVal !== state.target) {
+        sfxBump();
+        bumpAnimation();
+        const cell = document.getElementById(`cell-${nx}-${ny}`);
+        if(cell) {
+            cell.style.background = '#fecdd3'; 
+            setTimeout(() => cell.style.background = 'white', 300);
+        }
+        return;
+    }
+
+    // Move is valid (Kadhalika sarinadi)
+    const oldCell = document.getElementById(`cell-${state.playerX}-${state.playerY}`);
+    if (state.grid[state.playerY][state.playerX] === state.target) {
+        oldCell.innerText = state.target;
+    } else {
+        oldCell.innerText = '';
+    }
+
+    state.playerX = nx;
+    state.playerY = ny;
+    updatePlayerPosition();
+
+    // Win Check (Gelupu check)
+    if(state.playerX === state.targetX && state.playerY === state.targetY) {
+        state.locked = true;
+        sfxWin();
+        setTimeout(() => {
+            document.getElementById('modal-win').style.display = 'flex';
+            cft();
+        }, 500);
+    } else {
+        sfxMove();
+    }
+};
+
+function bumpAnimation() {
+    const p = document.getElementById('player-sprite');
+    if(p) {
+        p.classList.remove('bump-anim');
+        void p.offsetWidth;
+        p.classList.add('bump-anim');
+    }
+}
+
+function cft() {
+    const end = Date.now() + 2500;
+    const cols = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6'];
+    (function f() {
+        try {
+            confetti({ particleCount:10, angle:60,  spread:55, origin:{x:0}, colors:cols, zIndex: 1000 });
+            confetti({ particleCount:10, angle:120, spread:55, origin:{x:1}, colors:cols, zIndex: 1000 });
+        } catch(e){}
+        if (Date.now() < end) requestAnimationFrame(f);
+    })();
+}
+</script>
+</body>
+</html>

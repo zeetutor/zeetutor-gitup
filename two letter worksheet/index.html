@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LiveTutor — Two Letter Blend</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #0b0f19;
+            overflow: hidden;
+        }
+        .font-fredoka {
+            font-family: 'Fredoka One', cursive;
+        }
+        #worksheet-canvas {
+            touch-action: none;
+        }
+        .active-card {
+            border-color: #6366f1 !important;
+            background: rgba(99, 102, 241, 0.15) !important;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+        }
+    </style>
+</head>
+<body class="text-slate-200 h-screen w-screen flex flex-col select-none">
+
+    <!-- COMPACT HEADER ROW -->
+    <header class="bg-slate-900 border-b border-slate-800 px-3 py-1.5 flex justify-between items-center shrink-0 z-50 shadow-md">
+        <div class="flex items-center gap-2">
+            <span class="text-indigo-400 font-fredoka text-sm tracking-wide">🔤 Two Letter Blend</span>
+            <span id="room-badge" class="px-2 py-0.5 bg-indigo-950/80 text-indigo-300 rounded-lg text-[10px] font-mono font-bold border border-indigo-900/50 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                Room: <strong id="room-code-display" class="text-white">7890</strong>
+            </span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span id="selected-worksheet-name" class="text-slate-400 text-xs font-semibold max-w-[120px] md:max-w-[200px] truncate">No Blend Selected</span>
+            <button id="btn-back" onclick="goToSelectionScreen()" class="hidden px-2.5 py-1 bg-rose-900 hover:bg-rose-800 text-white rounded-lg text-[11px] font-bold transition flex items-center gap-1">
+                <i data-lucide="arrow-left" class="w-3 h-3"></i> List
+            </button>
+            <button onclick="openJsonModal()" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[11px] font-bold transition flex items-center gap-1">
+                <i data-lucide="file-json" class="w-3 h-3"></i> Manage JSON
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN FLOW CONTAINER -->
+    <main class="flex-1 flex flex-col relative overflow-hidden">
+
+        <!-- SCREEN 1: SIMPLE FILE LIST SELECTOR -->
+        <section id="selection-screen" class="absolute inset-0 z-30 bg-[#0b0f19] flex flex-col p-4 overflow-y-auto">
+            <div class="max-w-4xl mx-auto w-full">
+                <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-fredoka text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+                            Two Letter Blend Worksheet
+                        </h2>
+                        <p class="text-slate-400 text-xs md:text-sm mt-1">Select a blend image to open the drawing board.</p>
+                    </div>
+                    <button onclick="openJsonModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Blends & Build JSON
+                    </button>
+                </div>
+
+                <!-- File checklist grid -->
+                <div id="file-selector-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: ACTIVE FULL-SIZED WORKSPACE VIEW -->
+        <section id="drawing-view-screen" class="flex-1 flex flex-col min-h-0 relative bg-slate-950 opacity-40 pointer-events-none transition-opacity duration-300">
+            
+            <!-- TOOLBAR -->
+            <div id="control-toolbar" class="bg-slate-900/95 border-b border-slate-800 p-1 md:p-1.5 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0 shadow-md">
+                
+                <!-- Tool Selector Buttons -->
+                <div class="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
+                    <button id="tool-pen" onclick="selectTool('pen')" class="px-2 py-1 rounded-md text-[10px] md:text-xs font-bold transition flex items-center gap-1">
+                        <i data-lucide="pen-tool" class="w-3 h-3"></i> Pen
+                    </button>
+                    <button id="tool-rainbow" onclick="selectTool('rainbow')" class="px-2 py-1 rounded-md text-[10px] md:text-xs font-bold transition flex items-center gap-1">
+                        <i data-lucide="wand-2" class="w-3 h-3"></i> Rainbow
+                    </button>
+                    <button id="tool-eraser" onclick="selectTool('eraser')" class="px-2 py-1 rounded-md text-[10px] md:text-xs font-bold transition flex items-center gap-1">
+                        <i data-lucide="eraser" class="w-3 h-3"></i> Eraser
+                    </button>
+                </div>
+
+                <!-- Brush Thickness Settings -->
+                <div class="flex items-center bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 gap-1.5 shrink-0">
+                    <i data-lucide="paint-bucket" class="w-3 h-3.5 text-slate-400"></i>
+                    <input type="range" id="brush-thickness-slider" min="2" max="25" value="4" oninput="updateThickness(this.value)" class="w-16 md:w-24 accent-indigo-500 h-1 bg-slate-900 rounded-lg cursor-pointer">
+                    <span id="thickness-display" class="text-[10px] font-mono font-bold text-indigo-300 min-w-[24px]">4px</span>
+                </div>
+
+                <!-- Color Palette -->
+                <div id="color-palette" class="flex items-center gap-1 shrink-0"></div>
+
+                <!-- Zoom & Operation Controls -->
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex items-center bg-slate-950 px-1.5 py-0.5 rounded-lg border border-slate-800 gap-1">
+                        <button id="btn-zoom-out" onclick="adjustZoom(-0.25)" class="p-1 hover:text-white text-slate-400 transition" title="Zoom Out">
+                            <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <span id="zoom-indicator" class="text-[10px] font-bold font-mono min-w-[28px] text-center">100%</span>
+                        <button id="btn-zoom-in" onclick="adjustZoom(0.25)" class="p-1 hover:text-white text-slate-400 transition" title="Zoom In">
+                            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button id="btn-zoom-reset" onclick="resetZoom()" class="p-1 hover:text-white text-indigo-400 transition" title="Fit Screen">
+                            <i data-lucide="maximize" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+
+                    <button id="btn-undo" onclick="executeUndo()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition" title="Undo Stroke">
+                        <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button id="btn-clear" onclick="executeClear()" class="p-1.5 bg-rose-950/50 hover:bg-rose-900 text-rose-300 rounded-lg border border-rose-900/40 transition" title="Clear Canvas">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CANVAS WRAPPER -->
+            <div id="worksheet-viewport" class="flex-1 relative overflow-auto bg-slate-950 p-0 m-0 w-full h-full">
+                <div id="canvas-container" class="w-full h-full absolute inset-0 origin-center transition-transform duration-100">
+                    <img id="worksheet-img" class="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" src="" alt="Two Letter Blend Worksheet">
+                    <canvas id="worksheet-canvas" class="absolute inset-0 w-full h-full z-10" style="touch-action: none;"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ==================== JSON BUILDER MODAL ==================== -->
+    <div id="json-modal" class="fixed inset-0 bg-slate-950/90 z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
+                <h3 class="font-fredoka text-amber-400 text-lg">Two Letter Blend Images to JSON Generator</h3>
+                <button onclick="closeJsonModal()" class="text-slate-400 hover:text-white font-bold">✕</button>
+            </div>
+
+            <div class="p-4 overflow-y-auto space-y-4 flex-1 text-xs md:text-sm">
+                <!-- Direct Image Uploader Box -->
+                <div class="bg-slate-950 border border-dashed border-indigo-500/50 p-5 rounded-2xl text-center flex flex-col items-center justify-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-8 h-8 text-indigo-400"></i>
+                    <p class="font-bold text-white">Upload Blend Worksheet Images (JPG / PNG)</p>
+                    <p class="text-[11px] text-slate-400">Select images to convert them directly into Base64 format.</p>
+                    <label class="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs cursor-pointer">
+                        Browse Images
+                        <input type="file" accept="image/*" multiple class="hidden" onchange="handleMultipleImageUpload(event)">
+                    </label>
+                </div>
+
+                <!-- Deck Summary -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="font-fredoka text-white text-sm">Loaded Blends (<span id="json-item-count">0</span>)</p>
+                        <button onclick="clearAllWorksheets()" class="text-rose-400 text-xs font-bold hover:underline">Erase All</button>
+                    </div>
+                    <div id="json-items-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <!-- Footer Operations -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950 flex flex-wrap gap-2 justify-between items-center">
+                <div class="flex gap-2">
+                    <label class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-2 rounded-xl text-xs cursor-pointer border border-slate-700">
+                        Import JSON
+                        <input type="file" accept=".json,application/json" class="hidden" onchange="importManifestFile(event)">
+                    </label>
+                    <button onclick="downloadManifestFile()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-xl text-xs border border-emerald-400">
+                        Download manifest.json
+                    </button>
+                </div>
+                <button onclick="closeJsonModal()" class="bg-slate-800 text-slate-300 font-bold px-4 py-2 rounded-xl text-xs">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. Room Seed & Setup
+        // ==========================================
+        let roomId = "1234";
+        const urlHash = window.location.hash || window.location.search;
+        const roomMatch = urlHash.match(/[#&]room=([^&]+)/);
+        if (roomMatch) {
+            roomId = roomMatch[1];
+        }
+        document.getElementById('room-code-display').innerText = roomId;
+
+        (function installSeededRNG() {
+            let seed = 0;
+            for (let i = 0; i < roomId.length; i++) {
+                seed = (seed + roomId.charCodeAt(i)) | 0;
+            }
+            Math.random = function() {
+                let t = seed += 0x6D2B79F5;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        })();
+
+        // ==========================================
+        // 2. Worksheet Deck State
+        // ==========================================
+        let worksheetDeck = []; // { id, display, dataUri }
+        let activeWorksheetId = "";
+        let isDrawing = false;
+        let activeTool = 'pen'; 
+        let brushColor = '#3b82f6'; 
+        let brushThickness = 4;
+        let rainbowHue = 0;
+        let zoomScale = 1.0;
+
+        let strokeHistory = []; 
+        let currentStroke = null;
+        let remoteStrokes = {}; 
+        let lastStrokeSendTime = 0;
+        window.isSimulating = false;
+
+        const canvas = document.getElementById('worksheet-canvas');
+        const ctx = canvas.getContext('2d');
+        const imgNode = document.getElementById('worksheet-img');
+
+        const colorsList = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ffffff'];
+
+        // ==========================================
+        // 3. Lifecycle Initialization
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            buildColorsPalette();
+            loadManifestOnBoot();
+            
+            window.addEventListener('resize', handleDelayedResize);
+            window.addEventListener('orientationchange', handleDelayedResize);
+            
+            canvas.addEventListener('pointerdown', onPointerDown);
+            canvas.addEventListener('pointermove', onPointerMove);
+            canvas.addEventListener('pointerup', onPointerUp);
+            canvas.addEventListener('pointercancel', onPointerUp);
+        });
+
+        // ==========================================
+        // 4. Manifest Boot & Fallback
+        // ==========================================
+        async function loadManifestOnBoot() {
+            try {
+                const response = await fetch('./manifest.json');
+                if (!response.ok) throw new Error("Manifest load failed");
+                const list = await response.json();
+                if (Array.isArray(list) && list.length) {
+                    worksheetDeck = list;
+                } else {
+                    useDefaultMockBlends();
+                }
+            } catch (err) {
+                useDefaultMockBlends();
+            }
+            buildFileSelectorList();
+            renderModalList();
+        }
+
+        function useDefaultMockBlends() {
+            const defaults = ["Blend AT", "Blend AN", "Blend IN", "Blend OP"];
+            worksheetDeck = defaults.map((title, i) => ({
+                id: 'blend_' + (i + 1),
+                display: title,
+                dataUri: ""
+            }));
+        }
+
+        // ==========================================
+        // 5. UI Palette & Selection Grid
+        // ==========================================
+        function buildColorsPalette() {
+            const container = document.getElementById('color-palette');
+            container.innerHTML = '';
+            colorsList.forEach(color => {
+                const btn = document.createElement('button');
+                btn.id = `swatch-${color.replace('#', '')}`;
+                btn.style.backgroundColor = color;
+                btn.className = "w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-transparent hover:scale-110 active:scale-95 transition shadow-sm";
+                btn.onclick = () => selectColor(color);
+                container.appendChild(btn);
+            });
+            selectColor(brushColor);
+        }
+
+        function buildFileSelectorList() {
+            const grid = document.getElementById('file-selector-grid');
+            grid.innerHTML = '';
+            
+            worksheetDeck.forEach(item => {
+                const card = document.createElement('button');
+                card.id = `card-${item.id}`;
+                card.className = "bg-slate-900 border border-slate-800 rounded-xl p-4 text-center hover:border-indigo-500 hover:bg-slate-800/50 transition-all duration-200 flex flex-col items-center justify-center gap-2 group min-h-[100px]";
+                card.onclick = () => selectWorksheetLocal(item);
+
+                const thumbnail = item.dataUri
+                    ? `<img src="${item.dataUri}" class="w-10 h-10 object-cover rounded-lg"/>`
+                    : `<div class="w-10 h-10 rounded-lg bg-slate-950 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition"><i data-lucide="file-text" class="w-5 h-5"></i></div>`;
+
+                card.innerHTML = `
+                    ${thumbnail}
+                    <span class="font-bold text-xs text-slate-200 group-hover:text-white tracking-wide truncate max-w-full">${item.display}</span>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function selectColor(color) {
+            brushColor = color;
+            colorsList.forEach(c => {
+                const node = document.getElementById(`swatch-${c.replace('#', '')}`);
+                if (node) {
+                    if (c === color) {
+                        node.classList.add('border-white', 'ring-2', 'ring-indigo-500/50', 'scale-110');
+                    } else {
+                        node.classList.remove('border-white', 'ring-2', 'ring-indigo-500/50', 'scale-110');
+                    }
+                }
+            });
+            if (activeTool === 'eraser' || activeTool === 'rainbow') {
+                selectTool('pen');
+            }
+        }
+
+        function selectTool(tool) {
+            activeTool = tool;
+            ['pen', 'rainbow', 'eraser'].forEach(t => {
+                const btn = document.getElementById(`tool-${t}`);
+                if (t === tool) {
+                    btn.className = "px-2 py-1 rounded-md text-[10px] md:text-xs font-bold transition flex items-center gap-1 bg-indigo-600 text-white shadow";
+                } else {
+                    btn.className = "px-2 py-1 rounded-md text-[10px] md:text-xs font-bold transition flex items-center gap-1 bg-slate-900 text-slate-400 hover:text-slate-200";
+                }
+            });
+
+            const palette = document.getElementById('color-palette');
+            if (tool === 'pen') {
+                palette.classList.remove('opacity-20', 'pointer-events-none');
+                selectColor(brushColor);
+            } else {
+                palette.classList.add('opacity-20', 'pointer-events-none');
+            }
+        }
+
+        function updateThickness(val) {
+            brushThickness = parseInt(val);
+            document.getElementById('thickness-display').innerText = `${val}px`;
+            sendStateAction('CANVAS_THICKNESS_CHANGE', { thickness: brushThickness });
+        }
+
+        // ==========================================
+        // 6. Dual-Master PostMessage Communication
+        // ==========================================
+        function sendStateAction(type, payload = {}) {
+            if (window.isSimulating) return; 
+            const actionId = 'canvas_act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+            
+            window.parent.postMessage({
+                type: 'IFRAME_ACTION_TRIGGERED',
+                payload: {
+                    type: type,
+                    actionId: actionId,
+                    ...payload
+                }
+            }, '*');
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data?.type === 'EXECUTE_UNIVERSAL_ACTION') {
+                const action = e.data.action;
+                window.isSimulating = true;
+                try {
+                    handleReplayPacket(action);
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    window.isSimulating = false;
+                }
+            }
+        });
+
+        function handleReplayPacket(action) {
+            switch(action.type) {
+                case 'SELECT_WORKSHEET':
+                    const foundItem = worksheetDeck.find(f => f.id === action.id || f.display === action.display);
+                    if (foundItem) loadWorksheetIntoView(foundItem);
+                    break;
+                case 'BACK_TO_GALLERY':
+                    goToSelectionScreenLocal();
+                    break;
+                case 'CANVAS_THICKNESS_CHANGE':
+                    brushThickness = action.thickness;
+                    document.getElementById('brush-thickness-slider').value = action.thickness;
+                    document.getElementById('thickness-display').innerText = `${action.thickness}px`;
+                    break;
+                case 'CANVAS_STROKE_START':
+                    remoteStrokes[action.strokeId] = {
+                        type: action.toolType,
+                        color: action.color,
+                        thickness: action.thickness,
+                        points: [{ pctX: action.pctX, pctY: action.pctY, color: action.pointColor }]
+                    };
+                    redrawCanvasLayers();
+                    break;
+                case 'CANVAS_STROKE_MOVE':
+                    if (remoteStrokes[action.strokeId]) {
+                        remoteStrokes[action.strokeId].points.push({
+                            pctX: action.pctX,
+                            pctY: action.pctY,
+                            color: action.pointColor
+                        });
+                        redrawCanvasLayers();
+                    }
+                    break;
+                case 'CANVAS_STROKE_END':
+                    if (remoteStrokes[action.strokeId]) {
+                        strokeHistory.push(remoteStrokes[action.strokeId]);
+                        delete remoteStrokes[action.strokeId];
+                        redrawCanvasLayers();
+                    }
+                    break;
+                case 'CANVAS_UNDO':
+                    strokeHistory.pop();
+                    redrawCanvasLayers();
+                    break;
+                case 'CANVAS_CLEAR':
+                    strokeHistory = [];
+                    remoteStrokes = {};
+                    redrawCanvasLayers();
+                    break;
+            }
+        }
+
+        // ==========================================
+        // 7. Navigation & Viewport Routing
+        // ==========================================
+        function selectWorksheetLocal(item) {
+            loadWorksheetIntoView(item);
+            sendStateAction('SELECT_WORKSHEET', { id: item.id, display: item.display });
+        }
+
+        function loadWorksheetIntoView(item) {
+            activeWorksheetId = item.id;
+            strokeHistory = [];
+            remoteStrokes = {};
+            zoomScale = 1.0;
+            updateZoomUI();
+
+            document.getElementById('selection-screen').classList.add('hidden');
+            const drawScreen = document.getElementById('drawing-view-screen');
+            drawScreen.classList.remove('opacity-40', 'pointer-events-none');
+            document.getElementById('btn-back').classList.remove('hidden');
+            document.getElementById('selected-worksheet-name').innerText = item.display;
+
+            worksheetDeck.forEach(f => {
+                const node = document.getElementById(`card-${f.id}`);
+                if (node) {
+                    if (f.id === item.id) node.classList.add('active-card');
+                    else node.classList.remove('active-card');
+                }
+            });
+
+            imgNode.onload = () => realignWorkspaceBounds();
+            imgNode.onerror = () => {
+                imgNode.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" style="background-color:%23ffffff;"><rect width="100%" height="100%" fill="%23ffffff"/><text x="400" y="300" font-family="'Fredoka One', sans-serif" font-weight="900" font-size="36" fill="%2394a3b8" text-anchor="middle">${item.display}</text><text x="400" y="350" font-family="'Nunito', sans-serif" font-size="20" fill="%23cbd5e1" text-anchor="middle">Ready to Blend!</text></svg>`;
+            };
+
+            imgNode.src = item.dataUri || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" style="background-color:%23ffffff;"><rect width="100%" height="100%" fill="%23ffffff"/><text x="400" y="300" font-family="'Fredoka One', sans-serif" font-weight="900" font-size="36" fill="%2394a3b8" text-anchor="middle">${item.display}</text></svg>`;
+        }
+
+        function goToSelectionScreen() {
+            goToSelectionScreenLocal();
+            sendStateAction('BACK_TO_GALLERY');
+        }
+
+        function goToSelectionScreenLocal() {
+            document.getElementById('selection-screen').classList.remove('hidden');
+            const drawScreen = document.getElementById('drawing-view-screen');
+            drawScreen.classList.add('opacity-40', 'pointer-events-none');
+            document.getElementById('btn-back').classList.add('hidden');
+            document.getElementById('selected-worksheet-name').innerText = "No Blend Selected";
+        }
+
+        let resizeTimeout;
+        function handleDelayedResize() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => realignWorkspaceBounds(), 80);
+        }
+
+        function realignWorkspaceBounds() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            redrawCanvasLayers();
+        }
+
+        function adjustZoom(amount) {
+            zoomScale += amount;
+            if (zoomScale < 0.5) zoomScale = 0.5;
+            if (zoomScale > 3.0) zoomScale = 3.0;
+            updateZoomUI();
+        }
+
+        function resetZoom() {
+            zoomScale = 1.0;
+            updateZoomUI();
+        }
+
+        function updateZoomUI() {
+            const container = document.getElementById('canvas-container');
+            if (container) container.style.transform = `scale(${zoomScale})`;
+            document.getElementById('zoom-indicator').innerText = `${Math.round(zoomScale * 100)}%`;
+        }
+
+        // ==========================================
+        // 8. Pointer Event Calculations & Drawing
+        // ==========================================
+        function getComputedPercentages(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+            
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const pctX = (x / rect.width) * 100;
+            const pctY = (y / rect.height) * 100;
+            return { pctX, pctY };
+        }
+
+        function onPointerDown(e) {
+            if (e.button && e.button !== 0) return;
+            isDrawing = true;
+            canvas.setPointerCapture(e.pointerId);
+
+            const { pctX, pctY } = getComputedPercentages(e);
+            const strokeId = 'str_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+            let ptColor = brushColor;
+            if (activeTool === 'rainbow') {
+                rainbowHue = (rainbowHue + 3) % 360;
+                ptColor = `hsl(${rainbowHue}, 100%, 50%)`;
+            }
+
+            currentStroke = {
+                type: activeTool,
+                color: activeTool === 'eraser' ? 'transparent' : brushColor,
+                thickness: brushThickness,
+                strokeId: strokeId,
+                points: [{ pctX, pctY, color: ptColor }]
+            };
+
+            redrawCanvasLayers();
+
+            sendStateAction('CANVAS_STROKE_START', {
+                pctX: pctX,
+                pctY: pctY,
+                color: currentStroke.color,
+                thickness: currentStroke.thickness,
+                toolType: activeTool,
+                pointColor: ptColor,
+                strokeId: strokeId
+            });
+        }
+
+        function onPointerMove(e) {
+            if (!isDrawing || !currentStroke) return;
+
+            const { pctX, pctY } = getComputedPercentages(e);
+
+            let ptColor = brushColor;
+            if (activeTool === 'rainbow') {
+                rainbowHue = (rainbowHue + 3) % 360;
+                ptColor = `hsl(${rainbowHue}, 100%, 50%)`;
+            }
+
+            currentStroke.points.push({ pctX, pctY, color: ptColor });
+            redrawCanvasLayers();
+
+            const now = Date.now();
+            if (now - lastStrokeSendTime > 40) {
+                lastStrokeSendTime = now;
+                sendStateAction('CANVAS_STROKE_MOVE', {
+                    pctX: pctX,
+                    pctY: pctY,
+                    pointColor: ptColor,
+                    strokeId: currentStroke.strokeId
+                });
+            }
+        }
+
+        function onPointerUp(e) {
+            if (!isDrawing || !currentStroke) return;
+            isDrawing = false;
+            try { canvas.releasePointerCapture(e.pointerId); } catch(err) {}
+
+            const { pctX, pctY } = getComputedPercentages(e);
+
+            sendStateAction('CANVAS_STROKE_END', {
+                pctX: pctX,
+                pctY: pctY,
+                strokeId: currentStroke.strokeId
+            });
+
+            strokeHistory.push(currentStroke);
+            currentStroke = null;
+            redrawCanvasLayers();
+        }
+
+        function redrawCanvasLayers() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            strokeHistory.forEach(stroke => renderPath(stroke));
+            if (currentStroke) renderPath(currentStroke);
+            Object.values(remoteStrokes).forEach(stroke => {
+                if (stroke) renderPath(stroke);
+            });
+        }
+
+        function renderPath(stroke) {
+            if (!stroke.points || stroke.points.length === 0) return;
+
+            ctx.beginPath();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = stroke.thickness;
+
+            if (stroke.type === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
+            const start = stroke.points[0];
+            const startX = (start.pctX / 100) * canvas.width;
+            const startY = (start.pctY / 100) * canvas.height;
+
+            ctx.moveTo(startX, startY);
+
+            if (stroke.points.length === 1) {
+                ctx.lineTo(startX, startY);
+                ctx.strokeStyle = stroke.type === 'rainbow' ? start.color : stroke.color;
+                ctx.stroke();
+            } else {
+                for (let i = 1; i < stroke.points.length; i++) {
+                    const pt = stroke.points[i];
+                    const x = (pt.pctX / 100) * canvas.width;
+                    const y = (pt.pctY / 100) * canvas.height;
+                    
+                    ctx.lineTo(x, y);
+                    
+                    if (stroke.type === 'rainbow') {
+                        ctx.strokeStyle = pt.color;
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                    }
+                }
+                if (stroke.type !== 'rainbow') {
+                    ctx.strokeStyle = stroke.color;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function executeUndo() {
+            strokeHistory.pop();
+            redrawCanvasLayers();
+            sendStateAction('CANVAS_UNDO');
+        }
+
+        function executeClear() {
+            strokeHistory = [];
+            remoteStrokes = {};
+            redrawCanvasLayers();
+            sendStateAction('CANVAS_CLEAR');
+        }
+
+        // ==========================================
+        // 9. Image-to-JSON Generator Modal Logic
+        // ==========================================
+        function openJsonModal() {
+            renderModalList();
+            document.getElementById('json-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeJsonModal() {
+            document.getElementById('json-modal').classList.add('hidden');
+            buildFileSelectorList();
+        }
+
+        function handleMultipleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+
+            let loaded = 0;
+            files.forEach(file => {
+                const reader = new FileReader();
+                const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, ' ');
+
+                reader.onload = () => {
+                    worksheetDeck.push({
+                        id: 'blend_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                        display: cleanName,
+                        dataUri: reader.result
+                    });
+                    loaded++;
+                    if (loaded === files.length) {
+                        renderModalList();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderModalList() {
+            const list = document.getElementById('json-items-list');
+            document.getElementById('json-item-count').innerText = worksheetDeck.length;
+            
+            list.innerHTML = worksheetDeck.map((item, idx) => `
+                <div class="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        ${item.dataUri ? `<img src="${item.dataUri}" class="w-8 h-8 rounded object-cover shrink-0"/>` : `<div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center shrink-0">📄</div>`}
+                        <input type="text" value="${item.display}" onchange="updateDeckTitle(${idx}, this.value)" class="bg-slate-900 border border-slate-700 px-2 py-1 rounded text-white font-bold text-xs truncate">
+                    </div>
+                    <button onclick="removeDeckItem(${idx})" class="text-rose-400 font-bold hover:text-rose-300 text-xs px-2 py-1">Delete</button>
+                </div>
+            `).join('') || '<p class="text-slate-600 text-center py-4">No blend images loaded yet.</p>';
+        }
+
+        function updateDeckTitle(idx, newTitle) {
+            if (worksheetDeck[idx]) {
+                worksheetDeck[idx].display = newTitle.trim() || `Blend ${idx + 1}`;
+            }
+        }
+
+        function removeDeckItem(idx) {
+            worksheetDeck.splice(idx, 1);
+            renderModalList();
+        }
+
+        function clearAllWorksheets() {
+            if (!confirm('Erase all blend worksheets in the list?')) return;
+            worksheetDeck = [];
+            renderModalList();
+        }
+
+        function importManifestFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const parsed = JSON.parse(reader.result);
+                    if (Array.isArray(parsed) && parsed.length) {
+                        worksheetDeck = parsed;
+                        renderModalList();
+                        buildFileSelectorList();
+                        alert('manifest.json loaded successfully!');
+                    }
+                } catch(e) {
+                    alert('Invalid JSON format');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function downloadManifestFile() {
+            if (!worksheetDeck.length) return alert('No blend worksheets to export.');
+            const blob = new Blob([JSON.stringify(worksheetDeck, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'manifest.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+    </script>
+</body>
+</html>

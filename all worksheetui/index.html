@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LiveTutor Phonics Worksheet App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Fredoka One and Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+    
+    <!-- Canvas Confetti for rewards -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Firebase Compat v11.6.1 SDKs -->
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f7efe5;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+        h1, h2, h3, h4, .brand-font {
+            font-family: 'Fredoka', sans-serif;
+        }
+        /* Custom styled scrollbars for dynamic grids */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1ebd9;
+            border-radius: 99px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbb29a;
+            border-radius: 99px;
+        }
+        
+        /* Premium Skeuomorphic Depth & Tactile Elements */
+        .kid-card {
+            border: 4px solid #3c1e08;
+            box-shadow: 0 8px 0px 0px #3c1e08;
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .kid-card:hover {
+            transform: translateY(2px);
+            box-shadow: 0 6px 0px 0px #3c1e08;
+        }
+        .kid-card:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0px 0px #3c1e08;
+        }
+        .kid-btn {
+            border: 3px solid #3c1e08;
+            box-shadow: 0 5px 0px 0px #3c1e08;
+            transition: all 0.1s ease;
+        }
+        .kid-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0px 0px #3c1e08;
+        }
+        .kid-btn-active {
+            transform: translateY(3px) !important;
+            box-shadow: 0 2px 0px 0px #3c1e08 !important;
+            background-color: #fbcfe8 !important; /* Soft active pink */
+        }
+        
+        /* Dotted Phonics Trace Letter Styles */
+        .dotted-letter {
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+            color: transparent;
+            -webkit-text-stroke: 4px #93c5fd;
+            stroke-dasharray: 12, 12;
+            text-shadow: none;
+        }
+        
+        /* Rainbow text micro-animation */
+        .rainbow-text {
+            background-image: linear-gradient(to left, violet, indigo, blue, green, #eab308, orange, red);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 400% 100%;
+            animation: rainbow 8s linear infinite;
+        }
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 400% 50%; }
+        }
+        
+        /* Error Shake Animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+        
+        /* Lined worksheet background effect */
+        .worksheet-lined {
+            background-color: #ffffff;
+            background-image: linear-gradient(#e0f2fe 1px, transparent 1px);
+            background-size: 100% 2.5rem;
+        }
+
+        /* Phone mockup/wrapper style parameters for responsive screens */
+        .app-mobile-frame {
+            max-width: 480px;
+            max-height: 920px;
+            border-radius: 40px;
+            border: 12px solid #3c1e08;
+            box-shadow: 0 20px 50px rgba(60, 30, 8, 0.15);
+        }
+    </style>
+</head>
+<body class="h-full flex items-center justify-center p-0 sm:p-4 text-[#3c1e08] selection:bg-pink-200">
+
+    <!-- Premium Mobile Wrapper / Adaptive Framework Viewport Container -->
+    <div class="w-full h-full sm:h-[95vh] sm:max-h-[880px] sm:max-w-[450px] sm:rounded-[36px] sm:border-8 sm:border-[#3c1e08] bg-[#fbf5ed] flex flex-col overflow-hidden relative shadow-2xl transition-all duration-300">
+        
+        <!-- App Header Bar -->
+        <header class="bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 border-b-4 border-[#3c1e08] p-3 flex flex-col gap-2 shrink-0 z-40">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 bg-white rounded-full flex items-center justify-center border-2 border-[#3c1e08] shadow-sm transform -rotate-6">
+                        <span class="text-xl animate-pulse">🍎</span>
+                    </div>
+                    <div>
+                        <h1 class="text-white text-lg leading-none font-black tracking-wide" style="text-shadow: 1.5px 1.5px 0px #3c1e08;">LivePhonics</h1>
+                        <p class="text-pink-100 text-[9px] font-bold tracking-wider">Interactive Sound Deck</p>
+                    </div>
+                </div>
+                
+                <!-- Connection Sync Indicator -->
+                <div class="flex items-center gap-1.5">
+                    <div id="sync-status" class="w-3 h-3 rounded-full bg-red-500 border border-[#3c1e08] animate-pulse" title="Direct Sync Offline"></div>
+                    <span class="text-[9px] bg-black/20 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wider" id="room-badge-lbl">R: 7860</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Room Control Bar -->
+            <div class="flex justify-between items-center gap-2 bg-black/15 rounded-xl p-1.5 border border-white/10">
+                <div class="flex items-center gap-1 text-white text-[10px] font-black">
+                    <span>🗝️ Room:</span>
+                    <input type="text" id="input-room-code" class="w-12 bg-white/20 text-white rounded px-1 text-center font-bold uppercase tracking-wide border-none outline-none focus:bg-white focus:text-[#3c1e08]" value="7860" maxlength="6" oninput="handleManualRoomChange(this.value)">
+                </div>
+
+                <!-- Role Swap Switcher (Touch Friendly) -->
+                <button id="role-badge" onclick="toggleRoleAutomatically()" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border-2 border-[#3c1e08] bg-purple-200 text-purple-950 cursor-pointer shadow-sm active:translate-y-0.5 transition-all">
+                    👩‍🏫 Teacher View
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dynamic Viewports Space -->
+        <main class="flex-1 overflow-hidden relative flex flex-col bg-[#fef9f3]">
+
+            <!-- ================== VIEWPORT 1: HOME ================== -->
+            <section id="screen-home" class="screen-view flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center gap-6">
+                <div class="text-center max-w-sm">
+                    <h2 class="text-2xl font-black text-purple-900 mb-1 leading-tight">Phonetics Lab</h2>
+                    <p class="text-[#7d5032] text-xs font-semibold leading-relaxed">Instantly sync real-time visual learning worksheets directly with students. Build slides or inspect assets below!</p>
+                </div>
+
+                <div class="flex flex-col gap-5 w-full max-w-xs">
+                    <!-- Launch Worksheet Builder Card -->
+                    <div id="btn-goto-wizard" onclick="applyNavigationState('screen-wizard')" class="kid-card bg-gradient-to-br from-amber-50 to-orange-100 rounded-2xl p-4 cursor-pointer text-center flex flex-col items-center gap-2">
+                        <div class="w-12 h-12 bg-amber-200 border-2 border-[#3c1e08] rounded-xl flex items-center justify-center text-2xl shadow-sm">
+                            ⚙️
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-black text-orange-950">Worksheet Builder</h3>
+                            <p class="text-orange-900 text-[10px] font-medium leading-tight">Step-by-step wizard to formulate alphabet and blending target worksheets.</p>
+                        </div>
+                        <button class="kid-btn bg-orange-400 text-[#3c1e08] font-black px-4 py-1.5 rounded-xl text-xs uppercase tracking-wider mt-1">
+                            Build Now 🚀
+                        </button>
+                    </div>
+
+                    <!-- Gallery Asset Library Card -->
+                    <div id="btn-goto-library" onclick="applyNavigationState('screen-library')" class="kid-card bg-gradient-to-br from-indigo-50 to-purple-100 rounded-2xl p-4 cursor-pointer text-center flex flex-col items-center gap-2">
+                        <div class="w-12 h-12 bg-indigo-200 border-2 border-[#3c1e08] rounded-xl flex items-center justify-center text-2xl shadow-sm">
+                            🖼️
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-black text-indigo-950">Image Directory</h3>
+                            <p class="text-indigo-900 text-[10px] font-medium leading-tight">Inspect keyword categories, load external manifests, and configure words.</p>
+                        </div>
+                        <button class="kid-btn bg-indigo-400 text-white font-black px-4 py-1.5 rounded-xl text-xs uppercase tracking-wider mt-1">
+                            Open Gallery 📸
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================== VIEWPORT 2: BUILDER WIZARD ================== -->
+            <section id="screen-wizard" class="screen-view hidden flex-1 flex flex-col overflow-hidden bg-orange-50/20">
+                <!-- Step progress indicator bar -->
+                <div class="bg-white border-b-2 border-[#3c1e08] px-4 py-2 shrink-0">
+                    <div class="flex items-center justify-between text-xs font-black">
+                        <div id="step-indicator-1" class="flex items-center gap-1.5 text-purple-800">
+                            <span class="w-5 h-5 rounded-full border border-[#3c1e08] bg-purple-400 flex items-center justify-center text-white text-[10px]">1</span>
+                            <span>Target</span>
+                        </div>
+                        <div class="flex-1 h-0.5 bg-[#3c1e08] mx-2 rounded-full"></div>
+                        <div id="step-indicator-2" class="flex items-center gap-1.5 text-gray-400">
+                            <span class="w-5 h-5 rounded-full border border-gray-300 bg-white flex items-center justify-center text-gray-500 text-[10px]">2</span>
+                            <span>Assets</span>
+                        </div>
+                        <div class="flex-1 h-0.5 bg-[#3c1e08] mx-2 rounded-full"></div>
+                        <div id="step-indicator-3" class="flex items-center gap-1.5 text-gray-400">
+                            <span class="w-5 h-5 rounded-full border border-gray-300 bg-white flex items-center justify-center text-gray-500 text-[10px]">3</span>
+                            <span>Interactive</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scrollable Wizard Core Steps -->
+                <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    
+                    <!-- STEP 1: Focus Selection -->
+                    <div id="wizard-step-1-content" class="wizard-step-container flex flex-col gap-4">
+                        <h3 class="text-base font-black text-center text-purple-950">Step 1: Choose Phonics Target</h3>
+                        
+                        <div class="flex justify-center gap-3">
+                            <button id="btn-toggle-alphabet" onclick="toggleSelectionMode('alphabet')" class="kid-btn bg-amber-300 px-4 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1">
+                                🔠 A-Z Keys
+                            </button>
+                            <button id="btn-toggle-family" onclick="toggleSelectionMode('word-family')" class="kid-btn bg-white px-4 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1">
+                                👪 Word Families
+                            </button>
+                        </div>
+
+                        <!-- Alphabet Keypad Grid -->
+                        <div id="grid-selection-alphabet" class="grid grid-cols-4 gap-2 max-w-xs mx-auto">
+                            <!-- Injected dynamically -->
+                        </div>
+
+                        <!-- Families Keypad Grid -->
+                        <div id="grid-selection-family" class="hidden grid grid-cols-2 gap-2.5 max-w-xs mx-auto">
+                            <!-- Injected dynamically -->
+                        </div>
+
+                        <!-- Add Custom Word Family Option -->
+                        <div id="new-family-btn-container" class="text-center mt-2 hidden">
+                            <button onclick="openNewFamilyModal()" class="kid-btn bg-purple-500 text-white px-4 py-2 rounded-xl text-xs font-black inline-flex items-center gap-1.5">
+                                ➕ New Word Family
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Asset Checkboxes -->
+                    <div id="wizard-step-2-content" class="wizard-step-container hidden flex flex-col gap-4">
+                        <div class="flex flex-col gap-1 text-center">
+                            <h3 id="step-2-title" class="text-base font-black text-[#3c1e08]">Step 2: Choose target words</h3>
+                            <p class="text-[10px] text-amber-900 font-bold">Select items to form presentation slides.</p>
+                        </div>
+
+                        <div class="flex justify-center gap-2">
+                            <button onclick="setAllImagesSelection(true)" class="kid-btn bg-purple-100 text-purple-950 px-3 py-1 rounded-lg text-[10px] font-black">Select All</button>
+                            <button onclick="setAllImagesSelection(false)" class="kid-btn bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-[10px] font-black">Clear</button>
+                        </div>
+
+                        <!-- Grid -->
+                        <div id="grid-match-images" class="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+                            <!-- Injected dynamically -->
+                        </div>
+
+                        <!-- Nav Bottom Controls -->
+                        <div class="flex justify-between border-t-2 border-dashed border-[#3c1e08]/15 pt-3 mt-2">
+                            <button onclick="navigateWizardStep(1)" class="kid-btn bg-gray-200 text-gray-800 px-4 py-1.5 rounded-xl text-xs font-bold">👈 Back</button>
+                            <button onclick="processImageSelectionNext()" class="kid-btn bg-purple-500 text-white px-5 py-1.5 rounded-xl text-xs font-bold">Proceed 👉</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Game/Activity Styles selection -->
+                    <div id="wizard-step-3-content" class="wizard-step-container hidden flex flex-col gap-4">
+                        <div class="text-center">
+                            <h3 class="text-base font-black text-purple-950">Step 3: Launch Phonics Activity</h3>
+                            <p class="text-[10px] text-gray-500 font-bold">Pick dynamic interactive design templates to deploy.</p>
+                        </div>
+
+                        <div class="flex flex-col gap-3.5 max-w-xs mx-auto w-full">
+                            <!-- Style Cards -->
+                            <div onclick="launchPresentationWithTemplate('know-words')" class="kid-card cursor-pointer bg-emerald-50 rounded-xl p-3 border-4 border-[#3c1e08] flex items-center gap-3">
+                                <span class="text-2xl">📖</span>
+                                <div class="text-left">
+                                    <h4 class="font-black text-xs text-[#3c1e08]">Know Words</h4>
+                                    <p class="text-[9px] text-emerald-800 leading-tight">Visual focus panels with spell tags & vocal synthesizer guide.</p>
+                                </div>
+                            </div>
+
+                            <div onclick="launchPresentationWithTemplate('missing-letter')" class="kid-card cursor-pointer bg-sky-50 rounded-xl p-3 border-4 border-[#3c1e08] flex items-center gap-3">
+                                <span class="text-2xl">📝</span>
+                                <div class="text-left">
+                                    <h4 class="font-black text-xs text-[#3c1e08]">Missing Letter</h4>
+                                    <p class="text-[9px] text-sky-800 leading-tight">Find & supply correct focus phonics start elements.</p>
+                                </div>
+                            </div>
+
+                            <div onclick="launchPresentationWithTemplate('trace-letter')" class="kid-card cursor-pointer bg-rose-50 rounded-xl p-3 border-4 border-[#3c1e08] flex items-center gap-3">
+                                <span class="text-2xl">✏️</span>
+                                <div class="text-left">
+                                    <h4 class="font-black text-xs text-[#3c1e08]">Trace Letter</h4>
+                                    <p class="text-[9px] text-rose-800 leading-tight">Dotted tracing canvas displaying alignment shapes.</p>
+                                </div>
+                            </div>
+
+                            <div onclick="launchPresentationWithTemplate('circle-word')" class="kid-card cursor-pointer bg-amber-50 rounded-xl p-3 border-4 border-[#3c1e08] flex items-center gap-3">
+                                <span class="text-2xl">🎯</span>
+                                <div class="text-left">
+                                    <h4 class="font-black text-xs text-[#3c1e08]">Circle Choice</h4>
+                                    <p class="text-[9px] text-amber-800 leading-tight">Multiple choice word match matching graphics.</p>
+                                </div>
+                            </div>
+
+                            <div onclick="launchPresentationWithTemplate('match-picture')" class="kid-card cursor-pointer bg-indigo-50 rounded-xl p-3 border-4 border-[#3c1e08] flex items-center gap-3">
+                                <span class="text-2xl">🔗</span>
+                                <div class="text-left">
+                                    <h4 class="font-black text-xs text-[#3c1e08]">Match Line</h4>
+                                    <p class="text-[9px] text-indigo-800 leading-tight">Link images to corresponding keywords on side.</p>
+                                </div>
+                            </div>
+
+                            <div onclick="launchPresentationWithTemplate('match-pair')" class="kid-card cursor-pointer bg-pink-50 rounded-xl p-3 border-4 border-[#3c1e08] flex items-center gap-3">
+                                <span class="text-2xl">🃏</span>
+                                <div class="text-left">
+                                    <h4 class="font-black text-xs text-[#3c1e08]">Pair Flipping</h4>
+                                    <p class="text-[9px] text-pink-800 leading-tight">Memory pair boards of graphics vs matching spellcards.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Back Button -->
+                        <div class="flex justify-start border-t-2 border-dashed border-[#3c1e08]/15 pt-3">
+                            <button onclick="navigateWizardStep(2)" class="kid-btn bg-gray-200 text-gray-800 px-4 py-1.5 rounded-xl text-xs font-bold">👈 Back</button>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- ================== VIEWPORT 3: IMAGE DIRECTORY GALLERY ================== -->
+            <section id="screen-library" class="screen-view hidden flex-1 flex flex-col overflow-hidden bg-[#faf8f5]">
+                <!-- Header Controls -->
+                <div class="bg-white border-b-2 border-[#3c1e08] p-3 flex flex-col gap-2 shrink-0">
+                    <div class="flex justify-between items-center">
+                        <button onclick="applyNavigationState('screen-home')" class="kid-btn bg-amber-100 text-[#3c1e08] px-3 py-1 rounded-xl text-xs font-bold">
+                            🏠 Home
+                        </button>
+                        <button onclick="triggerUploadMockManifest()" class="kid-btn bg-indigo-500 text-white px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center gap-1">
+                            📥 Ingest custom JSON
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <h2 class="text-sm font-black">Asset Directory</h2>
+                        <p class="text-[9px] text-gray-500">Assign image targets to phonetics groups. Tap grid cards to multi-select.</p>
+                    </div>
+                </div>
+
+                <!-- Scroll gallery -->
+                <div class="flex-1 overflow-y-auto p-3 custom-scrollbar">
+                    
+                    <!-- Assign Group Control Bar -->
+                    <div id="library-multi-assign-bar" class="hidden bg-indigo-50 border-4 border-[#3c1e08] p-3 rounded-2xl mb-3 flex flex-col gap-2 items-center justify-center">
+                        <span class="text-[11px] font-black text-indigo-950">🎁 Assign <span id="library-selected-count" class="text-rose-600 font-extrabold">0</span> Selected Card(s)</span>
+                        <div class="flex items-center gap-1.5 flex-wrap justify-center">
+                            <select id="dropdown-assign-family" class="bg-white border-2 border-[#3c1e08] rounded-lg px-2 py-1 text-[10px] font-black outline-none">
+                                <!-- Loaded dynamically -->
+                            </select>
+                            <button onclick="assignSelectedToFamily()" class="kid-btn bg-purple-500 text-white px-2.5 py-1 rounded-lg text-[9px] font-black">Apply Category</button>
+                            <button onclick="clearLibrarySelection()" class="kid-btn bg-gray-200 text-gray-800 px-2.5 py-1 rounded-lg text-[9px] font-black">Cancel</button>
+                        </div>
+                    </div>
+
+                    <!-- Informational status text -->
+                    <div id="library-status-msg" class="mb-3 text-[10px] font-bold text-center text-indigo-900 bg-indigo-50/50 p-2 rounded-xl">
+                        Showing fallback templates. Load external manifests above.
+                    </div>
+
+                    <!-- Images Grid -->
+                    <div id="grid-library-gallery" class="grid grid-cols-2 gap-3">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================== VIEWPORT 4: PRESENTATION VIEW ================== -->
+            <section id="screen-presentation" class="screen-view hidden flex-1 flex flex-col overflow-hidden bg-purple-50/10">
+                <!-- Presenter Bar Controls -->
+                <div class="bg-white border-b-2 border-[#3c1e08] px-3 py-2 shrink-0 flex flex-col gap-2 z-20 shadow-sm">
+                    <div class="flex justify-between items-center gap-1.5">
+                        <button onclick="exitPresentationView()" class="kid-btn bg-rose-400 text-white font-black px-3 py-1 rounded-xl text-[10px] uppercase">
+                            🚪 Exit
+                        </button>
+
+                        <span id="badge-template" class="bg-purple-100 text-purple-950 text-[9px] font-black px-2.5 py-1 rounded-full border border-purple-300 uppercase shrink-0">
+                            KNOW WORDS
+                        </span>
+
+                        <button id="btn-draw-mode" onclick="toggleDrawMode()" class="kid-btn bg-white text-[#3c1e08] font-black px-2.5 py-1 rounded-xl text-[9px] uppercase tracking-wide">
+                            ✏️ DRAW MODE: OFF
+                        </button>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-gray-50 rounded-xl p-1 border border-gray-100">
+                        <button onclick="pronounceCurrentWord()" class="kid-btn bg-amber-400 p-1.5 rounded-lg text-[10px] font-black" title="Synthesizer audio">
+                            🔊 Voice
+                        </button>
+
+                        <!-- Drawing Cleaners -->
+                        <div class="flex items-center gap-1">
+                            <button onclick="handleDrawingUndo()" class="kid-btn bg-orange-100 px-2 py-1 rounded-lg text-[9px] font-bold">↩️ Undo</button>
+                            <button onclick="handleDrawingClear()" class="kid-btn bg-red-100 px-2 py-1 rounded-lg text-[9px] font-bold">🗑️ Clear</button>
+                        </div>
+
+                        <!-- Zoom controller -->
+                        <div class="flex items-center gap-1 bg-white rounded-lg px-1 py-0.5 border border-gray-200">
+                            <button onclick="modifyZoomScale(-0.1)" class="w-5 h-5 flex items-center justify-center font-black text-xs bg-gray-100 rounded">-</button>
+                            <span id="label-zoom-percent" class="text-[9px] font-black min-w-[28px] text-center">100%</span>
+                            <button onclick="modifyZoomScale(0.1)" class="w-5 h-5 flex items-center justify-center font-black text-xs bg-gray-100 rounded">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Presentation Workspace -->
+                <div class="flex-1 relative overflow-hidden flex items-center justify-center p-2 bg-[#fdfaf5]">
+                    <!-- Scaling viewport wrapper container -->
+                    <div id="presentation-zoom-container" class="relative w-full h-full max-w-sm max-h-[460px] bg-white rounded-2xl border-4 border-[#3c1e08] shadow-md overflow-hidden flex flex-col justify-between transition-transform duration-100 origin-center">
+                        
+                        <!-- Slide Content Viewport -->
+                        <div id="slide-template-workspace" class="flex-1 w-full relative overflow-hidden p-4 flex flex-col justify-center items-center">
+                            <!-- Slide layout elements injected dynamically -->
+                        </div>
+
+                        <!-- Touch Drawing Overlay Layer Canvas -->
+                        <canvas id="sketch-canvas" class="absolute inset-0 z-10 cursor-crosshair touch-none" style="pointer-events: none; touch-action: auto;"></canvas>
+
+                        <!-- Passive Visual Pointing Node (Smooth multi-client tracking node) -->
+                        <div id="remote-cursor-node" class="absolute w-5 h-5 rounded-full bg-rose-500/90 border-2 border-white shadow-md pointer-events-none z-30 flex items-center justify-center font-bold text-[8px] text-white" style="left: -100px; top: -100px; transition: transform 0.05s ease;">
+                            👤
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer slide navigations -->
+                <div class="bg-amber-50/50 border-t-2 border-[#3c1e08] px-4 py-2 shrink-0 flex items-center justify-between gap-4 z-20">
+                    <button onclick="navigateSlide('prev')" id="btn-slide-prev" class="kid-btn bg-amber-400 px-4 py-1.5 rounded-xl text-xs font-bold">
+                        ⬅️ Prev
+                    </button>
+                    <div class="text-center">
+                        <span id="label-slide-progress" class="text-xs font-black tracking-wide text-[#3c1e08]">Slide 0 / 0</span>
+                        <div id="label-cursor-readout" class="text-[8px] text-amber-900 font-extrabold tracking-tight opacity-75">X: 0.0% | Y: 0.0%</div>
+                    </div>
+                    <button onclick="navigateSlide('next')" id="btn-slide-next" class="kid-btn bg-amber-400 px-4 py-1.5 rounded-xl text-xs font-bold">
+                        Next ➡️
+                    </button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Dynamic Word Family Insertion Modal -->
+        <div id="new-family-modal" class="hidden absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-5 border-4 border-[#3c1e08] w-full max-w-xs flex flex-col gap-3 kid-card">
+                <h4 class="font-black text-base text-purple-900 text-center">Add New Family Group</h4>
+                <div>
+                    <label class="text-[10px] font-black block mb-1">Key Code (e.g. "et", "ip"):</label>
+                    <input type="text" id="input-new-fam-key" class="w-full bg-amber-50/50 border-2 border-[#3c1e08] rounded-xl px-2.5 py-1.5 outline-none uppercase font-black text-xs" maxlength="4">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black block mb-1">Display Label (e.g. "-et Family"):</label>
+                    <input type="text" id="input-new-fam-label" class="w-full bg-amber-50/50 border-2 border-[#3c1e08] rounded-xl px-2.5 py-1.5 outline-none font-bold text-xs" placeholder="-et Family">
+                </div>
+                <div class="flex justify-end gap-2 mt-2">
+                    <button onclick="closeNewFamilyModal()" class="kid-btn bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-xs font-bold">Cancel</button>
+                    <button onclick="saveNewFamily()" class="kid-btn bg-purple-500 text-white px-3 py-1 rounded-lg text-xs font-bold">Save</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script Block containing logical architectures & pointer streams -->
+    <script>
+        /* ================== DYNAMIC SEED ASSETS PACKS ================== */
+        const SEED_DATA_PACK = [
+            // Letter A
+            { id: 'img-apple', searchName: 'apple', category: 'a', word: 'Apple', fallbackSvg: '🍎' },
+            { id: 'img-ant', searchName: 'ant', category: 'a', word: 'Ant', fallbackSvg: '🐜' },
+            { id: 'img-alligator', searchName: 'alligator', category: 'a', word: 'Alligator', fallbackSvg: '🐊' },
+            { id: 'img-axe', searchName: 'axe', category: 'a', word: 'Axe', fallbackSvg: '🪓' },
+            
+            // Letter B
+            { id: 'img-banana', searchName: 'banana', category: 'b', word: 'Banana', fallbackSvg: '🍌' },
+            { id: 'img-bat', searchName: 'bat', category: 'b', word: 'Bat', fallbackSvg: '🦇' },
+            { id: 'img-bear', searchName: 'bear', category: 'b', word: 'Bear', fallbackSvg: '🐻' },
+            { id: 'img-ball', searchName: 'ball', category: 'b', word: 'Ball', fallbackSvg: '⚽' },
+
+            // Letter C
+            { id: 'img-cat', searchName: 'cat', category: 'c', word: 'Cat', fallbackSvg: '🐱' },
+            { id: 'img-cup', searchName: 'cup', category: 'c', word: 'Cup', fallbackSvg: '🥛' },
+            { id: 'img-car', searchName: 'car', category: 'c', word: 'Car', fallbackSvg: '🚗' },
+            { id: 'img-cow', searchName: 'cow', category: 'c', word: 'Cow', fallbackSvg: '🐄' },
+
+            // Letter D
+            { id: 'img-dog', searchName: 'dog', category: 'd', word: 'Dog', fallbackSvg: '🐶' },
+            { id: 'img-duck', searchName: 'duck', category: 'd', word: 'Duck', fallbackSvg: '🦆' },
+            { id: 'img-drum', searchName: 'drum', category: 'd', word: 'Drum', fallbackSvg: '🥁' },
+            { id: 'img-dolphin', searchName: 'dolphin', category: 'd', word: 'Dolphin', fallbackSvg: '🐬' },
+
+            // Letter E
+            { id: 'img-egg', searchName: 'egg', category: 'e', word: 'Egg', fallbackSvg: '🥚' },
+            { id: 'img-elephant', searchName: 'elephant', category: 'e', word: 'Elephant', fallbackSvg: '🐘' },
+            { id: 'img-eagle', searchName: 'eagle', category: 'e', word: 'Eagle', fallbackSvg: '🦅' },
+
+            // Letter F
+            { id: 'img-fish', searchName: 'fish', category: 'f', word: 'Fish', fallbackSvg: '🐟' },
+            { id: 'img-frog', searchName: 'frog', category: 'f', word: 'Frog', fallbackSvg: '🐸' },
+            { id: 'img-fox', searchName: 'fox', category: 'f', word: 'Fox', fallbackSvg: '🦊' },
+
+            // Letter G
+            { id: 'img-grape', searchName: 'grapes', category: 'g', word: 'Grapes', fallbackSvg: '🍇' },
+            { id: 'img-goat', searchName: 'goat', category: 'g', word: 'Goat', fallbackSvg: '🐐' },
+            { id: 'img-giraffe', searchName: 'giraffe', category: 'g', word: 'Giraffe', fallbackSvg: '🦒' },
+
+            { id: 'img-hat', searchName: 'hat', category: 'h', word: 'Hat', fallbackSvg: '🎩' },
+            { id: 'img-hen', searchName: 'hen', category: 'h', word: 'Hen', fallbackSvg: '🐔' },
+            { id: 'img-igloo', searchName: 'igloo', category: 'i', word: 'Igloo', fallbackSvg: '⛺' },
+            { id: 'img-jellyfish', searchName: 'jellyfish', category: 'j', word: 'jellyfish', fallbackSvg: '🪼' },
+            { id: 'img-kite', searchName: 'kite', category: 'k', word: 'Kite', fallbackSvg: '🪁' },
+            { id: 'img-lion', searchName: 'lion', category: 'l', word: 'Lion', fallbackSvg: '🦁' },
+            { id: 'img-monkey', searchName: 'monkey', category: 'm', word: 'Monkey', fallbackSvg: '🐵' },
+            { id: 'img-nest', searchName: 'nest', category: 'n', word: 'Nest', fallbackSvg: '🪹' },
+            { id: 'img-octopus', searchName: 'octopus', category: 'o', word: 'Octopus', fallbackSvg: '🐙' },
+            { id: 'img-pig', searchName: 'pig', category: 'p', word: 'Pig', fallbackSvg: '🐷' },
+            { id: 'img-queen', searchName: 'queen', category: 'q', word: 'Queen', fallbackSvg: '👑' },
+            { id: 'img-rabbit', searchName: 'rabbit', category: 'r', word: 'Rabbit', fallbackSvg: '🐰' },
+            { id: 'img-sun', searchName: 'sun', category: 's', word: 'Sun', fallbackSvg: '☀️' },
+            { id: 'img-tiger', searchName: 'tiger', category: 't', word: 'Tiger', fallbackSvg: '🐯' },
+            { id: 'img-umbrella', searchName: 'umbrella', category: 'u', word: 'Umbrella', fallbackSvg: '☂️' },
+            { id: 'img-violin', searchName: 'violin', category: 'v', word: 'Violin', fallbackSvg: '🎻' },
+            { id: 'img-wagon', searchName: 'wagon', category: 'w', word: 'Wagon', fallbackSvg: '🛒' },
+            { id: 'img-xylophone', searchName: 'xylophone', category: 'x', word: 'Xylophone', fallbackSvg: '🎹' },
+            { id: 'img-yak', searchName: 'yak', category: 'y', word: 'Yak', fallbackSvg: '🐂' },
+            { id: 'img-zebra', searchName: 'zebra', category: 'z', word: 'Zebra', fallbackSvg: '🦓' },
+
+            // Word Families: -at
+            { id: 'fam-cat', searchName: 'cat', category: 'at', word: 'Cat', fallbackSvg: '🐱' },
+            { id: 'fam-hat', searchName: 'hat', category: 'at', word: 'Hat', fallbackSvg: '🎩' },
+            { id: 'fam-bat', searchName: 'bat', category: 'at', word: 'Bat', fallbackSvg: '🦇' },
+            { id: 'fam-rat', searchName: 'rat', category: 'at', word: 'Rat', fallbackSvg: '🐀' },
+
+            // Word Families: -an
+            { id: 'fam-man', searchName: 'man', category: 'an', word: 'Man', fallbackSvg: '👨' },
+            { id: 'fam-pan', searchName: 'pan', category: 'an', word: 'Pan', fallbackSvg: '🍳' },
+            { id: 'fam-fan', searchName: 'fan', category: 'an', word: 'Fan', fallbackSvg: '🪭' },
+            { id: 'fam-van', searchName: 'van', category: 'an', word: 'Van', fallbackSvg: '🚐' },
+
+            // Word Families: -ig
+            { id: 'fam-pig', searchName: 'pig', category: 'ig', word: 'Pig', fallbackSvg: '🐷' },
+            { id: 'fam-fig', searchName: 'fig', category: 'ig', word: 'Fig', fallbackSvg: '🍠' },
+            { id: 'fam-wig', searchName: 'wig', category: 'ig', word: 'Wig', fallbackSvg: '💇' },
+            { id: 'fam-dig', searchName: 'dig', category: 'ig', word: 'Dig', fallbackSvg: '⛏️' },
+
+            // Word Families: -op
+            { id: 'fam-mop', searchName: 'mop', category: 'op', word: 'Mop', fallbackSvg: '🧹' },
+            { id: 'fam-top', searchName: 'top', category: 'op', word: 'Top', fallbackSvg: '🪀' },
+            { id: 'fam-hop', searchName: 'hop', category: 'op', word: 'Hop', fallbackSvg: '🐸' },
+            { id: 'fam-cop', searchName: 'cop', category: 'op', word: 'Cop', fallbackSvg: '👮' }
+        ];
+
+        /* ================== GLOBAL APPLICATION STATE ================== */
+        const myClientId = 'client_' + Math.random().toString(36).substring(2, 9);
+
+        let state = {
+            currentScreen: 'screen-home',
+            myRole: '',
+            selectionMode: 'alphabet',
+            selectedValue: 'a',
+            selectedImageIds: [],
+            activityTemplate: 'know-words',
+            compiledSlides: [],
+            currentSlideIndex: 0,
+            zoomScale: 1.0,
+            activeColor: '#3b82f6', // Fixed solid blue line
+            activeTool: 'pen',
+            drawingStrokes: [],
+            activeStroke: null,
+            activeStrokeId: null,
+            remoteActiveStroke: null,
+            isSimulating: false, // Anti-feedback network gate
+            currentAnswerStates: {},
+            cursorX: 0,
+            cursorY: 0,
+            roomId: '7860',
+            drawModeActive: false,
+            librarySelectedIds: []
+        };
+
+        // Firebase Sync Context
+        let lastProcessedActionId = null;
+        let lastCursorSend = 0;
+        let lastStrokeSyncTime = 0;
+        let _lastRenderedSlideKey = null;
+
+        // Broadcast Channel Fallback
+        let postChannel = null;
+        try {
+            postChannel = new BroadcastChannel('livetutor_sync');
+            postChannel.onmessage = (event) => {
+                if (event.data) handleIncomingParentMessage(event.data);
+            };
+        } catch(e) {
+            console.warn("Local BroadcastChannel system bypassed.", e);
+        }
+
+        // ================== UNIVERSAL CLICK & INPUT EVENT CAPTURERS ==================
+        let actionIdCounter = 0;
+
+        document.addEventListener('click', (e) => {
+            if (e.isTrusted === false || state.isSimulating) return;
+            const sel = getUniqueSelector(e.target);
+            if (!sel) return;
+            actionIdCounter++;
+            pushRoomUpdateToRealtimeDatabase('UNIVERSAL_CLICK', {
+                selector: sel,
+                actionId: 'click_' + actionIdCounter + '_' + Date.now()
+            });
+        }, true);
+
+        document.addEventListener('input', (e) => {
+            if (e.isTrusted === false || state.isSimulating) return;
+            const sel = getUniqueSelector(e.target);
+            if (!sel) return;
+            pushRoomUpdateToRealtimeDatabase('UNIVERSAL_INPUT', {
+                selector: sel,
+                value: e.target.value,
+                actionId: 'input_' + Date.now()
+            });
+        }, true);
+
+        // Extract clean unique paths
+        function getUniqueSelector(el) {
+            if (!el) return null;
+            if (el.id) return '#' + el.id;
+            if (el === document.body) return 'body';
+            let path = [];
+            while (el && el.nodeType === Node.ELEMENT_NODE) {
+                let sel = el.nodeName.toLowerCase();
+                if (el.id) { 
+                    sel = '#' + el.id; 
+                    path.unshift(sel); 
+                    break; 
+                }
+                let sib = el, nth = 1;
+                while (sib = sib.previousElementSibling) {
+                    if (sib.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++;
+                }
+                sel += ':nth-of-type(' + nth + ')';
+                path.unshift(sel);
+                el = el.parentNode;
+            }
+            return path.join(' > ');
+        }
+
+        // Parent Message Router
+        window.addEventListener('message', (event) => {
+            if (!event.data) return;
+            let type = event.data.type;
+            let action = event.data.action || event.data.payload;
+
+            if (type === 'EXECUTE_UNIVERSAL_ACTION') {
+                action = event.data.action;
+            }
+            if (!action) return;
+
+            if (action.actionType === 'UNIVERSAL_CLICK' || action.type === 'UNIVERSAL_CLICK') {
+                state.isSimulating = true;
+                const el = document.querySelector(action.selector);
+                if (el) el.click();
+                setTimeout(() => { state.isSimulating = false; }, 50);
+            } else if (action.actionType === 'UNIVERSAL_INPUT' || action.type === 'UNIVERSAL_INPUT') {
+                state.isSimulating = true;
+                const el = document.querySelector(action.selector);
+                if (el) {
+                    el.value = action.value;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                setTimeout(() => { state.isSimulating = false; }, 50);
+            } else if (action.actionType === 'SLIDE_SET_INDEX' || action.type === 'SLIDE_SET_INDEX') {
+                state.isSimulating = true;
+                state.currentSlideIndex = action.index;
+                renderSlidePresentationView();
+                setTimeout(() => { state.isSimulating = false; }, 50);
+            } else {
+                handleIncomingParentMessage({
+                    type: 'IFRAME_ACTION_TRIGGERED',
+                    payload: action
+                });
+            }
+        });
+
+        window.onload = function() {
+            autoDetectRoleAndRoom();
+            generateAtoZSelectors();
+            generateWordFamilySelectors();
+            refreshImageLibraryView();
+            applyNavigationState('screen-home');
+            initCanvasCore();
+
+            // Sizing handles
+            window.addEventListener('resize', handleCanvasSetupLayout);
+            
+            autoLoadManifestOnBoot();
+            markSyncStatusActive();
+        };
+
+        /* ================== ROLE & ROOM CONTROLLER ================== */
+        function autoDetectRoleAndRoom() {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const hashRoom = hashParams.get('room');
+            if (hashRoom) {
+                state.roomId = hashRoom.toUpperCase();
+                document.getElementById('input-room-code').value = state.roomId;
+            } else {
+                updateUrlHash();
+            }
+
+            const roleParam = hashParams.get('role');
+            if (roleParam) {
+                setSystemRole(roleParam.toLowerCase());
+            } else {
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryRole = urlParams.get('role');
+                if (queryRole) {
+                    setSystemRole(queryRole.toLowerCase());
+                } else {
+                    if (window.location.href.toLowerCase().includes('student')) {
+                        setSystemRole('student');
+                    } else {
+                        setSystemRole('teacher');
+                    }
+                }
+            }
+            document.getElementById('room-badge-lbl').textContent = `R: ${state.roomId}`;
+        }
+
+        function toggleRoleAutomatically() {
+            const nextRole = (state.myRole === 'teacher') ? 'student' : 'teacher';
+            setSystemRole(nextRole);
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            params.set('role', nextRole);
+            window.location.hash = params.toString();
+        }
+
+        function setSystemRole(role) {
+            state.myRole = role;
+            const badge = document.getElementById('role-badge');
+            if (badge) {
+                if (role === 'teacher') {
+                    badge.innerText = "👩‍🏫 Teacher View";
+                    badge.className = "px-2.5 py-1 rounded-lg text-[10px] font-extrabold border-2 border-[#3c1e08] bg-purple-200 text-purple-950 cursor-pointer shadow-sm";
+                } else {
+                    badge.innerText = "👶 Student View";
+                    badge.className = "px-2.5 py-1 rounded-lg text-[10px] font-extrabold border-2 border-[#3c1e08] bg-pink-200 text-pink-950 cursor-pointer shadow-sm";
+                }
+            }
+        }
+
+        /* ================== VISUAL SYNCHRONIZATION DIAGNOSTICS ================== */
+        function logDebugSync(message, isError = false) {
+            console.log(isError ? "🚨 [Sync Error]" : "✔ [Sync Success]", message);
+        }
+
+        /* ================== CONSOLE RELAY SYNC STATUS ================== */
+        // No direct Firebase connection anymore — the console (parent tab)
+        // owns the Firebase link and relays everything to us via postMessage.
+        // We just mark the status indicator active on load; actual sync
+        // health depends on the console, not this file.
+        function markSyncStatusActive() {
+            const statusIndicator = document.getElementById('sync-status');
+            if (!statusIndicator) return;
+            statusIndicator.className = "w-3 h-3 rounded-full bg-emerald-500 border border-[#3c1e08] animate-pulse";
+            statusIndicator.title = `Relay Active: ${state.roomId} (${state.myRole})`;
+        }
+
+        // Console-relay write engine (postMessage only, no direct Firebase)
+        // NOTE: strokes now ride the same single-message channel as clicks —
+        // the console's last_action overwrite path, not a lossless push() list.
+        // Under fast drawing / flaky network this can drop a stroke point,
+        // same tradeoff the other console-based games already accept.
+        function pushRoomUpdateToRealtimeDatabase(type, payload) {
+            const isDrawingEvent = ['CANVAS_STROKE_START', 'CANVAS_STROKE_MOVE', 'CANVAS_STROKE_END', 'DRAW_CLEAR', 'DRAW_UNDO'].includes(type);
+            if (state.isSimulating && !isDrawingEvent) return;
+
+            const actionId = 'act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+            const actionPayload = {
+                type: type,
+                actionType: type,
+                senderRole: state.myRole,
+                clientId: myClientId,
+                timestamp: Date.now(),
+                actionId: actionId,
+                ...payload
+            };
+
+            if (!isDrawingEvent) {
+                lastProcessedActionId = actionId;
+            }
+
+            const msgPacket = { type: 'IFRAME_ACTION_TRIGGERED', payload: actionPayload };
+
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(msgPacket, '*');
+            }
+            if (postChannel) {
+                postChannel.postMessage(msgPacket);
+            }
+
+            logDebugSync(`${type} sent via console relay ✔`);
+        }
+
+        function handleManualRoomChange(val) {
+            const cleanedVal = val.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (cleanedVal.length > 0) {
+                state.roomId = cleanedVal;
+                updateUrlHash();
+                document.getElementById('room-badge-lbl').textContent = `R: ${state.roomId}`;
+                // Room is now owned by the console (parent tab) — it reloads
+                // this iframe with the new #room= hash, no local resubscribe needed.
+            }
+        }
+
+        function updateUrlHash() {
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            params.set('room', state.roomId);
+            params.set('role', state.myRole);
+            window.location.hash = params.toString();
+        }
+
+        function applyNavigationState(screenId) {
+            state.currentScreen = screenId;
+            document.querySelectorAll('.screen-view').forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+
+            if (screenId === 'screen-presentation') {
+                setTimeout(() => {
+                    handleCanvasSetupLayout();
+                    repaintDrawingCanvas();
+                }, 100);
+            }
+        }
+
+        function broadcastLiveTutorMessage(type, payload) {
+            if (state.isSimulating) return;
+
+            const msgPacket = {
+                type: 'IFRAME_ACTION_TRIGGERED',
+                payload: {
+                    type: type === 'CURSOR_MOVE' ? 'UNIVERSAL_CURSOR' : type,
+                    actionType: type,
+                    senderRole: state.myRole,
+                    clientId: myClientId,
+                    timestamp: Date.now(),
+                    ...payload
+                }
+            };
+
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(msgPacket, '*');
+            }
+            if (postChannel) {
+                postChannel.postMessage(msgPacket);
+            }
+        }
+
+        function handleIncomingParentMessage(actionPacket) {
+            if (!actionPacket || actionPacket.type !== 'IFRAME_ACTION_TRIGGERED') return;
+            const payload = actionPacket.payload;
+            if (!payload || payload.clientId === myClientId) return;
+
+            const actionType = payload.actionType || payload.type;
+            const isDrawingEvent = ['CANVAS_STROKE_START', 'CANVAS_STROKE_MOVE', 'CANVAS_STROKE_END', 'DRAW_CLEAR', 'DRAW_UNDO', 'CURSOR_MOVE', 'UNIVERSAL_CURSOR'].includes(actionType);
+
+            if (!isDrawingEvent) {
+                state.isSimulating = true;
+            }
+
+            try {
+                switch(actionType) {
+                    case 'CANVAS_STROKE_START':
+                        state.remoteActiveStroke = {
+                            color: '#3b82f6',
+                            tool: 'pen',
+                            width: payload.width || 5,
+                            points: [{ x: payload.pctX, y: payload.pctY }]
+                        };
+                        repaintDrawingCanvas();
+                        break;
+                    case 'CANVAS_STROKE_MOVE':
+                        if (!state.remoteActiveStroke) {
+                            state.remoteActiveStroke = {
+                                color: '#3b82f6',
+                                tool: 'pen',
+                                width: payload.width || 5,
+                                points: [{ x: payload.pctX, y: payload.pctY }]
+                            };
+                        } else {
+                            state.remoteActiveStroke.points.push({ x: payload.pctX, y: payload.pctY });
+                        }
+                        repaintDrawingCanvas();
+                        break;
+                    case 'CANVAS_STROKE_END':
+                        if (state.remoteActiveStroke) {
+                            state.drawingStrokes.push(state.remoteActiveStroke);
+                            state.remoteActiveStroke = null;
+                            repaintDrawingCanvas();
+                        }
+                        break;
+                    case 'DRAW_CLEAR':
+                        state.drawingStrokes = [];
+                        state.remoteActiveStroke = null;
+                        repaintDrawingCanvas();
+                        break;
+                    case 'DRAW_UNDO':
+                        state.drawingStrokes.pop();
+                        state.remoteActiveStroke = null;
+                        repaintDrawingCanvas();
+                        break;
+                    case 'CURSOR_MOVE':
+                    case 'UNIVERSAL_CURSOR':
+                        moveRemoteCursorDOM(payload.pctX, payload.pctY);
+                        break;
+                }
+            } catch(e) {
+                console.error("Critical parent payload execution error:", e);
+            } finally {
+                if (!isDrawingEvent) {
+                    setTimeout(() => { state.isSimulating = false; }, 50);
+                }
+            }
+        }
+
+        /* ================== CANVAS DRAWING & PASSIVE HOVER SYSTEM ================== */
+        let canvas, ctx;
+        let isDrawing = false;
+
+        function initCanvasCore() {
+            canvas = document.getElementById('sketch-canvas');
+            ctx = canvas.getContext('2d');
+
+            // Draw controls
+            canvas.addEventListener('mousedown', startDrawingLine);
+            canvas.addEventListener('mousemove', moveDrawingLine);
+            window.addEventListener('mouseup', endDrawingLine);
+
+            canvas.addEventListener('touchstart', startDrawingLineTouch);
+            canvas.addEventListener('touchmove', moveDrawingLineTouch, { passive: false });
+            window.addEventListener('touchend', endDrawingLine);
+
+            // Passive Pointer Hover Target on presentation workspace (Gap 2 resolved)
+            const workspace = document.getElementById('presentation-zoom-container');
+            if (workspace) {
+                workspace.addEventListener('mousemove', handlePassiveMouseMove);
+                workspace.addEventListener('touchmove', handlePassiveTouchMove, { passive: true });
+            }
+        }
+
+        function handleCanvasSetupLayout() {
+            if (!canvas) return;
+            const container = document.getElementById('presentation-zoom-container');
+            if (container) {
+                const newWidth = container.clientWidth;
+                const newHeight = container.clientHeight;
+                if (canvas.width !== newWidth || canvas.height !== newHeight) {
+                    canvas.width = newWidth;
+                    canvas.height = newHeight;
+                    repaintDrawingCanvas();
+                }
+            }
+        }
+
+        function getCanvasNormalizedCoordinates(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const pctX = ((clientX - rect.left) / rect.width) * 100;
+            const pctY = ((clientY - rect.top) / rect.height) * 100;
+            return { x: Math.max(0, Math.min(100, pctX)), y: Math.max(0, Math.min(100, pctY)) };
+        }
+
+        // Passive mouse movement broadcasting even when NOT drawing
+        function handlePassiveMouseMove(e) {
+            if (isDrawing) return; // handled separately
+            const coords = getCanvasNormalizedCoordinates(e.clientX, e.clientY);
+            broadcastPassivePointer(coords.x, coords.y);
+        }
+
+        // Passive touch pointing
+        function handlePassiveTouchMove(e) {
+            if (isDrawing || e.touches.length === 0) return;
+            const t = e.touches[0];
+            const coords = getCanvasNormalizedCoordinates(t.clientX, t.clientY);
+            broadcastPassivePointer(coords.x, coords.y);
+        }
+
+        function broadcastPassivePointer(pctX, pctY) {
+            updateCoordsReadout(pctX, pctY);
+            const now = Date.now();
+            if (now - lastCursorSend > 150) { // Stable throttled pointing
+                lastCursorSend = now;
+                broadcastLiveTutorMessage('CURSOR_MOVE', { pctX, pctY });
+            }
+        }
+
+        function startDrawingLine(e) {
+            if (!state.drawModeActive) return;
+            isDrawing = true;
+            const coords = getCanvasNormalizedCoordinates(e.clientX, e.clientY);
+            
+            state.activeStrokeId = 'stroke_' + Date.now();
+            state.activeStroke = {
+                color: '#3b82f6',
+                tool: 'pen',
+                width: 5,
+                points: [coords]
+            };
+
+            pushRoomUpdateToRealtimeDatabase('CANVAS_STROKE_START', {
+                pctX: coords.x,
+                pctY: coords.y,
+                width: 5
+            });
+        }
+
+        function startDrawingLineTouch(e) {
+            if (!state.drawModeActive || e.touches.length === 0) return;
+            isDrawing = true;
+            const t = e.touches[0];
+            const coords = getCanvasNormalizedCoordinates(t.clientX, t.clientY);
+
+            state.activeStrokeId = 'stroke_' + Date.now();
+            state.activeStroke = {
+                color: '#3b82f6',
+                tool: 'pen',
+                width: 5,
+                points: [coords]
+            };
+
+            pushRoomUpdateToRealtimeDatabase('CANVAS_STROKE_START', {
+                pctX: coords.x,
+                pctY: coords.y,
+                width: 5
+            });
+        }
+
+        function moveDrawingLine(e) {
+            const coords = getCanvasNormalizedCoordinates(e.clientX, e.clientY);
+            broadcastPassivePointer(coords.x, coords.y);
+
+            if (!isDrawing || !state.activeStroke) return;
+            state.activeStroke.points.push(coords);
+            repaintDrawingCanvas();
+
+            const now = Date.now();
+            if (now - lastStrokeSyncTime > 40) {
+                lastStrokeSyncTime = now;
+                pushRoomUpdateToRealtimeDatabase('CANVAS_STROKE_MOVE', { pctX: coords.x, pctY: coords.y });
+            }
+        }
+
+        function moveDrawingLineTouch(e) {
+            if (e.touches.length === 0) return;
+            if (!state.drawModeActive) return;
+            e.preventDefault();
+
+            const t = e.touches[0];
+            const coords = getCanvasNormalizedCoordinates(t.clientX, t.clientY);
+            broadcastPassivePointer(coords.x, coords.y);
+
+            if (!isDrawing || !state.activeStroke) return;
+            state.activeStroke.points.push(coords);
+            repaintDrawingCanvas();
+
+            const now = Date.now();
+            if (now - lastStrokeSyncTime > 40) {
+                lastStrokeSyncTime = now;
+                pushRoomUpdateToRealtimeDatabase('CANVAS_STROKE_MOVE', { pctX: coords.x, pctY: coords.y });
+            }
+        }
+
+        function endDrawingLine() {
+            if (!isDrawing || !state.activeStroke) return;
+            isDrawing = false;
+            state.drawingStrokes.push(state.activeStroke);
+            pushRoomUpdateToRealtimeDatabase('CANVAS_STROKE_END', {});
+            state.activeStroke = null;
+            state.activeStrokeId = null;
+            repaintDrawingCanvas();
+        }
+
+        function repaintDrawingCanvas() {
+            if (!ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const drawStroke = (stroke) => {
+                if (!stroke || !stroke.points || stroke.points.length === 0) return;
+                ctx.beginPath();
+                ctx.lineWidth = stroke.width || 5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = stroke.color || '#3b82f6';
+
+                const startPoint = stroke.points[0];
+                ctx.moveTo((startPoint.x / 100) * canvas.width, (startPoint.y / 100) * canvas.height);
+
+                for (let i = 1; i < stroke.points.length; i++) {
+                    const pt = stroke.points[i];
+                    ctx.lineTo((pt.x / 100) * canvas.width, (pt.y / 100) * canvas.height);
+                }
+                ctx.stroke();
+            };
+
+            state.drawingStrokes.forEach(drawStroke);
+            if (state.activeStroke) drawStroke(state.activeStroke);
+            if (state.remoteActiveStroke) drawStroke(state.remoteActiveStroke);
+        }
+
+        function handleDrawingClear() {
+            state.drawingStrokes = [];
+            state.remoteActiveStroke = null;
+            repaintDrawingCanvas();
+            pushRoomUpdateToRealtimeDatabase('DRAW_CLEAR', {});
+        }
+
+        function handleDrawingUndo() {
+            state.drawingStrokes.pop();
+            state.remoteActiveStroke = null;
+            repaintDrawingCanvas();
+            pushRoomUpdateToRealtimeDatabase('DRAW_UNDO', {});
+        }
+
+        function toggleDrawMode(forceValue) {
+            state.drawModeActive = (forceValue !== undefined) ? forceValue : !state.drawModeActive;
+            const canvasEl = document.getElementById('sketch-canvas');
+            if (canvasEl) {
+                canvasEl.style.pointerEvents = state.drawModeActive ? 'auto' : 'none';
+                canvasEl.style.touchAction = state.drawModeActive ? 'none' : 'auto';
+            }
+            const drawBtn = document.getElementById('btn-draw-mode');
+            if (drawBtn) {
+                if (state.drawModeActive) {
+                    drawBtn.className = "kid-btn bg-purple-300 text-purple-950 font-black px-2.5 py-1 rounded-xl text-[9px] uppercase tracking-wide";
+                    drawBtn.innerHTML = '✏️ DRAW MODE: ON';
+                    handleCanvasSetupLayout();
+                } else {
+                    drawBtn.className = "kid-btn bg-white text-[#3c1e08] font-black px-2.5 py-1 rounded-xl text-[9px] uppercase tracking-wide";
+                    drawBtn.innerHTML = '✏️ DRAW MODE: OFF';
+                }
+            }
+        }
+
+        /* ================== WORKSHEET BUILDER WIZARD LOGIC ================== */
+        function generateAtoZSelectors() {
+            const grid = document.getElementById('grid-selection-alphabet');
+            grid.innerHTML = '';
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+            alphabet.forEach(letter => {
+                const lLower = letter.toLowerCase();
+                const count = SEED_DATA_PACK.filter(item => item.category === lLower && !item.isDummy).length;
+                
+                const btn = document.createElement('button');
+                btn.id = `btn-sel-alphabet-${lLower}`;
+                btn.onclick = () => selectWizardTerm('alphabet', lLower);
+                btn.className = "kid-btn bg-white rounded-xl p-1.5 flex flex-col items-center justify-center border-2 border-[#3c1e08]";
+                btn.innerHTML = `
+                    <span class="text-sm font-black text-purple-950">${letter}</span>
+                    <span class="text-[7px] font-bold text-purple-800 bg-purple-100 px-1 rounded-full mt-0.5">${count} words</span>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function getWordFamilies() {
+            const builtIns = [
+                { key: 'at', label: '-at Family', emoji: '👪' },
+                { key: 'an', label: '-an Family', emoji: '👪' },
+                { key: 'ig', label: '-ig Family', emoji: '👪' },
+                { key: 'op', label: '-op Family', emoji: '👪' }
+            ];
+            const categoriesInPack = [...new Set(SEED_DATA_PACK.map(item => item.category))];
+            categoriesInPack.forEach(cat => {
+                if (cat && cat.length > 1 && !builtIns.some(f => f.key === cat)) {
+                    builtIns.push({
+                        key: cat,
+                        label: `-${cat} Family`,
+                        emoji: '🌟'
+                    });
+                }
+            });
+            return builtIns;
+        }
+
+        function generateWordFamilySelectors() {
+            const grid = document.getElementById('grid-selection-family');
+            grid.innerHTML = '';
+            const families = getWordFamilies();
+            families.forEach(fam => {
+                const count = SEED_DATA_PACK.filter(item => item.category === fam.key && !item.isDummy).length;
+                const btn = document.createElement('button');
+                btn.id = `btn-sel-family-${fam.key}`;
+                btn.onclick = () => selectWizardTerm('word-family', fam.key);
+                btn.className = "kid-btn bg-white rounded-xl p-2.5 flex flex-col items-center justify-center border-2 border-[#3c1e08]";
+                btn.innerHTML = `
+                    <span class="text-xl">${fam.emoji || '👪'}</span>
+                    <span class="text-xs font-black text-orange-950 mt-0.5">${fam.label}</span>
+                    <span class="text-[8px] font-bold text-orange-800 bg-orange-100 px-1.5 rounded-full mt-0.5">${count} words</span>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function toggleSelectionMode(mode) {
+            state.selectionMode = mode;
+            const btnAlphabet = document.getElementById('btn-toggle-alphabet');
+            const btnFamily = document.getElementById('btn-toggle-family');
+            const gridAlphabet = document.getElementById('grid-selection-alphabet');
+            const gridFamily = document.getElementById('grid-selection-family');
+            const newFamilyBtnContainer = document.getElementById('new-family-btn-container');
+
+            if (mode === 'alphabet') {
+                btnAlphabet.className = "kid-btn bg-amber-300 px-4 py-1.5 rounded-xl text-xs font-bold";
+                btnFamily.className = "kid-btn bg-white px-4 py-1.5 rounded-xl text-xs font-bold";
+                gridAlphabet.classList.remove('hidden');
+                gridFamily.classList.add('hidden');
+                if (newFamilyBtnContainer) newFamilyBtnContainer.classList.add('hidden');
+            } else {
+                btnFamily.className = "kid-btn bg-amber-300 px-4 py-1.5 rounded-xl text-xs font-bold";
+                btnAlphabet.className = "kid-btn bg-white px-4 py-1.5 rounded-xl text-xs font-bold";
+                gridFamily.classList.remove('hidden');
+                gridAlphabet.classList.add('hidden');
+                if (newFamilyBtnContainer) newFamilyBtnContainer.classList.remove('hidden');
+            }
+        }
+
+        function selectWizardTerm(mode, val) {
+            state.selectionMode = mode;
+            state.selectedValue = val;
+            highlightSelectionInDOM();
+            loadStep2ImageGrid();
+            navigateWizardStep(2);
+        }
+
+        function highlightSelectionInDOM() {
+            document.querySelectorAll('[id^="btn-sel-"]').forEach(el => {
+                el.classList.remove('bg-purple-100', 'bg-orange-100', 'ring-2', 'ring-purple-400', 'ring-orange-400');
+            });
+            const activeBtn = document.getElementById(`btn-sel-${state.selectionMode}-${state.selectedValue}`);
+            if (activeBtn) {
+                if (state.selectionMode === 'alphabet') {
+                    activeBtn.classList.add('bg-purple-100', 'ring-2', 'ring-purple-400');
+                } else {
+                    activeBtn.classList.add('bg-orange-100', 'ring-2', 'ring-orange-400');
+                }
+            }
+        }
+
+        function loadStep2ImageGrid() {
+            const container = document.getElementById('grid-match-images');
+            container.innerHTML = '';
+            const matching = getMatchingImages(state.selectionMode, state.selectedValue);
+            state.selectedImageIds = [];
+
+            if (matching.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-rose-50 border-2 border-rose-200 rounded-xl p-4 text-center text-xs text-rose-900 font-bold">
+                        ❌ No image assets found for this focus. Add custom terms.
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('step-2-title').textContent = `Choose ${state.selectedValue.toUpperCase()} Words`;
+
+            matching.forEach(item => {
+                const isChecked = state.selectedImageIds.includes(item.id);
+                const card = document.createElement('div');
+                card.id = `image-select-card-${item.id}`;
+                card.onclick = () => toggleImageSelection(item.id);
+                card.className = `kid-card cursor-pointer bg-white rounded-xl p-2.5 border-2 border-[#3c1e08] flex flex-col items-center gap-1.5 relative transition-all ${isChecked ? 'ring-2 ring-pink-500 bg-pink-50/10' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="absolute top-1 right-1 w-4 h-4 rounded-full border border-[#3c1e08] bg-white flex items-center justify-center text-[8px] shadow-inner">
+                        <span id="check-icon-${item.id}" class="${isChecked ? '' : 'hidden'} font-black text-rose-600">✔</span>
+                    </div>
+                    <div class="w-12 h-12 bg-amber-50 rounded-lg border border-[#3c1e08] flex items-center justify-center overflow-hidden shadow-inner">
+                        <img id="sel-img-${item.id}" class="w-full h-full object-contain p-1 pointer-events-none" src="" alt="${item.word}"/>
+                    </div>
+                    <div class="text-center pointer-events-none">
+                        <p class="font-black text-xs text-[#3c1e08]">${item.word}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+                applySmartImage(document.getElementById(`sel-img-${item.id}`), item);
+            });
+        }
+
+        function toggleImageSelection(id) {
+            const index = state.selectedImageIds.indexOf(id);
+            if (index > -1) {
+                state.selectedImageIds.splice(index, 1);
+            } else {
+                state.selectedImageIds.push(id);
+            }
+            updateCheckboxSelectionsInDOM();
+        }
+
+        function setAllImagesSelection(bool) {
+            const matching = getMatchingImages(state.selectionMode, state.selectedValue);
+            state.selectedImageIds = bool ? matching.map(item => item.id) : [];
+            updateCheckboxSelectionsInDOM();
+        }
+
+        function updateCheckboxSelectionsInDOM() {
+            const matching = getMatchingImages(state.selectionMode, state.selectedValue);
+            matching.forEach(item => {
+                const isChecked = state.selectedImageIds.includes(item.id);
+                const card = document.getElementById('image-select-card-' + item.id);
+                const icon = document.getElementById('check-icon-' + item.id);
+                
+                if (card && icon) {
+                    if (isChecked) {
+                        card.classList.add('ring-2', 'ring-pink-500', 'bg-pink-50/10');
+                        icon.classList.remove('hidden');
+                    } else {
+                        card.classList.remove('ring-2', 'ring-pink-500', 'bg-pink-50/10');
+                        icon.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        function processImageSelectionNext() {
+            if (state.selectedImageIds.length === 0) {
+                showCustomWarning("Select at least 1 card!");
+                return;
+            }
+            navigateWizardStep(3);
+        }
+
+        function showCustomWarning(message) {
+            const warningDiv = document.createElement('div');
+            warningDiv.className = "absolute top-16 left-1/2 transform -translate-x-1/2 bg-rose-600 text-white font-black px-4 py-2 rounded-xl border-2 border-[#3c1e08] shadow-md z-50 animate-bounce text-[11px] text-center w-5/6";
+            warningDiv.innerHTML = `⚠️ ${message}`;
+            document.body.appendChild(warningDiv);
+            setTimeout(() => warningDiv.remove(), 2500);
+        }
+
+        function navigateWizardStep(step) {
+            document.querySelectorAll('.wizard-step-container').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`wizard-step-${step}-content`).classList.remove('hidden');
+
+            for(let i = 1; i <= 3; i++) {
+                const indicator = document.getElementById(`step-indicator-${i}`);
+                const spanNode = indicator.querySelector('span');
+                
+                if (i === step) {
+                    indicator.className = "flex items-center gap-1 font-black text-purple-800";
+                    spanNode.className = "w-5 h-5 rounded-full border border-[#3c1e08] bg-purple-500 flex items-center justify-center text-white text-[10px]";
+                } else if (i < step) {
+                    indicator.className = "flex items-center gap-1 font-bold text-emerald-700";
+                    spanNode.className = "w-5 h-5 rounded-full border border-[#3c1e08] bg-emerald-400 flex items-center justify-center text-white text-[10px]";
+                } else {
+                    indicator.className = "flex items-center gap-1 font-bold text-gray-400";
+                    spanNode.className = "w-5 h-5 rounded-full border border-gray-300 bg-white flex items-center justify-center text-gray-400 text-[10px]";
+                }
+            }
+        }
+
+        function getMatchingImages(mode, val) {
+            return SEED_DATA_PACK.filter(item => item.category === val && !item.isDummy);
+        }
+
+        function launchPresentationWithTemplate(templateId) {
+            state.activityTemplate = templateId;
+            state.currentSlideIndex = 0;
+            state.currentAnswerStates = {}; 
+            state.drawingStrokes = [];      
+
+            executeWorksheetSlideCompilation();
+            applyNavigationState('screen-presentation');
+            renderSlidePresentationView();
+        }
+
+        /* ================== PRESENTATION SLIDE COMPILERS & TEMPLATES ================== */
+        function executeWorksheetSlideCompilation() {
+            state.compiledSlides = [];
+            const items = SEED_DATA_PACK.filter(it => state.selectedImageIds.includes(it.id) && !it.isDummy);
+            if (items.length === 0) return;
+
+            const isMultiImage = ['circle-word', 'match-picture', 'match-pair'].includes(state.activityTemplate);
+
+            if (!isMultiImage) {
+                items.forEach(item => {
+                    state.compiledSlides.push({
+                        id: `slide-${item.id}`,
+                        images: [item]
+                    });
+                });
+            } else {
+                const batchSize = 4;
+                for (let i = 0; i < items.length; i += batchSize) {
+                    const chunk = items.slice(i, i + batchSize);
+                    state.compiledSlides.push({
+                        id: `slide-batch-${i}`,
+                        images: chunk
+                    });
+                }
+            }
+        }
+
+        function renderTemplateKnowWords(parent, item) {
+            parent.innerHTML = `
+                <div class="flex flex-col items-center justify-center gap-4 w-full text-center">
+                    <h4 class="text-xs font-black text-indigo-950 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full uppercase">
+                        Know the Word!
+                    </h4>
+                    <div class="w-32 h-32 bg-gradient-to-tr from-amber-50 to-orange-100 rounded-2xl border-2 border-[#3c1e08] flex items-center justify-center overflow-hidden shadow-sm">
+                        <img id="slide-item-img-${item.id}" class="w-full h-full object-contain p-2" src="" alt="${item.word}"/>
+                    </div>
+                    <div class="text-center mt-2">
+                        <h2 class="text-3xl font-black text-purple-950 tracking-wide uppercase leading-none">${item.word}</h2>
+                        <span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-dashed border-rose-200 mt-2.5 inline-block">
+                            First Letter sound: <strong class="text-xs font-black">${item.word.charAt(0)}</strong>
+                        </span>
+                    </div>
+                </div>
+            `;
+            applySmartImage(document.getElementById(`slide-item-img-${item.id}`), item);
+        }
+
+        function renderTemplateMissingLetter(parent, item) {
+            const firstLetter = item.word.charAt(0);
+            const remainder = item.word.substring(1);
+            const savedState = state.currentAnswerStates[state.currentSlideIndex] || { typed: '' };
+            const typedVal = savedState.typed || '';
+
+            parent.innerHTML = `
+                <div class="flex flex-col items-center justify-center gap-4 w-full">
+                    <h4 class="text-xs font-black text-sky-950 bg-sky-50 border border-sky-150 px-3 py-1 rounded-full">
+                        What's the start sound?
+                    </h4>
+                    <div class="w-28 h-28 bg-sky-50/50 rounded-2xl border-2 border-[#3c1e08] flex items-center justify-center overflow-hidden shadow-inner">
+                        <img id="slide-item-img-${item.id}" class="w-full h-full object-contain p-2" src="" alt="${item.word}"/>
+                    </div>
+                    <div class="flex items-center gap-1.5 mt-2">
+                        <input type="text" id="missing-char-input" maxLength="1" value="${typedVal}" 
+                               class="w-12 h-12 text-center text-2xl font-black border-2 border-[#3c1e08] bg-amber-50 rounded-xl outline-none focus:bg-pink-100 uppercase"
+                               placeholder="_" />
+                        <span class="text-3xl font-black text-[#3c1e08] uppercase tracking-wide">${remainder}</span>
+                    </div>
+                    <div id="missing-letter-feedback" class="text-[10px] font-black text-[#7d5032] min-h-[16px]"></div>
+                </div>
+            `;
+
+            applySmartImage(document.getElementById(`slide-item-img-${item.id}`), item);
+
+            const inp = document.getElementById('missing-char-input');
+            inp.addEventListener('input', (e) => {
+                const text = e.target.value.toLowerCase();
+                state.currentAnswerStates[state.currentSlideIndex] = { typed: e.target.value };
+                evaluateMissingLetterFeedback(text, firstLetter);
+            });
+
+            if (typedVal) {
+                evaluateMissingLetterFeedback(typedVal, firstLetter);
+            }
+        }
+
+        function evaluateMissingLetterFeedback(typed, correct) {
+            const feedback = document.getElementById('missing-letter-feedback');
+            const inp = document.getElementById('missing-char-input');
+            if (!feedback || !inp) return;
+
+            if (typed.toLowerCase() === correct.toLowerCase()) {
+                feedback.innerHTML = `<span class="text-emerald-600">🎉 Bravo! High five!</span>`;
+                inp.style.backgroundColor = '#d1fae5';
+                inp.style.borderColor = '#10b981';
+                triggerExplosion();
+            } else if (typed !== '') {
+                feedback.innerHTML = `<span class="text-rose-600">Try again! Listen to the sound.</span>`;
+                inp.style.backgroundColor = '#fee2e2';
+                inp.style.borderColor = '#f43f5e';
+            } else {
+                feedback.innerHTML = '';
+                inp.style.backgroundColor = '#fffbeb';
+                inp.style.borderColor = '#3c1e08';
+            }
+        }
+
+        function renderTemplateTraceLetter(parent, item) {
+            const fUpper = item.word.charAt(0).toUpperCase();
+            const fLower = item.word.charAt(0).toLowerCase();
+
+            parent.innerHTML = `
+                <div class="flex flex-col items-center justify-around w-full h-full gap-2">
+                    <div class="flex items-center gap-3 text-left w-full border-b border-gray-100 pb-1">
+                        <div class="w-14 h-14 bg-rose-50 rounded-xl border border-[#3c1e08] flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                            <img id="slide-item-img-${item.id}" class="w-full h-full object-contain p-1" src="" alt="${item.word}"/>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-black text-rose-950 uppercase leading-none">${item.word}</h4>
+                            <p class="text-[8px] font-bold text-gray-400 mt-1">Trace carefully on screen</p>
+                        </div>
+                    </div>
+
+                    <!-- Worksheet tracing area -->
+                    <div class="flex items-center gap-6 bg-gray-50/50 rounded-xl p-3 border border-gray-200 relative w-full justify-center">
+                        <div class="relative flex flex-col items-center justify-center">
+                            <span class="dotted-letter text-6xl leading-none">${fUpper}</span>
+                            <span class="text-[8px] font-bold text-gray-400">Capital</span>
+                        </div>
+                        <div class="relative flex flex-col items-center justify-center">
+                            <span class="dotted-letter text-6xl leading-none">${fLower}</span>
+                            <span class="text-[8px] font-bold text-gray-400">Small</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            applySmartImage(document.getElementById(`slide-item-img-${item.id}`), item);
+        }
+
+        function renderTemplateCircleWord(parent, items) {
+            parent.innerHTML = `
+                <div class="w-full h-full flex flex-col justify-center items-center">
+                    <h4 class="text-[10px] font-black text-amber-950 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full mb-3 shrink-0">
+                        Tap the matching word!
+                    </h4>
+                    <div class="grid grid-cols-2 gap-3.5 w-full flex-1 overflow-y-auto max-w-xs custom-scrollbar">
+                        ${items.map((item, idx) => {
+                            const choices = generateCircleChoices(item);
+                            const saved = state.currentAnswerStates[state.currentSlideIndex] || {};
+                            const chosenWord = saved[idx] || '';
+
+                            return `
+                                <div class="bg-amber-50/10 border border-dashed border-[#3c1e08]/20 rounded-xl p-2.5 flex flex-col items-center gap-2">
+                                    <div class="w-16 h-16 bg-white rounded-xl border border-[#3c1e08] flex items-center justify-center overflow-hidden shadow-inner">
+                                        <img id="slide-grid-img-${item.id}" class="w-full h-full object-contain p-1.5" src="" alt="${item.word}"/>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-1 w-full">
+                                        ${choices.map(choice => {
+                                            const isSel = chosenWord === choice;
+                                            const isCorrect = choice === item.word;
+                                            let styleClass = "bg-white text-[#3c1e08]";
+                                            if (isSel) {
+                                                styleClass = isCorrect ? "bg-emerald-400 text-white border-emerald-600" : "bg-rose-400 text-white border-rose-600";
+                                            }
+                                            return `
+                                                <button onclick="handleCircleWordChoice(${idx}, '${choice}', '${item.word}')" 
+                                                        class="kid-btn ${styleClass} text-[9px] font-extrabold py-1 rounded-lg border border-[#3c1e08] uppercase truncate">
+                                                    ${choice}
+                                                </button>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            items.forEach(item => {
+                applySmartImage(document.getElementById(`slide-grid-img-${item.id}`), item);
+            });
+        }
+
+        function generateCircleChoices(targetItem) {
+            const matches = SEED_DATA_PACK.filter(it => it.category === targetItem.category && it.word !== targetItem.word && !it.isDummy);
+            const list = [targetItem.word];
+            if (matches.length > 0) list.push(matches[0].word);
+            if (matches.length > 1) list.push(matches[1].word);
+            if (list.length < 3) {
+                const alternates = ['Dog', 'Cat', 'Ball', 'Apple', 'Hat'];
+                for(let alt of alternates) {
+                    if (!list.includes(alt)) {
+                        list.push(alt);
+                        if (list.length === 3) break;
+                    }
+                }
+            }
+            return list.sort();
+        }
+
+        function handleCircleWordChoice(idx, chosen, correct) {
+            const saved = state.currentAnswerStates[state.currentSlideIndex] || {};
+            saved[idx] = chosen;
+            state.currentAnswerStates[state.currentSlideIndex] = saved;
+            if (chosen === correct) triggerExplosion();
+            renderSlidePresentationView();
+        }
+
+        function renderTemplateMatchPicture(parent, items) {
+            const saved = state.currentAnswerStates[state.currentSlideIndex] || { connections: [] };
+            const connections = saved.connections || [];
+            let itemWords = [...items].sort((a,b) => a.word.localeCompare(b.word));
+            
+            const selectedImgIdx = saved.selectedImgIndex !== undefined ? saved.selectedImgIndex : -1;
+            const selectedWordIdx = saved.selectedWordIndex !== undefined ? saved.selectedWordIndex : -1;
+
+            parent.innerHTML = `
+                <div class="w-full h-full flex flex-col items-center justify-center">
+                    <h4 class="text-[10px] font-black text-indigo-950 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full mb-1 shrink-0">
+                        Link Cards to spelling!
+                    </h4>
+                    <p class="text-[8px] text-gray-400 mb-2 font-bold">Tap a card then tap its match to link them!</p>
+
+                    <div class="grid grid-cols-2 gap-4 w-full flex-1 overflow-y-auto max-w-xs justify-center p-1">
+                        <!-- Column Left: Images -->
+                        <div class="flex flex-col gap-2 justify-center">
+                            ${items.map((item, idx) => {
+                                const isMatched = connections.some(c => c.imgId === item.id);
+                                const isSelected = selectedImgIdx === idx;
+                                return `
+                                    <button onclick="handleMatchSelector('img', ${idx}, '${item.id}')"
+                                            class="kid-card flex items-center gap-2 bg-white border-2 border-[#3c1e08] p-1.5 rounded-xl text-left hover:bg-indigo-50 transition-all ${isSelected ? 'ring-2 ring-purple-500' : ''} ${isMatched ? 'opacity-30' : ''}"
+                                            ${isMatched ? 'disabled' : ''}>
+                                        <div class="w-10 h-10 bg-amber-50 rounded-lg border border-[#3c1e08] flex items-center justify-center overflow-hidden shrink-0">
+                                            <img id="slide-match-img-${item.id}" class="w-full h-full object-contain p-0.5" src="" alt="${item.word}"/>
+                                        </div>
+                                        <span class="font-extrabold text-[8px] text-gray-400">Card ${idx + 1}</span>
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+
+                        <!-- Column Right: Words -->
+                        <div class="flex flex-col gap-2 justify-center">
+                            ${itemWords.map((item, idx) => {
+                                const isMatched = connections.some(c => c.word === item.word);
+                                const isSelected = selectedWordIdx === idx;
+                                return `
+                                    <button onclick="handleMatchSelector('word', ${idx}, '${item.word}')"
+                                            class="kid-btn bg-white font-black text-sm text-[#3c1e08] border-2 border-[#3c1e08] p-2.5 rounded-xl uppercase hover:bg-orange-50 ${isSelected ? 'ring-2 ring-pink-500' : ''} ${isMatched ? 'opacity-30 bg-emerald-100 text-emerald-800' : ''}"
+                                            ${isMatched ? 'disabled' : ''}>
+                                        ${item.word}
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            items.forEach(item => {
+                applySmartImage(document.getElementById(`slide-match-img-${item.id}`), item);
+            });
+        }
+
+        function handleMatchSelector(type, idx, val) {
+            const saved = state.currentAnswerStates[state.currentSlideIndex] || { connections: [] };
+            if (type === 'img') {
+                saved.selectedImgIndex = idx;
+                saved.selectedImgId = val;
+            } else {
+                saved.selectedWordIndex = idx;
+                saved.selectedWord = val;
+            }
+
+            if (saved.selectedImgId && saved.selectedWord) {
+                const targetObj = SEED_DATA_PACK.find(it => it.id === saved.selectedImgId);
+                if (targetObj && targetObj.word === saved.selectedWord) {
+                    if (!saved.connections) saved.connections = [];
+                    saved.connections.push({ imgId: saved.selectedImgId, word: saved.selectedWord });
+                    triggerExplosion();
+                } else {
+                    const workspace = document.getElementById('presentation-zoom-container');
+                    workspace.classList.add('animate-shake');
+                    setTimeout(() => workspace.classList.remove('animate-shake'), 400);
+                }
+                saved.selectedImgIndex = -1;
+                saved.selectedImgId = null;
+                saved.selectedWordIndex = -1;
+                saved.selectedWord = null;
+            }
+
+            state.currentAnswerStates[state.currentSlideIndex] = saved;
+            renderSlidePresentationView();
+        }
+
+        function renderTemplateMatchPair(parent, items) {
+            const saved = state.currentAnswerStates[state.currentSlideIndex] || { matches: [], selected: [] };
+            const matchedIds = saved.matches || [];
+            const selectedIdxs = saved.selected || [];
+
+            if (!saved.cardDeck) {
+                let deck = [];
+                items.forEach(item => {
+                    deck.push({ type: 'img', id: item.id, word: item.word, display: item });
+                    deck.push({ type: 'text', id: `text-${item.id}`, word: item.word, display: item.word });
+                });
+                deck = deck.sort((a,b) => a.word.localeCompare(b.word));
+                for(let i = deck.length - 1; i > 0; i--) {
+                    const j = (i * 7) % deck.length;
+                    const temp = deck[i];
+                    deck[i] = deck[j];
+                    deck[j] = temp;
+                }
+                saved.cardDeck = deck;
+            }
+
+            const deck = saved.cardDeck;
+
+            parent.innerHTML = `
+                <div class="w-full h-full flex flex-col justify-center items-center">
+                    <h4 class="text-[10px] font-black text-pink-900 bg-pink-50 border border-pink-150 px-3 py-0.5 rounded-full mb-2 shrink-0">
+                        Memory Game Match!
+                    </h4>
+                    <div class="grid grid-cols-4 gap-1.5 w-full max-w-xs flex-1 overflow-y-auto p-1 custom-scrollbar">
+                        ${deck.map((card, idx) => {
+                            const isRevealed = selectedIdxs.includes(idx) || matchedIds.includes(card.word);
+                            const isMatched = matchedIds.includes(card.word);
+                            let blockContent = "?";
+
+                            if (isRevealed) {
+                                if (card.type === 'img') {
+                                    blockContent = `
+                                        <div class="w-10 h-10 bg-white rounded-lg border border-gray-300 flex items-center justify-center overflow-hidden">
+                                            <img id="deck-card-img-${card.id}" class="w-full h-full object-contain p-0.5 pointer-events-none" src="" alt="${card.word}"/>
+                                        </div>
+                                    `;
+                                } else {
+                                    blockContent = `<span class="text-[9px] font-black uppercase text-center break-all leading-tight">${card.display}</span>`;
+                                }
+                            }
+
+                            return `
+                                <button onclick="handlePairCardTap(${idx})"
+                                        class="kid-card aspect-square bg-gradient-to-br ${isMatched ? 'from-emerald-50 to-emerald-100 border-emerald-500 text-emerald-800' : isRevealed ? 'from-amber-50 to-orange-50 border-amber-500' : 'from-pink-400 to-purple-500 text-white'} rounded-xl flex items-center justify-center text-xl font-black border-2 border-[#3c1e08]"
+                                        ${isMatched ? 'disabled' : ''}>
+                                    ${blockContent}
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+
+            deck.forEach(card => {
+                const imgNode = document.getElementById(`deck-card-img-${card.id}`);
+                if (imgNode && card.type === 'img') {
+                    applySmartImage(imgNode, card.display);
+                }
+            });
+        }
+
+        function handlePairCardTap(idx) {
+            const saved = state.currentAnswerStates[state.currentSlideIndex] || { matches: [], selected: [] };
+            const selected = saved.selected || [];
+            const matches = saved.matches || [];
+            const deck = saved.cardDeck;
+
+            if (selected.includes(idx) || selected.length >= 2) return;
+            selected.push(idx);
+            saved.selected = selected;
+
+            if (selected.length === 2) {
+                const card1 = deck[selected[0]];
+                const card2 = deck[selected[1]];
+
+                if (card1.word === card2.word) {
+                    matches.push(card1.word);
+                    saved.matches = matches;
+                    saved.selected = [];
+                    triggerExplosion();
+                } else {
+                    setTimeout(() => {
+                        saved.selected = [];
+                        state.currentAnswerStates[state.currentSlideIndex] = saved;
+                        renderSlidePresentationView();
+                    }, 1200);
+                }
+            }
+
+            state.currentAnswerStates[state.currentSlideIndex] = saved;
+            renderSlidePresentationView();
+        }
+
+        /* ================== SMART CASE SENSITIVE RE-TRY IMAGE LOADER ================== */
+        async function applySmartImage(imgEl, item) {
+            if (!imgEl) return;
+            const extensions = ['png', 'gif', 'jpg', 'jpeg', 'svg', 'webp', 'PNG', 'GIF', 'JPG', 'JPEG', 'SVG', 'WEBP'];
+            const cases = [
+                val => val.toLowerCase(),
+                val => val,
+                val => val.toUpperCase(),
+                val => val.charAt(0).toUpperCase() + val.slice(1).toLowerCase()
+            ];
+
+            let attemptIndex = 0;
+            let caseIndex = 0;
+
+            const tryNext = () => {
+                if (caseIndex >= cases.length) {
+                    caseIndex = 0;
+                    attemptIndex++;
+                }
+                if (attemptIndex >= extensions.length) {
+                    // Placeholder visual SVG fallback
+                    imgEl.src = `https://placehold.co/150x150/ffedd5/4b2b0f?text=${encodeURIComponent(item.word)}`;
+                    imgEl.onerror = null; 
+                    return;
+                }
+                const currentExt = extensions[attemptIndex];
+                const transformedName = cases[caseIndex](item.searchName);
+                imgEl.src = `images/${transformedName}.${currentExt}`;
+                caseIndex++;
+            };
+
+            imgEl.onerror = () => tryNext();
+            tryNext();
+        }
+
+        /* ================== UTILITY CONTROLLERS ================== */
+        function modifyZoomScale(amount) {
+            state.zoomScale += amount;
+            state.zoomScale = Math.max(0.5, Math.min(1.8, state.zoomScale));
+
+            const node = document.getElementById('presentation-zoom-container');
+            node.style.transform = `scale(${state.zoomScale})`;
+            document.getElementById('label-zoom-percent').textContent = `${Math.round(state.zoomScale * 100)}%`;
+            setTimeout(handleCanvasSetupLayout, 100);
+        }
+
+        function exitPresentationView() {
+            applyNavigationState('screen-wizard');
+        }
+
+        function navigateSlide(direction) {
+            if (direction === 'prev') {
+                state.currentSlideIndex--;
+            } else {
+                state.currentSlideIndex++;
+            }
+            state.currentSlideIndex = Math.max(0, Math.min(state.compiledSlides.length - 1, state.currentSlideIndex));
+            renderSlidePresentationView();
+            pushRoomUpdateToRealtimeDatabase('SLIDE_SET_INDEX', { index: state.currentSlideIndex });
+        }
+
+        function pronounceCurrentWord() {
+            const currentSlide = state.compiledSlides[state.currentSlideIndex];
+            if (!currentSlide || currentSlide.images.length === 0) return;
+            const targetWord = currentSlide.images[0].word;
+            
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(targetWord);
+                utterance.rate = 0.8;
+                utterance.pitch = 1.3;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn("Speech Synthesis unsupported.");
+            }
+        }
+
+        function triggerExplosion() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 60,
+                    spread: 45,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function updateCoordsReadout(x, y) {
+            const readout = document.getElementById('label-cursor-readout');
+            if (readout) {
+                readout.textContent = `X: ${x.toFixed(1)}% | Y: ${y.toFixed(1)}%`;
+            }
+        }
+
+        function renderSlidePresentationView() {
+            const currentKey = state.activityTemplate + '_' + state.currentSlideIndex;
+            const slideActuallyChanged = (currentKey !== _lastRenderedSlideKey);
+            
+            if (slideActuallyChanged) {
+                _lastRenderedSlideKey = currentKey;
+                if (!state.isSimulating) {
+                    toggleDrawMode(false);
+                }
+            }
+
+            const container = document.getElementById('slide-template-workspace');
+            container.innerHTML = '';
+            state.activeStroke = null;
+            
+            const badge = document.getElementById('badge-template');
+            badge.textContent = state.activityTemplate.replace('-', ' ');
+
+            if (state.compiledSlides.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-4 text-rose-800">
+                        <span class="text-3xl">⚠️</span>
+                        <h4 class="font-black text-sm mt-2">Empty presentation</h4>
+                        <p class="text-[9px] text-gray-400 mt-1">Select words in Builder Wizard first.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            state.currentSlideIndex = Math.max(0, Math.min(state.compiledSlides.length - 1, state.currentSlideIndex));
+            const currentSlide = state.compiledSlides[state.currentSlideIndex];
+            const slideProgress = document.getElementById('label-slide-progress');
+            slideProgress.textContent = `${state.currentSlideIndex + 1} / ${state.compiledSlides.length}`;
+
+            switch(state.activityTemplate) {
+                case 'know-words':
+                    renderTemplateKnowWords(container, currentSlide.images[0]);
+                    break;
+                case 'missing-letter':
+                    renderTemplateMissingLetter(container, currentSlide.images[0]);
+                    break;
+                case 'trace-letter':
+                    renderTemplateTraceLetter(container, currentSlide.images[0]);
+                    break;
+                case 'circle-word':
+                    renderTemplateCircleWord(container, currentSlide.images);
+                    break;
+                case 'match-picture':
+                    renderTemplateMatchPicture(container, currentSlide.images);
+                    break;
+                case 'match-pair':
+                    renderTemplateMatchPair(container, currentSlide.images);
+                    break;
+            }
+            setTimeout(repaintDrawingCanvas, 15);
+        }
+
+        function moveRemoteCursorDOM(pctX, pctY) {
+            const cursorNode = document.getElementById('remote-cursor-node');
+            const container = document.getElementById('presentation-zoom-container');
+            if (cursorNode && container) {
+                const x = (pctX / 100) * container.clientWidth;
+                const y = (pctY / 100) * container.clientHeight;
+                cursorNode.style.left = `${x}px`;
+                cursorNode.style.top = `${y}px`;
+            }
+        }
+
+        /* ================== DYNAMIC CATEGORIES & WORD FAMILIES (Feature 4) ================== */
+        function openNewFamilyModal() {
+            document.getElementById('new-family-modal').classList.remove('hidden');
+        }
+
+        function closeNewFamilyModal() {
+            document.getElementById('new-family-modal').classList.add('hidden');
+            document.getElementById('input-new-fam-key').value = '';
+            document.getElementById('input-new-fam-label').value = '';
+        }
+
+        function saveNewFamily() {
+            const keyInput = document.getElementById('input-new-fam-key').value.trim().toLowerCase();
+            const labelInput = document.getElementById('input-new-fam-label').value.trim();
+
+            if (!keyInput || !labelInput) {
+                showCustomWarning("Complete both fields!");
+                return;
+            }
+            if (keyInput.length < 2) {
+                showCustomWarning("Key code must be at least 2 chars!");
+                return;
+            }
+
+            const exists = SEED_DATA_PACK.some(item => item.category === keyInput);
+            if (!exists) {
+                SEED_DATA_PACK.push({
+                    id: 'custom-family-dummy-' + keyInput,
+                    searchName: 'dummy',
+                    category: keyInput,
+                    word: 'Placeholder',
+                    fallbackSvg: '⭐',
+                    isDummy: true
+                });
+            }
+
+            generateWordFamilySelectors();
+            closeNewFamilyModal();
+            showToastSuccess(`Created custom family -${keyInput}!`);
+        }
+
+        function showToastSuccess(msg) {
+            const toast = document.createElement('div');
+            toast.className = "absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-emerald-600 text-white font-black px-4 py-2 rounded-xl border-2 border-[#3c1e08] shadow-md z-50 text-[10px] text-center w-5/6";
+            toast.innerHTML = `🎉 ${msg}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        function populateAssignFamilyDropdown() {
+            const selectEl = document.getElementById('dropdown-assign-family');
+            if (!selectEl) return;
+            selectEl.innerHTML = '';
+            const families = getWordFamilies();
+            families.forEach(fam => {
+                const opt = document.createElement('option');
+                opt.value = fam.key;
+                opt.textContent = fam.label;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        function toggleLibraryCardSelection(id) {
+            const idx = state.librarySelectedIds.indexOf(id);
+            if (idx > -1) {
+                state.librarySelectedIds.splice(idx, 1);
+            } else {
+                state.librarySelectedIds.push(id);
+            }
+
+            const card = document.getElementById(`lib-card-${id}`);
+            if (card) {
+                const check = card.querySelector('.lib-check-icon');
+                if (state.librarySelectedIds.includes(id)) {
+                    card.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50/10');
+                    if (check) check.classList.remove('hidden');
+                } else {
+                    card.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50/10');
+                    if (check) check.classList.add('hidden');
+                }
+            }
+            updateLibraryAssignBar();
+        }
+
+        function updateLibraryAssignBar() {
+            const bar = document.getElementById('library-multi-assign-bar');
+            const countLabel = document.getElementById('library-selected-count');
+            if (!bar || !countLabel) return;
+
+            const count = state.librarySelectedIds.length;
+            if (count > 0) {
+                bar.classList.remove('hidden');
+                countLabel.textContent = count;
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        function clearLibrarySelection() {
+            state.librarySelectedIds = [];
+            refreshImageLibraryView();
+            updateLibraryAssignBar();
+        }
+
+        function assignSelectedToFamily() {
+            const targetFamily = document.getElementById('dropdown-assign-family').value;
+            if (!targetFamily) return;
+
+            SEED_DATA_PACK.forEach(item => {
+                if (state.librarySelectedIds.includes(item.id)) {
+                    item.category = targetFamily;
+                }
+            });
+
+            const count = state.librarySelectedIds.length;
+            showToastSuccess(`Assigned ${count} image(s) to family -${targetFamily}!`);
+            clearLibrarySelection();
+            generateWordFamilySelectors();
+        }
+
+        /* ================== EXTERNAL MANIFEST LOADER SYSTEMS ================== */
+        function mergeManifestData(parsedArray) {
+            if (!Array.isArray(parsedArray)) return null;
+            SEED_DATA_PACK.length = 0;
+            let loadedCount = 0;
+
+            parsedArray.forEach(customItem => {
+                if (!customItem.word || !customItem.category) return;
+                const cat = customItem.category.trim().toLowerCase();
+                const word = customItem.word.trim();
+                const searchName = (customItem.searchName || word.toLowerCase()).trim().toLowerCase();
+                const fallbackSvg = customItem.fallbackSvg || '⭐';
+                const isDummy = !!customItem.isDummy;
+
+                const newItem = {
+                    id: customItem.id || `custom-${cat}-${searchName}`,
+                    searchName: searchName,
+                    category: cat,
+                    word: word,
+                    fallbackSvg: fallbackSvg,
+                    isDummy: isDummy
+                };
+                SEED_DATA_PACK.push(newItem);
+                loadedCount++;
+            });
+
+            generateAtoZSelectors();
+            generateWordFamilySelectors();
+            refreshImageLibraryView();
+            return { loadedCount };
+        }
+
+        async function autoLoadManifestOnBoot() {
+            try {
+                const response = await fetch('images/manifest.json');
+                if (response.ok) {
+                    const parsed = await response.json();
+                    const result = mergeManifestData(parsed);
+                    if (result) {
+                        const statusEl = document.getElementById('library-status-msg');
+                        if (statusEl) {
+                            statusEl.innerHTML = `
+                                <span class="text-emerald-700">Loaded ${result.loadedCount} custom assets from manifest.json</span>
+                            `;
+                        }
+                    }
+                }
+            } catch(err) {
+                console.log("No images/manifest.json auto-loaded. Using fallbacks.", err);
+            }
+        }
+
+        function refreshImageLibraryView() {
+            const container = document.getElementById('grid-library-gallery');
+            if (!container) return;
+            container.innerHTML = '';
+            populateAssignFamilyDropdown();
+
+            SEED_DATA_PACK.forEach(item => {
+                if (item.isDummy) return;
+                const isSelected = state.librarySelectedIds.includes(item.id);
+                const card = document.createElement('div');
+                card.id = `lib-card-${item.id}`;
+                card.onclick = () => toggleLibraryCardSelection(item.id);
+                card.className = `kid-card cursor-pointer bg-white rounded-xl p-2.5 border-2 border-[#3c1e08] flex flex-col items-center gap-1.5 shadow-sm transition-all duration-150 ${isSelected ? 'ring-2 ring-indigo-500 bg-indigo-50/10' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="absolute top-1 right-1 w-4 h-4 rounded-full border border-[#3c1e08] bg-white flex items-center justify-center text-[8px] shadow-inner">
+                        <span class="lib-check-icon ${isSelected ? '' : 'hidden'} font-black text-indigo-600">✔</span>
+                    </div>
+                    <div class="w-full aspect-square bg-amber-50 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
+                        <img id="lib-img-${item.id}" class="w-full h-full object-contain p-1.5 pointer-events-none" src="" alt="${item.word}"/>
+                    </div>
+                    <div class="text-center w-full pointer-events-none">
+                        <p class="font-black text-[11px] text-[#3c1e08] truncate leading-none">${item.word}</p>
+                        <p class="text-[7px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded px-1 mt-1 uppercase inline-block">
+                            F: ${item.category}
+                        </p>
+                    </div>
+                `;
+                container.appendChild(card);
+                applySmartImage(document.getElementById(`lib-img-${item.id}`), item);
+            });
+        }
+
+        function triggerUploadMockManifest() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'application/json';
+            fileInput.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.readAsText(file, 'UTF-8');
+                reader.onload = readerEvent => {
+                    try {
+                        const parsed = JSON.parse(readerEvent.target.result);
+                        if (Array.isArray(parsed)) {
+                            const result = mergeManifestData(parsed);
+                            if (result) {
+                                document.getElementById('library-status-msg').innerHTML = `
+                                    <span class="text-emerald-700">Ingested custom assets manifest cleanly. ${result.loadedCount} terms mapped.</span>
+                                `;
+                                showToastSuccess(`Ingested ${result.loadedCount} items!`);
+                            }
+                        } else {
+                            showCustomWarning("Manifest structure must be an Array.");
+                        }
+                    } catch(err) {
+                        showCustomWarning("Error reading JSON file.");
+                    }
+                };
+            };
+            fileInput.click();
+        }
+    </script>
+</body>
+</html>

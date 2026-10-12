@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Universal Matching Hub - Live Tutor App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- ============================================================
+         PART 1 — LIVETUTOR SYNC BLOCK (THE GOLDEN RULES)
+         ============================================================ -->
+    <script>
+        window.isSimulating = false;
+        const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#','?'));
+        const roomId = urlParams.get('room') || '54321';
+        let localSeed = 0;
+        
+        // Setup local seed
+        window.setSeed = function(str) {
+            let tempSeed = 0;
+            for (let i = 0; i < str.length; i++) { tempSeed = str.charCodeAt(i) + ((tempSeed << 5) - tempSeed); }
+            localSeed = Math.abs(tempSeed);
+        };
+        window.setSeed(roomId);
+        
+        // Seeded random number generator
+        window.seededRandom = function() {
+            let x = Math.sin(localSeed++) * 10000;
+            return x - Math.floor(x);
+        };
+        Math.random = window.seededRandom;
+
+        // CSS Unique selector generator
+        function getUniqueSelector(el) {
+            if (!el) return null;
+            if (el.id) return '#' + el.id;
+            if (el === document.body) return 'body';
+            let path = [];
+            while (el && el.nodeType === Node.ELEMENT_NODE) {
+                let selector = el.nodeName.toLowerCase();
+                if (el.id) { selector = '#' + el.id; path.unshift(selector); break; } 
+                else {
+                    if (el.className && typeof el.className === 'string') {
+                        const classes = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+                        if (classes) selector += '.' + classes;
+                    }
+                    let sibling = el, nth = 1;
+                    while (sibling = sibling.previousElementSibling) { if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++; }
+                    selector += ':nth-of-type(' + nth + ')';
+                    path.unshift(selector);
+                }
+                el = el.parentNode;
+            }
+            return path.join(' > ');
+        }
+
+        // UNIVERSAL CLICK TRACKER
+        let actionIdCounter = 0;
+        document.addEventListener('click', (e) => {
+            if (e.isTrusted === false || window.isSimulating) return;
+            const selector = getUniqueSelector(e.target); if (!selector) return;
+            actionIdCounter++;
+            window.parent.postMessage({
+                type: 'IFRAME_ACTION_TRIGGERED',
+                payload: { type: 'UNIVERSAL_CLICK', selector: selector, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+            }, '*');
+        }, true);
+
+        // UNIVERSAL INPUT SENDER TRACKER (Fixes desyncs inside Custom Input builders)
+        document.addEventListener('input', (e) => {
+            if (e.isTrusted === false || window.isSimulating) return;
+            const target = e.target;
+            if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+            
+            const selector = getUniqueSelector(target);
+            if (!selector) return;
+
+            window.parent.postMessage({
+                type: 'IFRAME_ACTION_TRIGGERED',
+                payload: {
+                    type: 'UNIVERSAL_INPUT',
+                    selector: selector,
+                    value: target.value,
+                    actionId: 'input_' + Date.now()
+                }
+            }, '*');
+        }, true);
+
+        // Cursor percentage position tracking
+        let lastCursorTime = 0;
+        document.addEventListener('mousemove', (e) => {
+            const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+            window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 }, '*');
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+                window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.touches[0].clientX / window.innerWidth) * 100, pctY: (e.touches[0].clientY / window.innerHeight) * 100 }, '*');
+            }
+        }, { passive: true });
+
+        // Event replication receiver bridge
+        let lastProcessedActionId = null;
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+                const action = event.data.action;
+                
+                if (action.type === 'UNIVERSAL_CURSOR') {
+                    const c = document.getElementById('remote-cursor');
+                    if (c) {
+                        c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+                        c.style.top = (action.pctY / 100 * window.innerHeight) + 'px';
+                        c.style.display = 'block';
+                    }
+                    return;
+                }
+
+                if (action.type === 'UNIVERSAL_INPUT') {
+                    const element = document.querySelector(action.selector);
+                    if (element) {
+                        element.value = action.value;
+                        element.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    return;
+                }
+
+                // EXPLICIT STATE SYNCHRONIZATION (Bypasses selector click dependencies on stale DOM screens)
+                if (action.type === 'SYNC_SCREEN') {
+                    window.isSimulating = true;
+                    if (action.screen === 'custom_input') {
+                        renderCustomInputScreen(action.mode);
+                    }
+                    setTimeout(() => { window.isSimulating = false; }, 50);
+                    return;
+                }
+
+                if (action.type === 'GENERATE_CUSTOM_WORD') {
+                    window.isSimulating = true;
+                    const lettersArray = action.word.split('');
+                    setupGeneratedMatchingLayout(lettersArray, `Word: ${action.word}`, action.mode);
+                    setTimeout(() => { window.isSimulating = false; }, 50);
+                    return;
+                }
+
+                if (action.type === 'GENERATE_CUSTOM_NUM') {
+                    window.isSimulating = true;
+                    const rangeArray = [];
+                    for (let i = action.start; i <= action.end; i++) {
+                        rangeArray.push(String(i));
+                    }
+                    setupGeneratedMatchingLayout(rangeArray, `Numbers: ${action.start} to ${action.end}`);
+                    setTimeout(() => { window.isSimulating = false; }, 50);
+                    return;
+                }
+
+                const currentActionId = action.actionId || action.timestamp;
+                if (currentActionId && currentActionId === lastProcessedActionId) return;
+                lastProcessedActionId = currentActionId;
+
+                window.isSimulating = true;
+                if (action.seed !== undefined) window.setSeed(action.seed.toString());
+                
+                if (action.type === 'UNIVERSAL_CLICK') {
+                    const element = document.querySelector(action.selector);
+                    if (element) element.click();
+                } 
+                else if (action.type === 'HUB_DROP') {
+                    if (window.handleHubDropReplication) {
+                        window.handleHubDropReplication(action.dragId, action.dropId);
+                    }
+                }
+
+                setTimeout(() => { window.isSimulating = false; }, 50);
+            }
+        });
+
+        function shuf(arr) {
+            arr = [...arr];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(window.seededRandom() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+    </script>
+
+    <style>
+         /* ============================================================
+           PART 2 — LAYOUT BOUNDS & RESPONSIVE PREMIUM KIDS CSS
+           ============================================================ */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap');
+
+        /* === RAINBOW BACKGROUND ANIMATION === */
+        @keyframes rainbowBg {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes floatBubble {
+            0%   { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+            50%  { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+            100% { transform: translateY(0px) rotate(360deg); opacity: 0.7; }
+        }
+
+        @keyframes waveFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50%       { transform: translateY(-6px) scale(1.03); }
+        }
+
+        @keyframes spinGlow {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulseRainbow {
+            0%   { box-shadow: 0 0 0 0 rgba(244,114,182,0.6); }
+            50%  { box-shadow: 0 0 20px 8px rgba(96,165,250,0.4); }
+            100% { box-shadow: 0 0 0 0 rgba(167,139,250,0.6); }
+        }
+
+        @keyframes borderDance {
+            0%   { border-color: #f472b6; box-shadow: 0 0 12px #f472b6; }
+            25%  { border-color: #fb923c; box-shadow: 0 0 12px #fb923c; }
+            50%  { border-color: #4ade80; box-shadow: 0 0 12px #4ade80; }
+            75%  { border-color: #60a5fa; box-shadow: 0 0 12px #60a5fa; }
+            100% { border-color: #f472b6; box-shadow: 0 0 12px #f472b6; }
+        }
+
+        html, body {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(270deg, #ffedd5, #fef3c7, #dcfce7, #e0f2fe, #f3e8ff);
+            background-size: 400% 400%;
+            animation: rainbowBg 10s ease infinite;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; touch-action: none; font-family: 'Nunito', sans-serif;
+            -webkit-user-drag: none; user-select: none;
+        }
+
+        /* Prevent children clicking inside dynamic synced nodes */
+        button *, .card-btn *, .drag-item *, .sync-btn *, .action-btn * { pointer-events: none; }
+
+        /* The Custom App Wrapper Limits for Mobile and Laptop Screens */
+        #app-wrapper {
+            width: 100vw; height: 100vh; max-width: 800px; max-height: 850px;
+            background-color: #ffffff; border: 6px solid transparent;
+            background-clip: padding-box;
+            box-shadow: 0 0 0 4px #60a5fa, 0 25px 60px -15px rgba(15, 23, 42, 0.15); 
+            display: flex; flex-direction: column;
+            overflow: hidden; position: relative; border-radius: 2.25rem;
+            animation: borderDance 4s linear infinite;
+        }
+
+        /* Bubble decorations */
+        body::before, body::after {
+            content: '⭐ 🌈 ✨ 🎈 🌟 💎 🎉';
+            position: fixed; font-size: 1.5rem;
+            animation: floatBubble 7s ease-in-out infinite;
+            pointer-events: none; z-index: 0; white-space: nowrap;
+            letter-spacing: 2rem; opacity: 0.35;
+        }
+        body::before { top: 8%; left: -5%; }
+        body::after  { bottom: 8%; right: -5%; animation-delay: 3s; animation-direction: reverse; }
+
+        .game-canvas {
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+            position: relative; padding: 1.5rem; display: flex;
+            flex-direction: column; align-items: center; justify-content: flex-start;
+            z-index: 1;
+        }
+
+        .bottom-dock {
+            flex-shrink: 0; min-height: 120px; max-height: 200px; background-color: #f8fafc;
+            border-top: 4px solid #f1f5f9; display: flex; justify-content: center;
+            align-items: center; gap: 0.75rem; padding: 1rem; z-index: 10; width: 100%;
+            flex-wrap: wrap; overflow-y: auto;
+        }
+
+        .drop-zone {
+            border: 3px dashed #cbd5e1; background-color: #f8fafc;
+            transition: all 0.25s ease; display: flex; align-items: center;
+            justify-content: center; border-radius: 1.25rem; font-family: 'Fredoka One', cursive;
+            position: relative; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            animation: waveFloat 4s ease-in-out infinite;
+        }
+        .drop-zone.active { border-color: #6366f1; background-color: #eef2ff; transform: scale(1.05); }
+
+        .drag-item {
+            cursor: grab; touch-action: none; display: flex; align-items: center;
+            justify-content: center; font-family: 'Fredoka One', cursive;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3), 0 4px 6px -4px rgba(99, 102, 241, 0.3); 
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 1.25rem; border: 3px solid rgba(255,255,255,0.4);
+            animation: waveFloat 3.5s ease-in-out infinite;
+            text-shadow: 1px 2px 3px rgba(0,0,0,0.15);
+        }
+        .drag-item:active { cursor: grabbing; transform: scale(0.9) rotate(-3deg); }
+        .dragging-clone { 
+            position: fixed; pointer-events: none; z-index: 9999; opacity: 0.95; 
+            transform: scale(1.1); font-family: 'Fredoka One', cursive; border-radius: 1.25rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); border: 3px solid white;
+        }
+        
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+            40%, 60% { transform: translate3d(3px, 0, 0); }
+        }
+
+        .pop-in { animation: popIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .custom-card {
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05);
+            border: 3px solid transparent !important;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(135deg, #f472b6, #60a5fa, #4ade80) border-box !important;
+        }
+        .custom-card:hover {
+            transform: translateY(-5px) scale(1.03) rotate(-1deg);
+            box-shadow: 0 20px 30px rgba(99, 102, 241, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- VISUAL SYNC REMOTE CURSOR -->
+    <div id="remote-cursor" style="position:fixed; width:22px; height:22px; background:rgba(239, 68, 68, 0.9); border-radius:50%; border:3px solid white; box-shadow:0 0 12px rgba(239, 68, 68, 0.7); pointer-events:none; z-index:99999; transform:translate(-50%,-50%); display:none;"></div>
+
+    <div id="app-wrapper">
+        <div class="decorations"></div>
+        
+        <header class="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white p-5 flex justify-between items-center shadow-lg flex-shrink-0 z-20 rounded-t-2xl">
+            <h1 class="text-2xl font-black tracking-wide flex items-center gap-2 drop-shadow-md" id="header-title">
+                <i data-lucide="sparkles" class="animate-bounce"></i> Universal Matching Hub
+            </h1>
+            <button id="btn-home" onclick="renderMainMenu()" class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-sm font-bold tracking-wide transition-all flex items-center gap-1 shadow-md sync-btn border border-white/20">
+                <i data-lucide="home" class="w-4 h-4"></i> Main Menu
+            </button>
+        </header>
+
+        <div id="game-canvas" class="game-canvas">
+            <!-- Canvas screen views injected dynamically -->
+        </div>
+
+        <div id="bottom-dock" class="bottom-dock hidden">
+            <!-- Draggable items rendered here -->
+        </div>
+        
+        <!-- Standard Multi-app overlay system -->
+        <div id="success-overlay" class="absolute inset-0 bg-white/95 z-50 hidden flex-col items-center justify-center pop-in">
+            <div class="w-24 h-24 bg-gradient-to-tr from-emerald-400 to-green-500 rounded-full flex items-center justify-center text-white mb-4 shadow-xl animate-bounce">
+                <i data-lucide="sparkles" class="w-12 h-12"></i>
+            </div>
+            <h2 class="text-3xl font-black text-gray-800 mb-2" id="success-headline">Perfect Match!</h2>
+            <p class="text-gray-500 text-lg mb-6 font-bold" id="success-subline">Everything is matched correctly.</p>
+            <button id="btn-next" class="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xl rounded-2xl font-black shadow-lg active:scale-95 transition-transform sync-btn">
+                Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PART 3 — ENGINE PIPELINE & CORE LOGIC
+         ============================================================ -->
+    <script>
+        // Sound Engine wave generator
+        const AudioSynth = {
+            ctx: null,
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            playWin() {
+                this.init(); const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1); osc.frequency.setValueAtTime(783.99, now + 0.2);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.4);
+            },
+            playBuzzer() {
+                this.init(); const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(130, now); osc.frequency.linearRampToValueAtTime(85, now + 0.2);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.25);
+            }
+        };
+
+        const CanvasView = document.getElementById('game-canvas');
+        const DockView = document.getElementById('bottom-dock');
+        const OverlayView = document.getElementById('success-overlay');
+
+        const CHUNKS = {
+            capital: [['A','B','C','D'], ['E','F','G','H'], ['I','J','K','L'], ['M','N','O','P'], ['Q','R','S','T'], ['U','V','W','X'], ['Y','Z']],
+            small: [['a','b','c','d'], ['e','f','g','h'], ['i','j','k','l'], ['m','n','o','p'], ['q','r','s','t'], ['u','v','w','x'], ['y','z']],
+            numbers: [['1','2','3','4','5','6','7','8','9','10'], ['11','12','13','14','15','16','17','18','19','20'], ['21','22','23','24','25','26','27','28','29','30']]
+        };
+
+        const KIDS_COLORS = [
+            'bg-gradient-to-tr from-pink-400 to-rose-500',
+            'bg-gradient-to-tr from-indigo-400 to-blue-500',
+            'bg-gradient-to-tr from-emerald-400 to-green-500',
+            'bg-gradient-to-tr from-amber-400 to-orange-500',
+            'bg-gradient-to-tr from-purple-400 to-fuchsia-500',
+            'bg-gradient-to-tr from-sky-400 to-cyan-500',
+            'bg-gradient-to-tr from-teal-400 to-emerald-500'
+        ];
+
+        function initAppHub() {
+            document.getElementById('btn-next').addEventListener('click', () => {
+                OverlayView.classList.replace('flex', 'hidden');
+                renderMainMenu();
+            });
+            renderMainMenu();
+        }
+
+        let activeDragClone = null;
+        function clearDragGhost() {
+            if (activeDragClone) {
+                activeDragClone.remove();
+                activeDragClone = null;
+            }
+            // Sweep all leftover ghost items to prevent menu spill
+            document.querySelectorAll('.dragging-clone').forEach(el => el.remove());
+        }
+
+        // PRADHANA DASHBOARD MENU
+        window.renderMainMenu = function() {
+            document.getElementById('btn-home').classList.add('hidden');
+            
+            // Clean dynamic structures fully to resolve spilled cards on menu switch
+            DockView.classList.add('hidden');
+            DockView.innerHTML = '';
+            clearDragGhost();
+
+            document.getElementById('header-title').innerHTML = `<i data-lucide="sparkles" class="animate-pulse"></i> Universal Matching Hub`;
+
+            let html = `
+                <div class="text-center mb-6 mt-4 w-full animate-bounce">
+                    <h2 class="text-3xl font-black text-slate-800">Select Practice Mode 🎈</h2>
+                    <p class="text-slate-400 text-sm font-bold mt-1">Pick a colourful matching layout to get started!</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl pb-8 z-10">
+                    <!-- Valiya Aksharangal (A-Z) -->
+                    <div class="bg-white p-5 border border-slate-100 rounded-3xl shadow-lg custom-card flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-black text-indigo-600 mb-3 text-lg uppercase tracking-wider flex items-center gap-1.5">
+                                🔠 Capital Letters
+                            </h3>
+                            <div class="flex flex-wrap gap-2 mb-4">${generateMenuButtons('capital', 'bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100')}</div>
+                        </div>
+                        <div class="border-t-2 border-dashed border-slate-100 pt-4 flex flex-wrap gap-2">
+                            <button id="btn-select-capital-full" onclick="setupMatchGame('capital_full', 0)" class="flex-1 min-w-[130px] px-3 py-2.5 text-xs font-black border rounded-xl transition-all bg-indigo-600 text-white hover:bg-indigo-700 shadow-md">Full A to Z Game</button>
+                            <button id="btn-select-capital-custom" onclick="renderCustomInputScreen('capital_custom')" class="flex-1 min-w-[130px] px-3 py-2.5 text-xs font-black border rounded-xl transition-all bg-purple-100 text-purple-700 hover:bg-purple-200 shadow-sm">Custom Name Builder</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Cheriya Aksharangal (a-z) -->
+                    <div class="bg-white p-5 border border-slate-100 rounded-3xl shadow-lg custom-card flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-black text-emerald-600 mb-3 text-lg uppercase tracking-wider flex items-center gap-1.5">
+                                🔡 Small Letters
+                            </h3>
+                            <div class="flex flex-wrap gap-2 mb-4">${generateMenuButtons('small', 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100')}</div>
+                        </div>
+                        <div class="border-t-2 border-dashed border-slate-100 pt-4 flex flex-wrap gap-2">
+                            <button id="btn-select-small-full" onclick="setupMatchGame('small_full', 0)" class="flex-1 min-w-[130px] px-3 py-2.5 text-xs font-black border rounded-xl transition-all bg-emerald-600 text-white hover:bg-emerald-700 shadow-md">Full a to z Game</button>
+                            <button id="btn-select-small-custom" onclick="renderCustomInputScreen('small_custom')" class="flex-1 min-w-[130px] px-3 py-2.5 text-xs font-black border rounded-xl transition-all bg-teal-100 text-teal-700 hover:bg-teal-200 shadow-sm">Custom Word Builder</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Samkhya Kramangal -->
+                    <div class="bg-white p-5 border border-slate-100 rounded-3xl shadow-lg custom-card md:col-span-2">
+                        <h3 class="font-black text-amber-500 mb-3 text-lg uppercase tracking-wider flex items-center gap-1.5">
+                            🔢 Number Sequence
+                        </h3>
+                        <div class="flex flex-wrap gap-2 mb-4">${generateMenuButtons('numbers', 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100')}</div>
+                        <div class="border-t-2 border-dashed border-slate-100 pt-4 flex flex-wrap gap-2">
+                            <button id="btn-select-num-custom" onclick="renderCustomInputScreen('num_custom')" class="w-full py-2.5 text-xs font-black border rounded-xl transition-all bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:opacity-90 shadow-md">Set Custom Range (e.g. 30 to 40)</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            CanvasView.innerHTML = html; lucide.createIcons();
+        }
+
+        function generateMenuButtons(type, classes) {
+            return CHUNKS[type].map((chunk, index) => {
+                const label = `${chunk[0]} - ${chunk[chunk.length - 1]}`;
+                return `<button id="btn-select-${type}-${index}" onclick="setupMatchGame('${type}', ${index})" class="px-3 py-1.5 text-xs font-bold border rounded-xl transition-all ${classes} shadow-sm">${label}</button>`;
+            }).join('');
+        }
+
+        // CUSTOM CONFIGURATION DATA INPUT SCREENS
+        window.renderCustomInputScreen = function(mode) {
+            document.getElementById('btn-home').classList.remove('hidden');
+            DockView.classList.add('hidden');
+            DockView.innerHTML = '';
+            clearDragGhost();
+
+            // EXPLICIT SCREEN SYNC (Updates Student Screen State)
+            if (!window.isSimulating) {
+                window.parent.postMessage({
+                    type: 'IFRAME_ACTION_TRIGGERED',
+                    payload: {
+                        type: 'SYNC_SCREEN',
+                        screen: 'custom_input',
+                        mode: mode,
+                        actionId: 'screen_' + Date.now()
+                    }
+                }, '*');
+            }
+
+            let headerText = "";
+            let inputFieldsHtml = "";
+            
+            if (mode === 'capital_custom') {
+                headerText = "Create Custom Name Matcher";
+                inputFieldsHtml = `
+                    <div class="w-full max-w-sm bg-white p-6 rounded-3xl border border-slate-100 shadow-xl pop-in">
+                        <label class="block text-slate-500 font-black mb-3 text-sm text-left uppercase tracking-wider">Type any name/word (A-Z only):</label>
+                        <input id="custom-text-input" type="text" maxlength="12" placeholder="e.g. CAT" class="w-full px-4 py-3.5 border-2 border-slate-200 rounded-2xl font-black uppercase focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xl text-center tracking-widest shadow-inner mb-4">
+                        <button id="btn-start-custom-word" onclick="setupCustomWordGame('capital_custom')" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl transition-transform active:scale-95 shadow-lg action-btn uppercase text-sm">Generate Matching Game 🎨</button>
+                    </div>
+                `;
+            } else if (mode === 'small_custom') {
+                headerText = "Create Custom Word Matcher";
+                inputFieldsHtml = `
+                    <div class="w-full max-w-sm bg-white p-6 rounded-3xl border border-slate-100 shadow-xl pop-in">
+                        <label class="block text-slate-500 font-black mb-3 text-sm text-left uppercase tracking-wider">Type any word (a-z only):</label>
+                        <input id="custom-text-input" type="text" maxlength="12" placeholder="e.g. cat" class="w-full px-4 py-3.5 border-2 border-slate-200 rounded-2xl font-black lowercase focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xl text-center tracking-widest shadow-inner mb-4">
+                        <button id="btn-start-custom-word" onclick="setupCustomWordGame('small_custom')" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl transition-transform active:scale-95 shadow-lg action-btn uppercase text-sm">Generate Matching Game 🎨</button>
+                    </div>
+                `;
+            } else if (mode === 'num_custom') {
+                headerText = "Create Custom Number Range";
+                inputFieldsHtml = `
+                    <div class="w-full max-w-sm bg-white p-6 rounded-3xl border border-slate-100 shadow-xl pop-in space-y-4">
+                        <div>
+                            <label class="block text-slate-500 font-black mb-1.5 text-xs uppercase tracking-wider text-left">Start Number:</label>
+                            <input id="custom-num-start" type="number" min="0" max="999" placeholder="e.g. 10" class="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl font-black focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-center shadow-inner">
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 font-black mb-1.5 text-xs uppercase tracking-wider text-left">End Number:</label>
+                            <input id="custom-num-end" type="number" min="0" max="999" placeholder="e.g. 20" class="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl font-black focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-center shadow-inner">
+                        </div>
+                        <p class="text-xs text-slate-400 font-bold text-center">Note: Layout stability parimitham aayi vekkaan (Max 12 numbers allowed)</p>
+                        <button id="btn-start-custom-num" onclick="setupCustomNumGame()" class="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-2xl transition-transform active:scale-95 shadow-lg action-btn uppercase text-sm">Generate Number Game 🔢</button>
+                    </div>
+                `;
+            }
+
+            document.getElementById('header-title').innerHTML = headerText;
+            CanvasView.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full w-full py-6">
+                    ${inputFieldsHtml}
+                </div>
+            `;
+        }
+
+        // Custom Word matching pipeline
+        window.setupCustomWordGame = function(mode) {
+            const inputField = document.getElementById('custom-text-input');
+            if (!inputField) return;
+            let rawWord = inputField.value.trim();
+            if (!rawWord) {
+                AudioSynth.playBuzzer();
+                inputField.classList.add('shake', 'border-red-400');
+                setTimeout(() => inputField.classList.remove('shake', 'border-red-400'), 500);
+                return;
+            }
+
+            rawWord = mode === 'capital_custom' ? rawWord.toUpperCase() : rawWord.toLowerCase();
+            const lettersArray = rawWord.split('');
+
+            // EXPLICIT SYNC DISPATCH (Prevents lag/blank inputs on student screen)
+            if (!window.isSimulating) {
+                window.parent.postMessage({
+                    type: 'IFRAME_ACTION_TRIGGERED',
+                    payload: { 
+                        type: 'GENERATE_CUSTOM_WORD', 
+                        mode: mode, 
+                        word: rawWord,
+                        actionId: 'word_' + Date.now()
+                    }
+                }, '*');
+            }
+
+            setupGeneratedMatchingLayout(lettersArray, `Word: ${rawWord}`, mode);
+        }
+
+        // Custom Numerical range builder
+        window.setupCustomNumGame = function() {
+            const startInput = document.getElementById('custom-num-start');
+            const endInput = document.getElementById('custom-num-end');
+            if (!startInput || !endInput) return;
+
+            let start = parseInt(startInput.value);
+            let end = parseInt(endInput.value);
+
+            if (isNaN(start) || start < 0) start = 1;
+            if (isNaN(end) || end < 0) end = 10;
+            if (start > end) { [start, end] = [end, start]; }
+
+            // Dynamic grid limit check
+            if (end - start > 11) {
+                end = start + 11;
+            }
+
+            const rangeArray = [];
+            for (let i = start; i <= end; i++) {
+                rangeArray.push(String(i));
+            }
+
+            // EXPLICIT SYNC DISPATCH (Bypasses laggy DOM inputs)
+            if (!window.isSimulating) {
+                window.parent.postMessage({
+                    type: 'IFRAME_ACTION_TRIGGERED',
+                    payload: { 
+                        type: 'GENERATE_CUSTOM_NUM', 
+                        start: start, 
+                        end: end,
+                        actionId: 'num_' + Date.now()
+                    }
+                }, '*');
+            }
+
+            setupGeneratedMatchingLayout(rangeArray, `Numbers: ${start} to ${end}`);
+        }
+
+        // Standard setup interface trigger
+        window.setupMatchGame = function(type, chunkIndex) {
+            let targetData = [];
+            let headerText = "Matching Workspace";
+
+            if (type === 'capital_full') {
+                targetData = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+                headerText = "Full A to Z Game";
+            } else if (type === 'small_full') {
+                targetData = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'];
+                headerText = "Full a to z Game";
+            } else {
+                targetData = CHUNKS[type][chunkIndex];
+            }
+
+            setupGeneratedMatchingLayout(targetData, headerText, type, chunkIndex);
+        }
+
+        // Dynamic flexible layout assembler
+        function setupGeneratedMatchingLayout(targetData, headerText, type = 'custom', chunkIndex = 0) {
+            document.getElementById('btn-home').classList.remove('hidden');
+            DockView.classList.remove('hidden');
+            document.getElementById('header-title').innerHTML = headerText;
+
+            // Aggressive sweep to clear clones before rendering layout
+            clearDragGhost();
+
+            // Chords dynamic responsive resizing (fixes overflow blocks on laptop screens)
+            let gridCols = "grid-cols-4";
+            let boxSize = "w-16 h-16 sm:w-20 sm:h-24";
+            let textSize = "text-xl sm:text-2xl";
+            let traceSize = "text-xl sm:text-2xl";
+            let paddingBottom = "pb-4";
+
+            if (targetData.length > 20) {
+                // A-Z full orders constraints configuration
+                gridCols = "grid-cols-5 sm:grid-cols-7";
+                boxSize = "w-11 h-11 sm:w-14 sm:h-16";
+                textSize = "text-xs sm:text-sm";
+                traceSize = "text-xs sm:text-sm";
+                paddingBottom = "pb-1";
+            } else if (targetData.length > 6) {
+                gridCols = "grid-cols-4 sm:grid-cols-5";
+                boxSize = "w-14 h-14 sm:w-16 sm:h-20";
+                textSize = "text-sm sm:text-base";
+                traceSize = "text-sm sm:text-base";
+            } else if (targetData.length <= 4) {
+                gridCols = `grid-cols-${targetData.length}`;
+                boxSize = "w-20 h-20 sm:w-24 sm:h-24";
+                textSize = "text-2xl sm:text-3xl";
+                traceSize = "text-2xl sm:text-3xl";
+            }
+
+            let topHtml = `
+                <div class="text-center mb-4 w-full pop-in">
+                    <h2 class="text-xs sm:text-sm font-black text-indigo-500 uppercase tracking-wider flex items-center justify-center gap-1">
+                        <i data-lucide="help-circle" class="w-4 h-4"></i> Drag blocks into their matching outline tracing boxes!
+                    </h2>
+                </div>
+                <div class="grid ${gridCols} gap-3 w-full max-w-2xl justify-items-center ${paddingBottom}">
+            `;
+
+            targetData.forEach((val, idx) => {
+                topHtml += `
+                    <div id="drop-target-${idx}" data-match-val="${val}" class="drop-zone ${boxSize} border-3 relative">
+                        <!-- OUTLINE TRACE HELPER: Beautiful semi-transparent guide -->
+                        <span class="absolute ${traceSize} font-black text-slate-300 select-none pointer-events-none opacity-25 tracking-wide">${val}</span>
+                    </div>
+                `;
+            });
+            topHtml += `</div>`;
+            CanvasView.innerHTML = topHtml;
+            lucide.createIcons();
+
+            // Hash target data string into the seed to ensure shuffler remains perfectly synced and unique
+            window.setSeed(roomId + "_" + targetData.join('') + "_shuf_matrix");
+            let scrambledData = shuf(targetData);
+
+            let dockHtml = '';
+            scrambledData.forEach((val, idx) => {
+                // Seed based colorful styles
+                const colIdx = (val.charCodeAt(0) + idx) % KIDS_COLORS.length;
+                const kidsBg = KIDS_COLORS[colIdx];
+
+                dockHtml += `
+                    <div id="drag-node-${val}-${idx}" data-val="${val}" class="drag-item ${boxSize.replace('sm:w-20 sm:h-24','sm:w-16 sm:h-16')} ${kidsBg} text-white font-black ${textSize} drop-shadow-md">
+                        ${val}
+                    </div>
+                `;
+            });
+            DockView.innerHTML = dockHtml;
+
+            window.matchedCountToken = 0;
+            window.targetMatchLimit = targetData.length;
+            activateDragDropEngine(boxSize, textSize);
+        }
+
+        // DRAG AND DROP HANDLERS
+        function activateDragDropEngine(boxSize, textSize) {
+            const items = document.querySelectorAll('.drag-item');
+            const zones = document.querySelectorAll('.drop-zone');
+            let currentDragNode = null, offsetX, offsetY;
+
+            items.forEach(node => {
+                node.addEventListener('pointerdown', (e) => {
+                    if (window.isSimulating) return; e.preventDefault();
+                    currentDragNode = node;
+                    
+                    const bounds = currentDragNode.getBoundingClientRect();
+                    activeDragClone = currentDragNode.cloneNode(true);
+                    activeDragClone.classList.add('dragging-clone');
+                    activeDragClone.style.left = `${bounds.left}px`; activeDragClone.style.top = `${bounds.top}px`;
+                    activeDragClone.style.width = `${bounds.width}px`; activeDragClone.style.height = `${bounds.height}px`;
+                    document.body.appendChild(activeDragClone);
+                    
+                    currentDragNode.style.opacity = '0.25';
+                    offsetX = e.clientX - bounds.left; offsetY = e.clientY - bounds.top;
+                    
+                    document.addEventListener('pointermove', processPointerMove);
+                    document.addEventListener('pointerup', processPointerUp);
+                });
+            });
+
+            function processPointerMove(e) {
+                if (!activeDragClone) return; e.preventDefault();
+                activeDragClone.style.left = `${e.clientX - offsetX}px`; activeDragClone.style.top = `${e.clientY - offsetY}px`;
+                
+                activeDragClone.hidden = true;
+                const hitElement = document.elementFromPoint(e.clientX, e.clientY);
+                activeDragClone.hidden = false;
+                
+                zones.forEach(z => z.classList.remove('active'));
+                const matchedZone = hitElement ? hitElement.closest('.drop-zone') : null;
+                if (matchedZone && !matchedZone.hasAttribute('data-occupied')) matchedZone.classList.add('active');
+            }
+
+            function processPointerUp(e) {
+                document.removeEventListener('pointermove', processPointerMove); document.removeEventListener('pointerup', processPointerUp);
+                if (!activeDragClone || !currentDragNode) return;
+                
+                activeDragClone.hidden = true;
+                const hitElement = document.elementFromPoint(e.clientX, e.clientY);
+                activeDragClone.hidden = false;
+
+                const targetZone = hitElement ? hitElement.closest('.drop-zone') : null;
+                const nodeVal = currentDragNode.getAttribute('data-val');
+                
+                if (targetZone && !targetZone.hasAttribute('data-occupied') && nodeVal === targetZone.getAttribute('data-match-val')) {
+                    if (!window.isSimulating) {
+                        window.parent.postMessage({
+                            type: 'IFRAME_ACTION_TRIGGERED',
+                            payload: { type: 'HUB_DROP', dragId: currentDragNode.id, dropId: targetZone.id }
+                        }, '*');
+                    }
+                    window.handleHubDropReplication(currentDragNode.id, targetZone.id, boxSize, textSize);
+                } else if (targetZone) {
+                    AudioSynth.playBuzzer(); targetZone.classList.add('shake', 'border-red-400');
+                    setTimeout(() => targetZone.classList.remove('shake', 'border-red-400'), 450);
+                }
+
+                clearDragGhost(); if (currentDragNode) currentDragNode.style.opacity = '1';
+                currentDragNode = null; zones.forEach(z => z.classList.remove('active'));
+            }
+
+            // Sync receiver handler
+            window.handleHubDropReplication = function(dragId, dropId, customBoxSize, customTextSize) {
+                const dragElement = document.getElementById(dragId);
+                const dropElement = document.getElementById(dropId);
+                if (!dragElement || !dropElement) return;
+
+                AudioSynth.playWin(); dropElement.innerHTML = '';
+                const displayNode = dragElement.cloneNode(true);
+                
+                displayNode.classList.remove('drag-item');
+                displayNode.style.width = "100%";
+                displayNode.style.height = "100%";
+                displayNode.classList.add('pop-in');
+                displayNode.style.opacity = "1";
+                displayNode.style.animation = "none"; // Stop floating animation inside drop zones
+                
+                dropElement.appendChild(displayNode); dropElement.setAttribute('data-occupied', 'true');
+                dropElement.style.border = 'none'; dragElement.style.visibility = 'hidden';
+
+                window.matchedCountToken++;
+                if (window.matchedCountToken === window.targetMatchLimit) {
+                    setTimeout(() => {
+                        document.getElementById('success-headline').innerText = "Congratulations!";
+                        document.getElementById('success-subline').innerText = "All items have been matched perfectly!";
+                        OverlayView.classList.replace('hidden', 'flex');
+                        confetti({ particleCount: 140, spread: 85, origin: { y: 0.65 }, colors: ['#6366f1', '#10b981', '#f59e0b'] });
+                    }, 500);
+                }
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', initAppHub);
+    </script>
+</body>
+</html>

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Park Picnic - Spot The Difference</title>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<!-- ============================================================
+     PART 1 — SYNC BLOCK — NEVER EDIT ANYTHING BELOW THIS LINE
+     ============================================================ -->
+<script>
+  window.isSimulating = false;
+  const urlParams = new URLSearchParams(
+    window.location.search || window.location.hash.replace('#','?')
+  );
+  const roomId = urlParams.get('room') || '54321';
+  let localSeed = 0;
+  for (let i = 0; i < roomId.length; i++) {
+    localSeed = roomId.charCodeAt(i) + ((localSeed << 5) - localSeed);
+  }
+  localSeed = Math.abs(localSeed);
+  window.seededRandom = function() {
+    let x = Math.sin(localSeed++) * 10000;
+    return x - Math.floor(x);
+  };
+  function getUniqueSelector(el) {
+    if (!el) return null;
+    if (el.id) return '#' + el.id;
+    if (el === document.body) return 'body';
+    let path = [];
+    while (el && el.nodeType === Node.ELEMENT_NODE) {
+      let sel = el.nodeName.toLowerCase();
+      if (el.id) { sel = '#' + el.id; path.unshift(sel); break; }
+      else {
+        if (el.className && typeof el.className === 'string') {
+          const cls = Array.from(el.classList)
+            .filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/'))
+            .join('.');
+          if (cls) sel += '.' + cls;
+        }
+        let sib = el, nth = 1;
+        while (sib = sib.previousElementSibling)
+          if (sib.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++;
+        sel += ':nth-of-type(' + nth + ')';
+        path.unshift(sel);
+      }
+      el = el.parentNode;
+    }
+    return path.join(' > ');
+  }
+  document.addEventListener('click', (e) => {
+    if (e.isTrusted === false || window.isSimulating) return;
+    const sel = getUniqueSelector(e.target);
+    if (!sel) return;
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: { type: 'UNIVERSAL_CLICK', selector: sel, seed: localSeed }
+    }, '*');
+  }, true);
+  document.addEventListener('mousemove', (e) => {
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: {
+        type: 'UNIVERSAL_CURSOR',
+        pctX: (e.clientX / window.innerWidth) * 100,
+        pctY: ((e.clientY + window.scrollY) / document.documentElement.scrollHeight) * 100
+      }
+    }, '*');
+  });
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+      window.parent.postMessage({
+        type: 'IFRAME_ACTION_TRIGGERED',
+        payload: {
+          type: 'UNIVERSAL_CURSOR',
+          pctX: (e.touches[0].clientX / window.innerWidth) * 100,
+          pctY: (e.touches[0].clientY / window.innerHeight) * 100
+        }
+      }, '*');
+    }
+  }, { passive: true });
+  function applyScale() {
+    const targetH = 650;
+    const curH = window.innerHeight;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    if (curH < targetH) {
+      const s = curH / targetH;
+      document.body.style.transform = 'scale(' + s + ')';
+      document.body.style.transformOrigin = 'top left';
+      document.body.style.width = (100 / s) + '%';
+      document.body.style.height = (100 / s) + '%';
+    } else {
+      document.body.style.transform = 'none';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    }
+  }
+  window.addEventListener('resize', applyScale);
+  window.addEventListener('load', applyScale);
+  window.addEventListener('message', (event) => {
+    if (event.data?.type === 'EXECUTE_UNIVERSAL_ACTION') {
+      const action = event.data.action;
+      window.isSimulating = true;
+      if (action.seed !== undefined) localSeed = action.seed;
+      if (action.type === 'UNIVERSAL_CLICK') {
+        const el = document.querySelector(action.selector);
+        if (el) el.click();
+      } else if (action.type === 'UNIVERSAL_CURSOR') {
+        const c = document.getElementById('remote-cursor');
+        if (c) {
+          c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+          c.style.top = (action.pctY / 100 * document.documentElement.scrollHeight - window.scrollY) + 'px';
+          c.style.display = 'block';
+        }
+      }
+      window.isSimulating = false;
+    }
+  });
+</script>
+
+<!-- ============================================================
+     PART 2 — CSS
+     ============================================================ -->
+<style>
+    :root {
+        --bg: #fffbeb; /* Light warm yellow/white bg */
+    }
+
+    /* ANTI-FLICKER ARMOR: Kill native selection and dragging globally */
+    * { 
+        box-sizing: border-box; 
+        -webkit-tap-highlight-color: transparent; 
+        -webkit-user-select: none; 
+        user-select: none; 
+        -webkit-user-drag: none;
+    }
+
+    body {
+        font-family: 'Nunito', sans-serif; 
+        background: var(--bg);
+        overflow: hidden; /* REQUIRED */
+        height: 650px;
+        min-height: 100vh;
+        touch-action: manipulation;
+    }
+
+    h1, .font-display { font-family: 'Boogaloo', cursive; }
+
+    @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .pop-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    
+    .btn-3d { transition: transform 0.1s, box-shadow 0.1s; box-shadow: 0 6px 0 rgba(0,0,0,0.2); }
+    .btn-3d:active { transform: translateY(6px); box-shadow: 0 0px 0 rgba(0,0,0,0.2); }
+
+    .svg-container {
+        width: 100%; height: auto; aspect-ratio: 4/3;
+        background: #87CEEB; /* Sky Blue */
+        border-radius: 20px; border: 8px solid white;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15); overflow: hidden;
+    }
+
+    /* Animations for Objects */
+    .anim-car { animation: driveCar 10s linear infinite; }
+    @keyframes driveCar { 0% { transform: translateX(-200px); } 100% { transform: translateX(950px); } }
+
+    .anim-dog { animation: runDog 14s linear infinite; }
+    @keyframes runDog { 0% { transform: translateX(900px); } 100% { transform: translateX(-300px); } }
+
+    .anim-bee { animation: buzzBee 4s ease-in-out infinite; transform-origin: center; }
+    @keyframes buzzBee { 
+        0%, 100% { transform: translate(0, 0) rotate(0deg); } 
+        25% { transform: translate(-30px, -20px) rotate(-15deg); } 
+        50% { transform: translate(-10px, -40px) rotate(10deg); } 
+        75% { transform: translate(20px, -15px) rotate(-5deg); } 
+    }
+
+    .anim-bob { animation: bob 3s ease-in-out infinite; transform-origin: bottom; }
+    @keyframes bob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-15px) rotate(2deg); } }
+    
+    /* Interaction */
+    .diff-hitbox { cursor: pointer; }
+    
+    /* Ensure clicks pass through to the main group ID */
+    .diff-hitbox > * { pointer-events: none; }
+    .diff-hitbox > .hover-highlight { pointer-events: all; }
+    
+    .diff-hitbox:hover .hover-highlight { opacity: 0.2; }
+    .hover-highlight { transition: opacity 0.2s; }
+    
+    .diff-marker {
+        opacity: 0; transition: opacity 0.3s, transform 0.3s;
+        transform: scale(0.5); transform-origin: center; pointer-events: none;
+    }
+    .diff-marker.found { opacity: 1; transform: scale(1); }
+
+    /* Found badge (shows briefly then fades) */
+    @keyframes badgePop {
+        0%   { opacity: 0; transform: translate(-50%,-60%) scale(0.5); }
+        25%  { opacity: 1; transform: translate(-50%,-60%) scale(1.1); }
+        75%  { opacity: 1; transform: translate(-50%,-80%) scale(1); }
+        100% { opacity: 0; transform: translate(-50%,-100%) scale(0.8); }
+    }
+    .found-badge {
+        position: fixed; pointer-events: none; z-index: 200;
+        background: #22c55e; color: white; font-family: 'Boogaloo', cursive;
+        font-size: 1.1rem; padding: 4px 14px; border-radius: 50px;
+        border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        animation: badgePop 1.2s ease forwards;
+    }
+</style>
+</head>
+<body class="flex flex-col items-center justify-center">
+
+    <!-- RED DOT CURSOR — REQUIRED, never remove, never rename id -->
+    <div id="remote-cursor" style="
+      position:fixed; width:18px; height:18px;
+      background:red; border-radius:50%;
+      border:3px solid white;
+      box-shadow:0 0 10px rgba(255,0,0,.6);
+      pointer-events:none; z-index:9999;
+      transform:translate(-50%,-50%); display:none;
+    "></div>
+
+    <!-- Header -->
+    <header class="w-full max-w-5xl flex justify-between items-center bg-white p-3 md:p-4 rounded-3xl shadow-lg border-b-4 border-yellow-500 mb-4 pop-in mt-4">
+        <div>
+            <h1 class="text-3xl md:text-4xl text-orange-600 tracking-wide m-0 leading-none">Park Picnic 🌳🐕</h1>
+            <p class="text-gray-500 font-bold mt-1 text-sm m-0">Find 5 differences in the park!</p>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="bg-gray-100 px-4 py-2 rounded-2xl border-4 border-gray-200 flex items-center">
+                <span class="text-lg font-bold text-gray-500">Score:</span>
+                <span id="score-display" class="font-display text-3xl text-orange-500 ml-2 leading-none">0 / 5</span>
+            </div>
+            <button onclick="resetGame()" class="bg-red-500 text-white px-4 py-2 rounded-2xl font-black text-lg btn-3d border-4 border-red-700">
+                🔄 Reset
+            </button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-5xl grid grid-cols-2 gap-4 pop-in px-4 pb-4">
+        
+        <!-- ================= ORIGINAL SCENE (LEFT) ================= -->
+        <div class="relative">
+            <div class="absolute -top-3 -left-3 bg-orange-500 text-white px-4 py-1 rounded-full font-display text-xl shadow-lg border-4 border-white z-10 transform -rotate-6">Image 1</div>
+            
+            <svg viewBox="0 0 800 600" class="svg-container">
+                
+                <!-- Background Elements -->
+                <!-- Sun & Clouds -->
+                <circle cx="100" cy="100" r="50" fill="#FFD700" />
+                <path d="M 600 120 Q 620 90 650 100 Q 680 80 710 110 Q 740 120 720 140 L 610 140 Q 580 130 600 120" fill="#FFF" opacity="0.8"/>
+                <path d="M 250 160 Q 270 130 300 140 Q 330 120 360 150 Q 390 160 370 180 L 260 180 Q 230 170 250 160" fill="#FFF" opacity="0.6"/>
+
+                <!-- Road at the top -->
+                <rect y="180" width="800" height="70" fill="#555" />
+                <line x1="0" y1="215" x2="800" y2="215" stroke="#FFF" stroke-width="4" stroke-dasharray="20,15" />
+                <rect y="250" width="800" height="15" fill="#333" />
+
+                <!-- Grass Area -->
+                <path d="M 0 260 Q 400 240 800 260 L 800 600 L 0 600 Z" fill="#7CFC00" />
+                <path d="M 0 320 Q 400 290 800 320 L 800 600 L 0 600 Z" fill="#32CD32" />
+
+                <!-- Trees -->
+                <rect x="700" y="200" width="20" height="120" fill="#8B4513" />
+                <circle cx="710" cy="200" r="60" fill="#228B22" />
+                <circle cx="670" cy="220" r="40" fill="#006400" />
+                <circle cx="750" cy="220" r="40" fill="#006400" />
+
+                <!-- DIFF 1: Car Moving (Blue) -->
+                <!-- Added ID and event passing -->
+                <g id="L-car" class="anim-car diff-hitbox diff-car" onclick="checkDiff('car', event)">
+                    <rect class="hover-highlight" x="30" y="170" width="160" height="70" fill="white" opacity="0" rx="10"/>
+                    <rect x="50" y="195" width="100" height="30" fill="#1E90FF" rx="5"/>
+                    <path d="M 70 195 L 85 175 L 125 175 L 140 195 Z" fill="#1E90FF" />
+                    <rect x="88" y="178" width="15" height="15" fill="#FFF" opacity="0.7"/>
+                    <rect x="108" y="178" width="15" height="15" fill="#FFF" opacity="0.7"/>
+                    <circle cx="75" cy="225" r="12" fill="#222" />
+                    <circle cx="125" cy="225" r="12" fill="#222" />
+                    <circle class="diff-marker marker-car" cx="100" cy="200" r="75" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+                </g>
+
+                <!-- Static Objects: Picnic Table & Chair -->
+                <!-- Table Legs -->
+                <rect x="340" y="460" width="15" height="80" fill="#5C4033" />
+                <rect x="495" y="460" width="15" height="80" fill="#5C4033" />
+                <!-- Table Top -->
+                <rect x="310" y="445" width="230" height="20" fill="#8B4513" rx="4"/>
+                
+                <!-- Chair (Left) -->
+                <rect x="230" y="470" width="10" height="50" fill="#5C4033" />
+                <rect x="270" y="470" width="10" height="50" fill="#5C4033" />
+                <rect x="210" y="460" width="80" height="12" fill="#A0522D" rx="3"/>
+                <rect x="220" y="380" width="10" height="80" fill="#8B4513" />
+                <rect x="210" y="380" width="80" height="15" fill="#A0522D" rx="2"/>
+
+                <!-- DIFF 2: Balloons (3 Balloons) -->
+                <g id="L-balloon" class="anim-bob diff-hitbox diff-balloon" onclick="checkDiff('balloon', event)">
+                    <rect class="hover-highlight" x="140" y="180" width="140" height="200" fill="white" opacity="0" rx="20"/>
+                    
+                    <!-- String & Balloon 1 (Red) -->
+                    <path d="M 225 380 Q 200 320 180 250" fill="none" stroke="#FFF" stroke-width="2"/>
+                    <ellipse cx="180" cy="230" rx="22" ry="28" fill="#FF3366"/>
+                    
+                    <!-- String & Balloon 2 (Blue) -->
+                    <path d="M 225 380 Q 240 310 240 240" fill="none" stroke="#FFF" stroke-width="2"/>
+                    <ellipse cx="240" cy="215" rx="22" ry="28" fill="#33CCFF"/>
+
+                    <!-- String & Balloon 3 (Yellow) - Difference -->
+                    <path d="M 225 380 Q 270 340 280 270" fill="none" stroke="#FFF" stroke-width="2"/>
+                    <ellipse cx="280" cy="250" rx="22" ry="28" fill="#FFD700"/>
+
+                    <circle class="diff-marker marker-balloon" cx="230" cy="250" r="90" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+                </g>
+
+                <!-- DIFF 3: Apple (Red) -->
+                <g id="L-apple" class="diff-hitbox diff-apple" onclick="checkDiff('apple', event)">
+                    <circle class="hover-highlight" cx="430" cy="430" r="30" fill="white" opacity="0"/>
+                    <!-- Apple Body -->
+                    <circle cx="430" cy="435" r="12" fill="#E32636" />
+                    <!-- Stem/Leaf -->
+                    <path d="M 430 423 Q 435 415 440 420" fill="none" stroke="#006400" stroke-width="2"/>
+                    <circle class="diff-marker marker-apple" cx="430" cy="430" r="30" stroke="#FF3366" stroke-width="6" fill="none" stroke-dasharray="10,5"/>
+                </g>
+
+                <!-- DIFF 4: Bee buzzing over table (Present) -->
+                <g id="L-bee" class="diff-hitbox diff-bee" onclick="checkDiff('bee', event)">
+                    <g class="anim-bee">
+                        <circle class="hover-highlight" cx="430" cy="380" r="40" fill="white" opacity="0"/>
+                        <!-- Bee Body -->
+                        <ellipse cx="430" cy="380" rx="12" ry="8" fill="#FFD700" />
+                        <!-- Bee Stripes -->
+                        <line x1="430" y1="372" x2="430" y2="388" stroke="#222" stroke-width="3"/>
+                        <line x1="424" y1="373" x2="424" y2="387" stroke="#222" stroke-width="3"/>
+                        <line x1="436" y1="373" x2="436" y2="387" stroke="#222" stroke-width="3"/>
+                        <!-- Bee Wings -->
+                        <path d="M 430 372 Q 435 355 445 370 Z" fill="#E0FFFF" opacity="0.8"/>
+                        <path d="M 426 373 Q 415 355 405 372 Z" fill="#E0FFFF" opacity="0.8"/>
+                        <!-- Stinger -->
+                        <polygon points="442,380 448,380 442,382" fill="#222" />
+                        <circle class="diff-marker marker-bee" cx="430" cy="380" r="40" stroke="#FF3366" stroke-width="6" fill="none" stroke-dasharray="10,5"/>
+                    </g>
+                </g>
+
+                <!-- DIFF 5: Dog Running (With Red Collar) -->
+                <g id="L-dog" class="anim-dog diff-hitbox diff-dog" onclick="checkDiff('dog', event)">
+                    <rect class="hover-highlight" x="460" y="450" width="150" height="100" fill="white" opacity="0" rx="20"/>
+                    <!-- Dog Body -->
+                    <rect x="500" y="480" width="60" height="35" fill="#D2B48C" rx="15"/>
+                    <!-- Dog Head -->
+                    <circle cx="490" cy="470" r="22" fill="#D2B48C" />
+                    <!-- Dog Ear -->
+                    <ellipse cx="495" cy="460" rx="8" ry="18" fill="#8B4513" transform="rotate(-20 495 460)"/>
+                    <circle cx="480" cy="465" r="3" fill="#222" /> <!-- Eye -->
+                    <circle cx="470" cy="475" r="4" fill="#222" /> <!-- Nose -->
+                    
+                    <!-- Dog Tail -->
+                    <path d="M 555 490 Q 575 470 585 490" fill="none" stroke="#D2B48C" stroke-width="8" stroke-linecap="round"/>
+                    
+                    <!-- Dog Legs -->
+                    <rect x="505" y="510" width="10" height="25" fill="#D2B48C" rx="4"/>
+                    <rect x="520" y="505" width="10" height="25" fill="#C19A6B" rx="4"/> <!-- Back leg -->
+                    <rect x="540" y="510" width="10" height="25" fill="#D2B48C" rx="4"/>
+                    <rect x="550" y="505" width="10" height="25" fill="#C19A6B" rx="4"/> <!-- Back leg -->
+
+                    <!-- DIFF: Red Collar -->
+                    <rect x="495" y="480" width="10" height="25" fill="#FF0000" transform="rotate(-25 495 480)"/>
+                    
+                    <circle class="diff-marker marker-dog" cx="530" cy="490" r="70" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+                </g>
+
+            </svg>
+        </div>
+
+        <!-- ================= MODIFIED SCENE (RIGHT) ================= -->
+        <div class="relative">
+            <div class="absolute -top-3 -left-3 bg-yellow-500 text-white px-4 py-1 rounded-full font-display text-xl shadow-lg border-4 border-white z-10 transform -rotate-6">Image 2</div>
+            
+            <svg viewBox="0 0 800 600" class="svg-container">
+                
+                <!-- Background Elements -->
+                <!-- Sun & Clouds -->
+                <circle cx="100" cy="100" r="50" fill="#FFD700" />
+                <path d="M 600 120 Q 620 90 650 100 Q 680 80 710 110 Q 740 120 720 140 L 610 140 Q 580 130 600 120" fill="#FFF" opacity="0.8"/>
+                <path d="M 250 160 Q 270 130 300 140 Q 330 120 360 150 Q 390 160 370 180 L 260 180 Q 230 170 250 160" fill="#FFF" opacity="0.6"/>
+
+                <!-- Road at the top -->
+                <rect y="180" width="800" height="70" fill="#555" />
+                <line x1="0" y1="215" x2="800" y2="215" stroke="#FFF" stroke-width="4" stroke-dasharray="20,15" />
+                <rect y="250" width="800" height="15" fill="#333" />
+
+                <!-- Grass Area -->
+                <path d="M 0 260 Q 400 240 800 260 L 800 600 L 0 600 Z" fill="#7CFC00" />
+                <path d="M 0 320 Q 400 290 800 320 L 800 600 L 0 600 Z" fill="#32CD32" />
+
+                <!-- Trees -->
+                <rect x="700" y="200" width="20" height="120" fill="#8B4513" />
+                <circle cx="710" cy="200" r="60" fill="#228B22" />
+                <circle cx="670" cy="220" r="40" fill="#006400" />
+                <circle cx="750" cy="220" r="40" fill="#006400" />
+
+                <!-- DIFF 1: Car Moving (Purple instead of Blue) -->
+                <g id="R-car" class="anim-car diff-hitbox diff-car" onclick="checkDiff('car', event)">
+                    <rect class="hover-highlight" x="30" y="170" width="160" height="70" fill="white" opacity="0" rx="10"/>
+                    <rect x="50" y="195" width="100" height="30" fill="#9C27B0" rx="5"/> <!-- Purple -->
+                    <path d="M 70 195 L 85 175 L 125 175 L 140 195 Z" fill="#9C27B0" /> <!-- Purple -->
+                    <rect x="88" y="178" width="15" height="15" fill="#FFF" opacity="0.7"/>
+                    <rect x="108" y="178" width="15" height="15" fill="#FFF" opacity="0.7"/>
+                    <circle cx="75" cy="225" r="12" fill="#222" />
+                    <circle cx="125" cy="225" r="12" fill="#222" />
+                    <circle class="diff-marker marker-car" cx="100" cy="200" r="75" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+                </g>
+
+                <!-- Static Objects: Picnic Table & Chair -->
+                <!-- Table Legs -->
+                <rect x="340" y="460" width="15" height="80" fill="#5C4033" />
+                <rect x="495" y="460" width="15" height="80" fill="#5C4033" />
+                <!-- Table Top -->
+                <rect x="310" y="445" width="230" height="20" fill="#8B4513" rx="4"/>
+                
+                <!-- Chair (Left) -->
+                <rect x="230" y="470" width="10" height="50" fill="#5C4033" />
+                <rect x="270" y="470" width="10" height="50" fill="#5C4033" />
+                <rect x="210" y="460" width="80" height="12" fill="#A0522D" rx="3"/>
+                <rect x="220" y="380" width="10" height="80" fill="#8B4513" />
+                <rect x="210" y="380" width="80" height="15" fill="#A0522D" rx="2"/>
+
+                <!-- DIFF 2: Balloons (Only 2 Balloons - Yellow missing) -->
+                <g id="R-balloon" class="anim-bob diff-hitbox diff-balloon" onclick="checkDiff('balloon', event)">
+                    <rect class="hover-highlight" x="140" y="180" width="140" height="200" fill="white" opacity="0" rx="20"/>
+                    
+                    <!-- String & Balloon 1 (Red) -->
+                    <path d="M 225 380 Q 200 320 180 250" fill="none" stroke="#FFF" stroke-width="2"/>
+                    <ellipse cx="180" cy="230" rx="22" ry="28" fill="#FF3366"/>
+                    
+                    <!-- String & Balloon 2 (Blue) -->
+                    <path d="M 225 380 Q 240 310 240 240" fill="none" stroke="#FFF" stroke-width="2"/>
+                    <ellipse cx="240" cy="215" rx="22" ry="28" fill="#33CCFF"/>
+
+                    <!-- MISSING BALLOON 3 HERE -->
+
+                    <circle class="diff-marker marker-balloon" cx="230" cy="250" r="90" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+                </g>
+
+                <!-- DIFF 3: Apple (Green instead of Red) -->
+                <g id="R-apple" class="diff-hitbox diff-apple" onclick="checkDiff('apple', event)">
+                    <circle class="hover-highlight" cx="430" cy="430" r="30" fill="white" opacity="0"/>
+                    <!-- Apple Body -->
+                    <circle cx="430" cy="435" r="12" fill="#7CFC00" /> <!-- Green Apple -->
+                    <!-- Stem/Leaf -->
+                    <path d="M 430 423 Q 435 415 440 420" fill="none" stroke="#006400" stroke-width="2"/>
+                    <circle class="diff-marker marker-apple" cx="430" cy="430" r="30" stroke="#FF3366" stroke-width="6" fill="none" stroke-dasharray="10,5"/>
+                </g>
+
+                <!-- DIFF 4: Bee buzzing over table (Missing) -->
+                <g id="R-bee" class="diff-hitbox diff-bee" onclick="checkDiff('bee', event)">
+                    <g class="anim-bee">
+                        <circle class="hover-highlight" cx="430" cy="380" r="40" fill="white" opacity="0"/>
+                        <!-- MISSING BEE HERE -->
+                        <circle class="diff-marker marker-bee" cx="430" cy="380" r="40" stroke="#FF3366" stroke-width="6" fill="none" stroke-dasharray="10,5"/>
+                    </g>
+                </g>
+
+                <!-- DIFF 5: Dog Running (Missing Collar) -->
+                <g id="R-dog" class="anim-dog diff-hitbox diff-dog" onclick="checkDiff('dog', event)">
+                    <rect class="hover-highlight" x="460" y="450" width="150" height="100" fill="white" opacity="0" rx="20"/>
+                    <!-- Dog Body -->
+                    <rect x="500" y="480" width="60" height="35" fill="#D2B48C" rx="15"/>
+                    <!-- Dog Head -->
+                    <circle cx="490" cy="470" r="22" fill="#D2B48C" />
+                    <!-- Dog Ear -->
+                    <ellipse cx="495" cy="460" rx="8" ry="18" fill="#8B4513" transform="rotate(-20 495 460)"/>
+                    <circle cx="480" cy="465" r="3" fill="#222" /> <!-- Eye -->
+                    <circle cx="470" cy="475" r="4" fill="#222" /> <!-- Nose -->
+                    
+                    <!-- Dog Tail -->
+                    <path d="M 555 490 Q 575 470 585 490" fill="none" stroke="#D2B48C" stroke-width="8" stroke-linecap="round"/>
+                    
+                    <!-- Dog Legs -->
+                    <rect x="505" y="510" width="10" height="25" fill="#D2B48C" rx="4"/>
+                    <rect x="520" y="505" width="10" height="25" fill="#C19A6B" rx="4"/> <!-- Back leg -->
+                    <rect x="540" y="510" width="10" height="25" fill="#D2B48C" rx="4"/>
+                    <rect x="550" y="505" width="10" height="25" fill="#C19A6B" rx="4"/> <!-- Back leg -->
+
+                    <!-- MISSING COLLAR HERE -->
+                    
+                    <circle class="diff-marker marker-dog" cx="530" cy="490" r="70" stroke="#FF3366" stroke-width="8" fill="none" stroke-dasharray="15,10"/>
+                </g>
+
+            </svg>
+        </div>
+    </main>
+
+    <!-- Victory Modal -->
+    <div id="victory-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center z-50 pop-in">
+        <div class="bg-white p-8 rounded-[3rem] text-center border-8 border-orange-400 shadow-2xl max-w-sm w-full mx-4">
+            <div class="text-6xl mb-2">🎈</div>
+            <h2 class="font-display text-4xl text-orange-500 mb-2">Awesome Job!</h2>
+            <p class="text-gray-500 text-lg font-bold mb-6">You found all 5 differences!</p>
+            <button onclick="resetGame()" class="bg-green-500 text-white px-6 py-3 rounded-full font-black text-xl btn-3d border-4 border-green-700 w-full shadow-lg">
+                Play Again ➔
+            </button>
+        </div>
+    </div>
+
+<!-- ============================================================
+     PART 3 — GAME LOGIC
+     ============================================================ -->
+<script>
+    // SVG element click() polyfill for proper framework syncing
+    if (typeof SVGElement !== 'undefined' && !SVGElement.prototype.click) {
+        SVGElement.prototype.click = function() {
+            const ev = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+            this.dispatchEvent(ev);
+        };
+    }
+
+    const TOTAL_DIFFS = 5;
+    let foundDiffs = new Set();
+    let audioCtx = null;
+
+    function getAC(){ 
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx; 
+    }
+    
+    document.addEventListener('click', () => getAC(), { once: true });
+
+    function playBeep(freq, type, dur, vol = 0.4) {
+        try {
+            const ac = getAC(); const o = ac.createOscillator(); const g = ac.createGain();
+            o.connect(g); g.connect(ac.destination); o.type = type; o.frequency.value = freq;
+            g.gain.setValueAtTime(vol, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+            o.start(); o.stop(ac.currentTime + dur);
+        } catch(e) {}
+    }
+
+    function checkDiff(id, event) {
+        if (foundDiffs.has(id)) return;
+        foundDiffs.add(id);
+        
+        // Success Sound
+        playBeep(523, 'sine', 0.1, 0.4); 
+        setTimeout(() => playBeep(659, 'sine', 0.15, 0.4), 100); 
+        setTimeout(() => playBeep(784, 'sine', 0.25, 0.3), 200);
+        
+        // Show Markers on BOTH images
+        document.querySelectorAll(`.marker-${id}`).forEach(marker => marker.classList.add('found'));
+        
+        // Floating badge position calculation (Handles both native click and framework replay)
+        let x, y;
+        if (event && event.isTrusted && event.clientX) {
+            x = event.clientX;
+            y = event.clientY;
+        } else if (event && event.currentTarget) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            x = rect.left + (rect.width / 2);
+            y = rect.top + (rect.height / 2);
+        }
+
+        if (x && y) showBadge(x, y);
+        
+        // Confetti Burst
+        confetti({ particleCount: 25, spread: 50, origin: { y: 0.5 }, zIndex: 100 });
+
+        updateScore();
+        if (foundDiffs.size === TOTAL_DIFFS) setTimeout(triggerWin, 600);
+    }
+
+    function showBadge(x, y) {
+        const badge = document.createElement('div');
+        badge.className = 'found-badge';
+        badge.textContent = '✓ Found!';
+        badge.style.left = x + 'px';
+        badge.style.top  = y + 'px';
+        document.body.appendChild(badge);
+        setTimeout(() => badge.remove(), 1250);
+    }
+
+    function updateScore() {
+        const display = document.getElementById('score-display');
+        display.innerText = `${foundDiffs.size} / ${TOTAL_DIFFS}`;
+        display.classList.remove('pop-in'); void display.offsetWidth; display.classList.add('pop-in');
+    }
+
+    function triggerWin() {
+        // Victory Chime
+        [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playBeep(f, 'sine', 0.3, 0.3), i * 150));
+        
+        // Confetti Loop
+        const duration = 3000; const end = Date.now() + duration;
+        (function frame() {
+            confetti({ particleCount: 8, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ff9800', '#4caf50', '#f44336'] });
+            confetti({ particleCount: 8, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff9800', '#4caf50', '#f44336'] });
+            if (Date.now() < end) requestAnimationFrame(frame);
+        }());
+        
+        document.getElementById('victory-modal').classList.remove('hidden');
+    }
+
+    function resetGame() {
+        foundDiffs.clear(); updateScore();
+        document.querySelectorAll('.diff-marker').forEach(m => m.classList.remove('found'));
+        document.getElementById('victory-modal').classList.add('hidden');
+    }
+</script>
+</body>
+</html>

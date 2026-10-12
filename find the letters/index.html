@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Find The Letter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- ============================================================
+       PART 1 — UNIVERSAL SYNC BRIDGE (GOLDEN MASTER)
+       ============================================================ -->
+  <script>
+      window.isSimulating = false;
+      const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#', '?'));
+      const roomId = urlParams.get('room') || '54321';
+      let localSeed = 0;
+      
+      window.setSeed = function(str) {
+          let tempSeed = 0;
+          for (let i = 0; i < str.length; i++) { tempSeed = str.charCodeAt(i) + ((tempSeed << 5) - tempSeed); }
+          localSeed = Math.abs(tempSeed);
+      };
+      window.setSeed(roomId);
+      
+      window.seededRandom = function() {
+          let x = Math.sin(localSeed++) * 10000;
+          return x - Math.floor(x);
+      };
+
+      function getUniqueSelector(el) {
+          if (!el) return null;
+          if (el.id) return '#' + el.id;
+          if (el === document.body) return 'body';
+          let path = [];
+          while (el && el.nodeType === Node.ELEMENT_NODE) {
+              let selector = el.nodeName.toLowerCase();
+              if (el.id) { selector = '#' + el.id; path.unshift(selector); break; } 
+              else {
+                  if (el.className && typeof el.className === 'string') {
+                      const classes = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+                      if (classes) selector += '.' + classes;
+                  }
+                  let sibling = el, nth = 1;
+                  while (sibling = sibling.previousElementSibling) { if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++; }
+                  selector += ':nth-of-type(' + nth + ')';
+                  path.unshift(selector);
+              }
+              el = el.parentNode;
+          }
+          return path.join(' > ');
+      }
+
+      let actionIdCounter = 0;
+      
+      // 1. CLICK SYNC
+      document.addEventListener('click', (e) => {
+          if (e.isTrusted === false || window.isSimulating) return;
+          const selector = getUniqueSelector(e.target); if (!selector) return;
+          actionIdCounter++;
+          window.parent.postMessage({
+              type: 'IFRAME_ACTION_TRIGGERED',
+              payload: { type: 'UNIVERSAL_CLICK', selector: selector, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+          }, '*');
+      }, true);
+
+      // 2. INPUT SYNC (CRITICAL FOR TEACHER TYPING)
+      document.addEventListener('input', (e) => {
+          if (window.isSimulating) return;
+          const selector = getUniqueSelector(e.target); if (!selector) return;
+          window.parent.postMessage({
+              type: 'IFRAME_ACTION_TRIGGERED',
+              payload: { type: 'UNIVERSAL_INPUT', selector: selector, value: e.target.value }
+          }, '*');
+      }, true);
+
+      // 3. CURSOR SYNC
+      let lastCursorTime = 0;
+      document.addEventListener('mousemove', (e) => {
+          const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+          window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload: { type: 'UNIVERSAL_CURSOR', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 } }, '*');
+      });
+
+      document.addEventListener('touchmove', (e) => {
+          if (e.touches.length > 0) {
+              const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+              window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload: { type: 'UNIVERSAL_CURSOR', pctX: (e.touches[0].clientX / window.innerWidth) * 100, pctY: (e.touches[0].clientY / window.innerHeight) * 100 } }, '*');
+          }
+      }, { passive: true });
+
+      let lastProcessedActionId = null;
+      window.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+              const action = event.data.action;
+              
+              if (action.type === 'UNIVERSAL_CURSOR') {
+                  const c = document.getElementById('remote-cursor');
+                  if (c) {
+                      c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+                      c.style.top = (action.pctY / 100 * window.innerHeight) + 'px';
+                      c.style.display = 'block';
+                  }
+                  return;
+              }
+              
+              const currentActionId = action.actionId || action.timestamp;
+              if (currentActionId && currentActionId === lastProcessedActionId) return;
+              lastProcessedActionId = currentActionId;
+
+              window.isSimulating = true;
+              if (action.seed !== undefined) localSeed = action.seed;
+              
+              if (action.type === 'UNIVERSAL_CLICK') {
+                  const element = document.querySelector(action.selector);
+                  if (element) element.click();
+              } else if (action.type === 'UNIVERSAL_INPUT') {
+                  const element = document.querySelector(action.selector);
+                  if (element) {
+                      element.value = action.value;
+                      element.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+              }
+              setTimeout(() => { window.isSimulating = false; }, 50);
+          }
+      });
+  </script>
+
+  <!-- ============================================================
+       PART 2 — CSS & GOLDEN APP WRAPPER
+       ============================================================ -->
+  <style>
+    * { box-sizing: border-box; font-family: 'Nunito', 'Comic Neue', cursive; user-select: none; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      margin: 0; padding: 0; 
+      width: 100vw; height: 100vh; overflow: hidden;
+      background-color: #0f0c29;
+      display: flex; justify-content: center; align-items: center;
+    }
+
+    #app-wrapper {
+        width: 98%; max-width: 1000px; height: 98%; max-height: 700px;
+        background: #fce4ec; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        display: flex; flex-direction: column; overflow: hidden;
+        border: 4px solid white; position: relative;
+    }
+
+    /* Prevent Pointer Events on Inner Elements for Perfect Sync */
+    .del-btn *, #start-btn *, #back-btn *, .card *, #add-letter-btn * { pointer-events: none; }
+
+    .header {
+      background: linear-gradient(135deg, #b352e6, #f24b88);
+      color: white; font-size: clamp(1.8rem, 4vw, 2.5rem); text-align: center;
+      padding: 15px; font-weight: 900; letter-spacing: 1px; flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10;
+    }
+    
+    /* Setup Screen */
+    #setup-screen {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 20px; background: #fafafa; overflow-y: auto; width: 100%;
+    }
+    .setup-title { font-size: 1.2rem; color: #555; margin-bottom: 20px; text-align: center; font-weight: 800;}
+    
+    #letter-inputs-container { width: 100%; max-width: 400px; }
+    .letter-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #fff; border: 2px solid #e2e8f0; border-radius: 12px;
+      padding: 10px 15px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .letter-input {
+      border: 2px solid #cbd5e1; border-radius: 8px; padding: 8px;
+      width: 60px; text-align: center; font-size: 20px; font-weight: 900;
+      outline: none; color: #333; transition: 0.2s;
+    }
+    .letter-input:focus { border-color: #f24b88; box-shadow: 0 0 0 3px rgba(242,75,136,0.2); }
+    
+    .del-btn { cursor: pointer; color: #94a3b8; font-size: 20px; font-weight: bold; padding: 5px; transition: 0.2s; }
+    .del-btn:active { color: #f44336; transform: scale(0.9); }
+    
+    #add-letter-btn {
+      color: #e91e63; font-weight: 800; cursor: pointer; margin: 15px 0; font-size: 1rem;
+      padding: 10px 20px; border-radius: 20px; background: #fce4ec; transition: 0.1s; border: 2px solid transparent;
+    }
+    #add-letter-btn:active { transform: scale(0.95); border-color: #e91e63; }
+    
+    #start-btn {
+      background: linear-gradient(135deg, #4ade80, #3b82f6);
+      color: white; border: none; padding: 15px 40px; border-radius: 30px;
+      font-size: 1.4rem; font-weight: 900; cursor: pointer; margin-top: 10px;
+      box-shadow: 0 8px 15px rgba(59,130,246,0.3); transition: transform 0.1s;
+    }
+    #start-btn:active { transform: translateY(4px); box-shadow: 0 2px 5px rgba(59,130,246,0.3); }
+
+    /* Game Screen */
+    #game-screen { flex: 1; display: none; flex-direction: column; background: #fafafa; overflow: hidden; width: 100%; }
+    
+    .status-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 20px; background: #e0f2fe; margin: 15px; border-radius: 12px;
+      font-size: clamp(14px, 3vw, 18px); font-weight: 900; color: #0284c7; flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid #bae6fd;
+    }
+    .targets-display { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .target-badge {
+      background: white; border-radius: 50%; width: 32px; height: 32px;
+      display: flex; justify-content: center; align-items: center;
+      color: #e91e63; font-weight: 900; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border: 2px solid #fce4ec;
+    }
+    .found-count { color: #d81b60; background: white; padding: 4px 12px; border-radius: 20px; }
+    
+    /* 🔥 Responsive Grid for perfect scaling */
+    .grid {
+      display: grid; grid-template-columns: repeat(6, 1fr);
+      gap: 10px; padding: 0 15px 15px 15px; flex: 1; overflow-y: auto;
+      align-content: start;
+    }
+    @media (max-width: 600px) {
+        .grid { grid-template-columns: repeat(4, 1fr); gap: 8px;} 
+    }
+
+    .card {
+      background: white; border: 3px solid #e2e8f0; border-radius: 12px;
+      display: flex; justify-content: center; align-items: center;
+      font-size: clamp(1.5rem, 5vw, 2.5rem); font-weight: 900; cursor: pointer;
+      color: #334155; box-shadow: 0 6px 0 #cbd5e1; transition: transform 0.1s, box-shadow 0.1s;
+      aspect-ratio: 1; width: 100%; max-width: 100px; margin: 0 auto;
+    }
+    .card:active { transform: translateY(6px); box-shadow: 0 0 0 #cbd5e1; }
+    
+    .card.found {
+      background: #dcfce7; border-color: #22c55e; color: #166534;
+      box-shadow: none; transform: translateY(6px); cursor: default;
+      opacity: 0.8; pointer-events: none;
+    }
+    .card.wrong {
+      background: #fee2e2; border-color: #ef4444; color: #991b1b;
+      animation: shake 0.3s;
+    }
+    
+    #back-btn {
+      padding: 15px; color: #64748b; cursor: pointer; font-size: 1rem; font-weight: 900;
+      text-align: center; background: #f1f5f9; flex-shrink: 0; border-top: 2px solid #e2e8f0;
+      transition: 0.2s;
+    }
+    #back-btn:active { background: #e2e8f0; }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      50% { transform: translateX(6px); }
+      75% { transform: translateX(-6px); }
+      100% { transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- RULE 2: THE MANDATORY RED CURSOR -->
+  <div id="remote-cursor"></div>
+
+  <!-- APP WRAPPER -->
+  <div id="app-wrapper">
+    <div class="header">Find The Letter!</div>
+    
+    <div id="setup-screen">
+      <div class="setup-title">Teacher Setup: Choose letters to hide</div>
+      <div id="letter-inputs-container">
+        <!-- Deterministic IDs for Sync. Empty values by default so teacher can type fresh. -->
+        <div class="letter-row" id="row-1">
+            <input type="text" id="input-1" class="letter-input" maxlength="1" value="A">
+            <div id="del-1" class="del-btn" onclick="removeRow('row-1')">✖</div>
+        </div>
+        <div class="letter-row" id="row-2">
+            <input type="text" id="input-2" class="letter-input" maxlength="1" value="B">
+            <div id="del-2" class="del-btn" onclick="removeRow('row-2')">✖</div>
+        </div>
+      </div>
+      <div id="add-letter-btn" onclick="addRow()">+ Add another letter</div>
+      <button id="start-btn" onclick="startGame()">Start Game! 🚀</button>
+    </div>
+
+    <div id="game-screen">
+      <div class="status-bar">
+        <div class="targets-display">
+          <span>🎯 Find:</span>
+          <div id="target-badges-container"></div>
+        </div>
+        <div class="found-count" id="score-display">Found: 0/0</div>
+      </div>
+      <div class="grid" id="game-grid"></div>
+      <div id="back-btn" onclick="resetToSetup()">🔙 Back to Setup</div>
+    </div>
+  </div>
+
+  <script>
+    // Audio & Confetti functions
+    let audioCtx = null;
+    function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+    document.addEventListener('click', () => initAudio(), { once: true });
+
+    function snd_win() {
+      try {
+        const A = initAudio();
+        const n = (f,t,dur) => {
+          const o=A.createOscillator(), g=A.createGain();
+          o.type='sine'; o.frequency.setValueAtTime(f,A.currentTime+t);
+          g.gain.setValueAtTime(0,A.currentTime+t);
+          g.gain.linearRampToValueAtTime(0.4,A.currentTime+t+.05);
+          g.gain.exponentialRampToValueAtTime(.001,A.currentTime+t+dur);
+          o.connect(g); g.connect(A.destination);
+          o.start(A.currentTime+t); o.stop(A.currentTime+t+dur+.05);
+        };
+        [[523,0],[659,.1],[784,.2],[1047,.32],[1319,.44]].forEach(([f,t])=>n(f,t,.45));
+      } catch(e) {}
+    }
+
+    function snd_bad() {
+      try {
+        const A = initAudio();
+        const o=A.createOscillator(), g=A.createGain();
+        o.type='sawtooth'; o.frequency.setValueAtTime(220,A.currentTime);
+        o.frequency.exponentialRampToValueAtTime(55,A.currentTime+.4);
+        g.gain.setValueAtTime(.4,A.currentTime);
+        g.gain.exponentialRampToValueAtTime(.001,A.currentTime+.4);
+        o.connect(g); g.connect(A.destination);
+        o.start(); o.stop(A.currentTime+.45);
+      } catch(e) {}
+    }
+
+    function cft(big) {
+      const end = Date.now() + (big ? 3500 : 2200);
+      const cols = ['#FF6B6B','#FFE66D','#4ECDC4','#A855F7','#22C55E'];
+      (function f() {
+        try {
+            confetti({ particleCount:big?14:8, angle:60, spread:72, origin:{x:0}, colors:cols });
+            confetti({ particleCount:big?14:8, angle:120, spread:72, origin:{x:1}, colors:cols });
+        } catch(e) {}
+        if (Date.now() < end) requestAnimationFrame(f);
+      })();
+    }
+
+    // LIVETUTOR SHUFFLE (Deterministic)
+    function shuf(arr) {
+      arr = [...arr];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(window.seededRandom() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Setup Logic
+    let rowCounter = 2; // Starts at 2 because we have 2 default rows
+    let targetLetters = [];
+    let foundCount = 0;
+    let totalTargets = 0;
+    let isGameLocked = false;
+    let gameRound = 0; // 🔥 THE FIX: Deterministic round counter
+
+    function addRow() {
+      const container = document.getElementById('letter-inputs-container');
+      rowCounter++;
+      const id = `row-${rowCounter}`;
+      const div = document.createElement('div');
+      div.className = 'letter-row';
+      div.id = id;
+      div.innerHTML = `<input type="text" id="input-${rowCounter}" class="letter-input" maxlength="1" value="C"><div id="del-${rowCounter}" class="del-btn" onclick="removeRow('${id}')">✖</div>`;
+      container.appendChild(div);
+    }
+
+    function removeRow(id) {
+      const row = document.getElementById(id);
+      if (row) row.remove();
+    }
+
+    function getRandomNoise(excludeArr) {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+      let char = "";
+      do {
+        char = chars[Math.floor(window.seededRandom() * chars.length)];
+      } while (excludeArr.includes(char));
+      return char;
+    }
+
+    function startGame() {
+      // 🔥 THE FIX: Use deterministic game round for seed, NOT Date.now()!
+      gameRound++;
+      window.setSeed(roomId + "_round_" + gameRound);
+      
+      // Gather inputs & Remove Duplicates & Empty
+      targetLetters = [];
+      const inputs = document.querySelectorAll('.letter-input');
+      inputs.forEach(inp => {
+        const val = inp.value.trim(); // Exact case tracking
+        if (val && !targetLetters.includes(val)) {
+            targetLetters.push(val);
+        }
+      });
+
+      if (targetLetters.length === 0) return;
+
+      // Reset states
+      foundCount = 0;
+      totalTargets = targetLetters.length * 3; // 3 instances per target letter
+      isGameLocked = false;
+      const boardSize = 24; 
+
+      // Build UI Badges
+      const badgesContainer = document.getElementById('target-badges-container');
+      badgesContainer.innerHTML = '';
+      targetLetters.forEach(t => {
+        const b = document.createElement('div');
+        b.className = 'target-badge';
+        b.innerText = t;
+        badgesContainer.appendChild(b);
+      });
+      updateScore();
+
+      // Generate Board Array
+      let boardData = [];
+      
+      // Add targets (Strict exact case match)
+      targetLetters.forEach(t => {
+        boardData.push({ val: t, isTarget: true, targetMatch: t });
+        boardData.push({ val: t, isTarget: true, targetMatch: t });
+        boardData.push({ val: t, isTarget: true, targetMatch: t });
+      });
+      
+      // Add noise
+      while (boardData.length < boardSize) {
+        boardData.push({ val: getRandomNoise(targetLetters), isTarget: false, targetMatch: null });
+      }
+
+      // Shuffle using LiveTutor seeded random
+      boardData = shuf(boardData);
+
+      // Render Grid
+      const grid = document.getElementById('game-grid');
+      grid.innerHTML = '';
+      boardData.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = `card-${index}`;
+        card.innerText = item.val;
+        
+        card.onclick = () => handleCardClick(card, item.isTarget);
+        grid.appendChild(card);
+      });
+
+      document.getElementById('setup-screen').style.display = 'none';
+      document.getElementById('game-screen').style.display = 'flex';
+    }
+
+    function handleCardClick(cardEl, isCorrect) {
+      if (cardEl.classList.contains('found') || isGameLocked) return;
+
+      if (isCorrect) {
+        cardEl.classList.add('found');
+        foundCount++;
+        updateScore();
+        
+        if (foundCount >= totalTargets) {
+          isGameLocked = true;
+          snd_win();
+          cft(true); // Big confetti on win
+        } else {
+          snd_win();
+          cft(false); // Small confetti per correct answer
+        }
+      } else {
+        cardEl.classList.remove('wrong');
+        void cardEl.offsetWidth; // trigger reflow to restart animation
+        cardEl.classList.add('wrong');
+        snd_bad();
+      }
+    }
+
+    function updateScore() {
+      document.getElementById('score-display').innerText = `Found: ${foundCount}/${totalTargets}`;
+    }
+
+    function resetToSetup() {
+      document.getElementById('game-screen').style.display = 'none';
+      document.getElementById('setup-screen').style.display = 'flex';
+    }
+  </script>
+</body>
+</html>

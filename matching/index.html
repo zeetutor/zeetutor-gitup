@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Match Game — LiveTutor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Nunito', sans-serif; user-select: none; }
+    .font-fredoka { font-family: 'Fredoka One', cursive; }
+    .big-match-card {
+      min-height: 190px;
+      height: 190px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    @media (min-width: 768px) {
+      .big-match-card { min-height: 230px; height: 230px; }
+    }
+    .big-match-card:active { transform: scale(0.97); }
+    .big-match-card.selected {
+      border-color: #3b82f6 !important;
+      background-color: rgba(59, 130, 246, 0.25) !important;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    }
+    .big-match-card.matched {
+      border-color: #10b981 !important;
+      background-color: rgba(16, 185, 129, 0.2) !important;
+      opacity: 0.92;
+      pointer-events: none;
+    }
+    .big-match-card.wrong {
+      border-color: #ef4444 !important;
+      background-color: rgba(239, 68, 68, 0.25) !important;
+      animation: wobbleFail 0.4s ease-in-out;
+    }
+    @keyframes wobbleFail {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .pick-chip.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.18); }
+    #match-scroll-box { -webkit-overflow-scrolling: touch; }
+  </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col p-2 md:p-3 overflow-hidden h-screen">
+
+<header class="w-full flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 gap-2 shrink-0">
+  <div>
+    <span class="bg-indigo-500/20 text-indigo-300 font-fredoka px-3 py-1 rounded-xl text-xs uppercase border border-indigo-500/30">Match Arena</span>
+    <span id="game-mode-label" class="text-xs font-bold text-amber-300 ml-2">Image ↔ Image</span>
+    <p id="manifest-status" class="text-[10px] text-slate-500 font-bold mt-1"></p>
+  </div>
+  <div class="flex items-center gap-2 flex-wrap">
+    <button id="btn-toggle-mode" class="bg-slate-800 text-teal-300 font-bold px-3 py-1.5 rounded-xl text-xs border border-slate-700">Switch to Spelling</button>
+    <button id="btn-pick-items" class="bg-slate-800 text-amber-300 font-bold px-3 py-1.5 rounded-xl text-xs border border-slate-700">Choose items</button>
+    <button id="btn-restart-game" class="bg-slate-800 text-slate-200 font-bold px-3 py-1.5 rounded-xl text-xs border border-slate-700">Shuffle</button>
+    <button id="btn-manage" class="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs">Manage JSON</button>
+  </div>
+</header>
+
+<main class="flex-1 relative flex flex-col max-w-5xl mx-auto w-full overflow-hidden min-h-0">
+  <div class="flex justify-between items-center bg-slate-950 border border-slate-800 px-4 py-2 rounded-2xl mb-2 shrink-0">
+    <p id="instruction-text" class="font-fredoka text-amber-300 text-xs md:text-sm">Scroll the list, tap left card, then tap matching right card</p>
+    <p class="font-fredoka text-emerald-400 text-xs">Matched: <span id="match-score">0 / 0</span></p>
+  </div>
+  <div id="match-scroll-box" class="relative flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 border border-slate-800 rounded-2xl bg-slate-950/40 min-h-0">
+    <svg id="match-lines-layer" class="absolute inset-0 w-full h-full pointer-events-none z-10" style="overflow:visible;"></svg>
+    <div id="match-stage" class="grid grid-cols-2 gap-6 md:gap-16 w-full items-start relative z-20">
+      <div id="left-column" class="flex flex-col gap-4"></div>
+      <div id="right-column" class="flex flex-col gap-4"></div>
+    </div>
+  </div>
+</main>
+
+<footer class="text-center py-1 shrink-0">
+  <div id="feedback-badge" class="inline-block px-4 py-1 rounded-full font-bold text-xs opacity-0"></div>
+</footer>
+
+<div id="pick-modal" class="fixed inset-0 bg-slate-950/95 z-50 hidden flex-col p-3">
+  <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl mx-auto flex flex-col max-h-[92vh] overflow-hidden">
+    <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+      <h3 class="font-fredoka text-amber-300 text-lg">Choose items to match</h3>
+      <button id="btn-close-pick" class="text-slate-400 font-bold text-lg px-2">✕</button>
+    </div>
+    <p class="px-4 pt-3 text-xs text-slate-400 font-bold">Tap cards to select. Then Start match. Both rooms use the same selected IDs.</p>
+    <div id="pick-grid" class="p-4 overflow-y-auto grid grid-cols-2 md:grid-cols-3 gap-3 flex-1"></div>
+    <div class="p-4 border-t border-slate-800 flex justify-between">
+      <button id="btn-pick-all" class="bg-slate-800 text-white font-bold px-3 py-2 rounded-xl text-xs">Select all</button>
+      <button id="btn-start-picked" class="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-sm">Start match</button>
+    </div>
+  </div>
+</div>
+
+<div id="manage-modal" class="fixed inset-0 bg-slate-950/95 z-50 hidden flex-col p-3">
+  <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl mx-auto flex flex-col max-h-[92vh] overflow-hidden">
+    <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+      <div>
+        <h3 class="font-fredoka text-amber-300 text-lg">Image Deck Manager</h3>
+        <p class="text-xs text-slate-400">Upload images into JSON, or keep folder paths like images/apple.png</p>
+      </div>
+      <button id="btn-close-manage" class="text-slate-400 font-bold text-lg px-2">✕</button>
+    </div>
+    <div class="p-4 overflow-y-auto space-y-4 flex-1 text-sm">
+      <div class="bg-slate-950 border-2 border-dashed border-indigo-500/40 p-4 rounded-2xl text-center">
+        <p class="font-bold text-white text-sm">Upload images (saved inside JSON as data)</p>
+        <label class="mt-2 bg-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-xs cursor-pointer inline-block">
+          Browse images
+          <input type="file" accept="image/*" multiple class="hidden" id="upload-images">
+        </label>
+      </div>
+      <div>
+        <div class="flex justify-between mb-2">
+          <p class="font-fredoka text-white text-xs uppercase">Deck (<span id="deck-count">0</span>)</p>
+          <button id="btn-clear-deck" class="text-rose-400 text-xs font-bold">Clear All</button>
+        </div>
+        <div id="deck-list" class="space-y-2 max-h-56 overflow-y-auto"></div>
+      </div>
+    </div>
+    <div class="p-4 border-t border-slate-800 flex flex-wrap gap-2 justify-between">
+      <div class="flex gap-2">
+        <label class="bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer">
+          Import JSON
+          <input type="file" accept=".json,application/json" class="hidden" id="import-json">
+        </label>
+        <button id="btn-download-json" class="bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs">Download manifest.json</button>
+      </div>
+      <button id="btn-done-manage" class="bg-slate-800 text-slate-300 font-bold px-4 py-1.5 rounded-xl text-xs">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.isRemoteUpdate = false;
+const hashParams = new URLSearchParams((window.location.hash || window.location.search).replace('#', '?'));
+const roomId = hashParams.get('room') || 'default_room';
+
+function sendAction(actionType, extra) {
+  if (window.isRemoteUpdate) return;
+  if (!window.parent || window.parent === window) return;
+  window.parent.postMessage({
+    type: 'IFRAME_ACTION_TRIGGERED',
+    payload: Object.assign({
+      actionType: actionType,
+      actionId: 'click_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)
+    }, extra || {})
+  }, '*');
+}
+
+window.addEventListener('message', function(event) {
+  if (!event.data || event.data.type !== 'EXECUTE_UNIVERSAL_ACTION') return;
+  const action = event.data.action || {};
+  window.isRemoteUpdate = true;
+  applyRemote(action);
+  window.isRemoteUpdate = false;
+});
+
+function applyRemote(action) {
+  const type = action.actionType || action.type;
+  if (type === 'SET_MODE') {
+    matchMode = action.matchMode === 'spelling' ? 'spelling' : 'image';
+    paintModeLabel();
+    if (action.leftIds) applyArena(action);
+  } else if (type === 'BUILD_ARENA') {
+    applyArena(action);
+  } else if (type === 'SELECT_LEFT') {
+    selectLeftItem(action.itemId, true);
+  } else if (type === 'SELECT_RIGHT') {
+    selectRightItem(action.itemId, true);
+  } else if (type === 'OPEN_PICK') {
+    openPickModal();
+  } else if (type === 'CLOSE_PICK') {
+    closePickModal();
+  } else if (type === 'TOGGLE_PICK') {
+    togglePicked(action.itemId, true);
+    renderPickGrid();
+  } else if (type === 'PICK_ALL') {
+    selectedIds = matchDeck.map(p => p.id);
+    renderPickGrid();
+  } else if (type === 'OPEN_MANAGE') {
+    openManageModal();
+  } else if (type === 'CLOSE_MANAGE') {
+    closeManageModal(true);
+  }
+}
+
+let matchDeck = [];
+let selectedIds = [];
+let matchMode = 'image';
+let activeLeftId = null;
+let activeRightId = null;
+let completedPairs = new Set();
+let leftList = [];
+let rightList = [];
+
+const fallbackDeck = [
+  { id: 'pair_1', name: 'Carrot', image: 'images/carrot.png' },
+  { id: 'pair_2', name: 'Apple', image: 'images/apple.png' },
+  { id: 'pair_3', name: 'Banana', image: 'images/banana.png' },
+  { id: 'pair_4', name: 'Broccoli', image: 'images/broccoli.png' },
+  { id: 'pair_5', name: 'Orange', image: 'images/orange.png' },
+  { id: 'pair_6', name: 'Tomato', image: 'images/tomato.png' }
+];
+
+let audioCtx = null;
+function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+document.addEventListener('click', () => initAudio(), { once: true });
+function sndWin() {
+  try {
+    const A = initAudio();
+    [[523,0],[659,.1],[784,.2],[1047,.32]].forEach(([f,t]) => {
+      const o = A.createOscillator(), g = A.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, A.currentTime + t);
+      g.gain.setValueAtTime(0, A.currentTime + t);
+      g.gain.linearRampToValueAtTime(0.3, A.currentTime + t + .04);
+      g.gain.exponentialRampToValueAtTime(.001, A.currentTime + t + .35);
+      o.connect(g); g.connect(A.destination);
+      o.start(A.currentTime + t); o.stop(A.currentTime + t + .4);
+    });
+  } catch (e) {}
+}
+function sndBad() {
+  try {
+    const A = initAudio();
+    const o = A.createOscillator(), g = A.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(180, A.currentTime);
+    o.frequency.exponentialRampToValueAtTime(55, A.currentTime + .3);
+    g.gain.setValueAtTime(.3, A.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, A.currentTime + .3);
+    o.connect(g); g.connect(A.destination);
+    o.start(); o.stop(A.currentTime + .35);
+  } catch (e) {}
+}
+
+async function initData() {
+  const status = document.getElementById('manifest-status');
+  try {
+    const res = await fetch('./manifest.json');
+    if (!res.ok) throw new Error('no file');
+    const data = await res.json();
+    matchDeck = Array.isArray(data) && data.length ? data : fallbackDeck;
+    status.textContent = 'Loaded manifest.json (' + matchDeck.length + ' items)';
+    status.style.color = '#34d399';
+  } catch (e) {
+    matchDeck = fallbackDeck;
+    status.textContent = 'No manifest.json — use Manage JSON or put images/ + manifest.json in this folder';
+    status.style.color = '#f87171';
+  }
+  selectedIds = matchDeck.map(p => p.id);
+  if (!window.isRemoteUpdate) buildAndBroadcast();
+  else renderColumns();
+}
+
+function paintModeLabel() {
+  document.getElementById('game-mode-label').innerText = matchMode === 'image' ? 'Image ↔ Image' : 'Image ↔ Spelling';
+  document.getElementById('btn-toggle-mode').innerText = matchMode === 'image' ? 'Switch to Spelling' : 'Switch to Image';
+}
+
+function activeItems() {
+  const picked = selectedIds.length ? matchDeck.filter(p => selectedIds.includes(p.id)) : matchDeck.slice();
+  return picked.length ? picked : matchDeck.slice();
+}
+
+function shuffleCopy(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function buildAndBroadcast() {
+  const items = activeItems();
+  leftList = shuffleCopy(items);
+  rightList = shuffleCopy(items);
+  completedPairs = new Set();
+  activeLeftId = null;
+  activeRightId = null;
+  renderColumns();
+  sendAction('BUILD_ARENA', {
+    matchMode: matchMode,
+    selectedIds: selectedIds.slice(),
+    leftIds: leftList.map(i => i.id),
+    rightIds: rightList.map(i => i.id),
+    completedIds: []
+  });
+}
+
+function applyArena(action) {
+  if (action.matchMode) matchMode = action.matchMode;
+  if (action.selectedIds) selectedIds = action.selectedIds.slice();
+  paintModeLabel();
+  const itemsById = {};
+  matchDeck.forEach(p => { itemsById[p.id] = p; });
+  leftList = (action.leftIds || []).map(id => itemsById[id]).filter(Boolean);
+  rightList = (action.rightIds || []).map(id => itemsById[id]).filter(Boolean);
+  completedPairs = new Set(action.completedIds || []);
+  activeLeftId = null;
+  activeRightId = null;
+  if (!leftList.length) {
+    const items = activeItems();
+    leftList = items.slice();
+    rightList = items.slice();
+  }
+  renderColumns();
+}
+
+function cardHtml(item, side) {
+  const extra = completedPairs.has(item.id) ? 'matched' : '';
+  if (side === 'right' && matchMode === 'spelling') {
+    return '<button id="' + side + '-card-' + item.id + '" class="big-match-card ' + extra + ' bg-slate-950 border-4 border-slate-800 rounded-3xl p-4 flex items-center justify-center font-fredoka text-3xl md:text-4xl text-white shadow-xl">' +
+      escapeHtml(item.name) + '</button>';
+  }
+  return '<button id="' + side + '-card-' + item.id + '" class="big-match-card ' + extra + ' bg-slate-950 border-4 border-slate-800 rounded-3xl p-2 flex flex-col items-center justify-center shadow-xl">' +
+    '<div class="w-full flex-1 flex items-center justify-center overflow-hidden">' +
+    '<img src="' + item.image + '" class="max-w-full max-h-full object-contain pointer-events-none" alt="' + escapeHtml(item.name) + '" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'<span class=text-4xl>🖼️</span>\';">' +
+    '</div><span class="mt-1 font-fredoka text-amber-300 text-lg truncate max-w-full">' + escapeHtml(item.name) + '</span></button>';
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderColumns() {
+  const items = activeItems();
+  document.getElementById('match-score').innerText = completedPairs.size + ' / ' + items.length;
+  document.getElementById('left-column').innerHTML = leftList.map(item => cardHtml(item, 'left')).join('');
+  document.getElementById('right-column').innerHTML = rightList.map(item => cardHtml(item, 'right')).join('');
+  leftList.forEach(item => {
+    const el = document.getElementById('left-card-' + item.id);
+    if (el) el.onclick = () => selectLeftItem(item.id, false);
+  });
+  rightList.forEach(item => {
+    const el = document.getElementById('right-card-' + item.id);
+    if (el) el.onclick = () => selectRightItem(item.id, false);
+  });
+  requestAnimationFrame(redrawAllLines);
+}
+
+function selectLeftItem(id, remote) {
+  if (completedPairs.has(id)) return;
+  activeLeftId = id;
+  if (!remote) sendAction('SELECT_LEFT', { itemId: id });
+  highlightSelections();
+  checkMatchAttempt();
+}
+function selectRightItem(id, remote) {
+  if (completedPairs.has(id)) return;
+  activeRightId = id;
+  if (!remote) sendAction('SELECT_RIGHT', { itemId: id });
+  highlightSelections();
+  checkMatchAttempt();
+}
+function highlightSelections() {
+  document.querySelectorAll('.big-match-card').forEach(el => el.classList.remove('selected'));
+  if (activeLeftId) {
+    const el = document.getElementById('left-card-' + activeLeftId);
+    if (el) el.classList.add('selected');
+  }
+  if (activeRightId) {
+    const el = document.getElementById('right-card-' + activeRightId);
+    if (el) el.classList.add('selected');
+  }
+}
+function checkMatchAttempt() {
+  if (!activeLeftId || !activeRightId) return;
+  const leftEl = document.getElementById('left-card-' + activeLeftId);
+  const rightEl = document.getElementById('right-card-' + activeRightId);
+  if (activeLeftId === activeRightId) {
+    completedPairs.add(activeLeftId);
+    if (leftEl) { leftEl.classList.remove('selected'); leftEl.classList.add('matched'); }
+    if (rightEl) { rightEl.classList.remove('selected'); rightEl.classList.add('matched'); }
+    redrawAllLines();
+    sndWin();
+    showFeedback('Correct match', 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40');
+    document.getElementById('match-score').innerText = completedPairs.size + ' / ' + activeItems().length;
+    if (completedPairs.size === activeItems().length) {
+      try { confetti({ particleCount: 140, spread: 85, origin: { y: 0.6 } }); } catch (e) {}
+    }
+  } else {
+    if (leftEl) leftEl.classList.add('wrong');
+    if (rightEl) rightEl.classList.add('wrong');
+    sndBad();
+    showFeedback('Try again', 'bg-rose-500/20 text-rose-300 border border-rose-500/40');
+    setTimeout(() => {
+      if (leftEl) leftEl.classList.remove('wrong', 'selected');
+      if (rightEl) rightEl.classList.remove('wrong', 'selected');
+    }, 500);
+  }
+  activeLeftId = null;
+  activeRightId = null;
+}
+
+function redrawAllLines() {
+  const svg = document.getElementById('match-lines-layer');
+  const box = document.getElementById('match-scroll-box');
+  if (!svg || !box) return;
+  const boxRect = box.getBoundingClientRect();
+  svg.style.height = box.scrollHeight + 'px';
+  svg.setAttribute('height', box.scrollHeight);
+  svg.innerHTML = '';
+  completedPairs.forEach(id => {
+    const leftEl = document.getElementById('left-card-' + id);
+    const rightEl = document.getElementById('right-card-' + id);
+    if (!leftEl || !rightEl) return;
+    const rectA = leftEl.getBoundingClientRect();
+    const rectB = rightEl.getBoundingClientRect();
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', rectA.right - boxRect.left);
+    line.setAttribute('y1', rectA.top + rectA.height / 2 - boxRect.top + box.scrollTop);
+    line.setAttribute('x2', rectB.left - boxRect.left);
+    line.setAttribute('y2', rectB.top + rectB.height / 2 - boxRect.top + box.scrollTop);
+    line.setAttribute('stroke', '#10b981');
+    line.setAttribute('stroke-width', '4');
+    line.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(line);
+  });
+}
+
+function showFeedback(text, classes) {
+  const badge = document.getElementById('feedback-badge');
+  badge.className = 'inline-block px-4 py-1 rounded-full font-bold text-xs opacity-100 ' + classes;
+  badge.innerText = text;
+}
+
+function openPickModal() {
+  document.getElementById('pick-modal').classList.remove('hidden');
+  document.getElementById('pick-modal').classList.add('flex');
+  renderPickGrid();
+}
+function closePickModal() {
+  document.getElementById('pick-modal').classList.add('hidden');
+  document.getElementById('pick-modal').classList.remove('flex');
+}
+function togglePicked(id, remote) {
+  if (selectedIds.includes(id)) selectedIds = selectedIds.filter(x => x !== id);
+  else selectedIds.push(id);
+  if (!remote) sendAction('TOGGLE_PICK', { itemId: id });
+}
+function renderPickGrid() {
+  const grid = document.getElementById('pick-grid');
+  grid.innerHTML = matchDeck.map(p => {
+    const on = selectedIds.includes(p.id) ? 'active' : '';
+    return '<button data-id="' + p.id + '" class="pick-chip ' + on + ' rounded-2xl border-2 border-slate-700 bg-slate-950 p-2 text-left">' +
+      '<img src="' + p.image + '" class="w-full h-24 object-contain pointer-events-none" onerror="this.style.display=\'none\'">' +
+      '<p class="font-fredoka text-amber-300 mt-1">' + escapeHtml(p.name) + '</p></button>';
+  }).join('') || '<p class="text-slate-500">No items. Import JSON first.</p>';
+  grid.querySelectorAll('button[data-id]').forEach(btn => {
+    btn.onclick = () => { togglePicked(btn.dataset.id, false); renderPickGrid(); };
+  });
+}
+
+function openManageModal() {
+  renderDeckList();
+  document.getElementById('manage-modal').classList.remove('hidden');
+  document.getElementById('manage-modal').classList.add('flex');
+}
+function closeManageModal(skipRebuild) {
+  document.getElementById('manage-modal').classList.add('hidden');
+  document.getElementById('manage-modal').classList.remove('flex');
+  if (!skipRebuild && !window.isRemoteUpdate) buildAndBroadcast();
+}
+function renderDeckList() {
+  document.getElementById('deck-count').innerText = matchDeck.length;
+  document.getElementById('deck-list').innerHTML = matchDeck.map((p, idx) =>
+    '<div class="flex items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800">' +
+    '<img src="' + p.image + '" class="w-12 h-12 object-contain rounded-lg bg-slate-900" onerror="this.style.display=\'none\'">' +
+    '<input data-idx="' + idx + '" data-k="name" class="bg-slate-900 border border-slate-700 rounded-xl px-2 py-1 text-white font-bold text-xs flex-1" value="' + escapeHtml(p.name) + '">' +
+    '<button data-del="' + idx + '" class="text-rose-400 font-bold text-xs">Delete</button></div>'
+  ).join('') || '<p class="text-slate-600 text-center py-4 text-xs">No images yet</p>';
+  document.querySelectorAll('#deck-list input').forEach(inp => {
+    inp.oninput = () => { if (matchDeck[inp.dataset.idx]) matchDeck[inp.dataset.idx].name = inp.value.trim(); };
+  });
+  document.querySelectorAll('#deck-list [data-del]').forEach(btn => {
+    btn.onclick = () => { matchDeck.splice(+btn.dataset.del, 1); renderDeckList(); };
+  });
+}
+
+document.getElementById('upload-images').onchange = function(event) {
+  Array.from(event.target.files || []).forEach(file => {
+    const reader = new FileReader();
+    const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    reader.onload = (e) => {
+      matchDeck.push({
+        id: 'pair_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        name: cleanName,
+        image: e.target.result
+      });
+      renderDeckList();
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+};
+document.getElementById('import-json').onchange = function(event) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!Array.isArray(parsed) || !parsed.length) throw new Error('bad');
+      matchDeck = parsed;
+      selectedIds = matchDeck.map(p => p.id);
+      renderDeckList();
+      alert('manifest.json loaded');
+    } catch (e) { alert('Invalid JSON'); }
+  };
+  reader.readAsText(file);
+};
+document.getElementById('btn-download-json').onclick = function() {
+  if (!matchDeck.length) return alert('No pairs to export');
+  const blob = new Blob([JSON.stringify(matchDeck, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'manifest.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+document.getElementById('btn-toggle-mode').onclick = function() {
+  matchMode = matchMode === 'image' ? 'spelling' : 'image';
+  paintModeLabel();
+  buildAndBroadcast();
+};
+document.getElementById('btn-restart-game').onclick = function() { buildAndBroadcast(); };
+document.getElementById('btn-pick-items').onclick = function() { openPickModal(); sendAction('OPEN_PICK'); };
+document.getElementById('btn-close-pick').onclick = function() { closePickModal(); sendAction('CLOSE_PICK'); };
+document.getElementById('btn-pick-all').onclick = function() {
+  selectedIds = matchDeck.map(p => p.id);
+  renderPickGrid();
+  sendAction('PICK_ALL');
+};
+document.getElementById('btn-start-picked').onclick = function() {
+  closePickModal();
+  buildAndBroadcast();
+};
+document.getElementById('btn-manage').onclick = function() { openManageModal(); sendAction('OPEN_MANAGE'); };
+document.getElementById('btn-close-manage').onclick = function() { closeManageModal(); sendAction('CLOSE_MANAGE'); };
+document.getElementById('btn-done-manage').onclick = function() { closeManageModal(); sendAction('CLOSE_MANAGE'); };
+document.getElementById('btn-clear-deck').onclick = function() {
+  if (!confirm('Erase all items?')) return;
+  matchDeck = [];
+  selectedIds = [];
+  renderDeckList();
+};
+document.getElementById('match-scroll-box').onscroll = redrawAllLines;
+window.addEventListener('resize', redrawAllLines);
+
+paintModeLabel();
+initData();
+</script>
+</body>
+</html>

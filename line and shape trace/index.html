@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Trace & Learn - Guided Path</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     PART 1 — LIVETUTOR SYNC BLOCK (ULTIMATE MASTER)
+     ============================================================ -->
+<script>
+  window.isSimulating = false;
+  const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#','?'));
+  const roomId = urlParams.get('room') || '54321';
+  let localSeed = 0;
+  
+  window.setSeed = function(str) {
+      let tempSeed = 0;
+      for (let i = 0; i < str.length; i++) { tempSeed = str.charCodeAt(i) + ((tempSeed << 5) - tempSeed); }
+      localSeed = Math.abs(tempSeed);
+  };
+  window.setSeed(roomId);
+  
+  window.seededRandom = function() {
+      let x = Math.sin(localSeed++) * 10000;
+      return x - Math.floor(x);
+  };
+  Math.random = window.seededRandom;
+
+  function getUniqueSelector(el) {
+      if (!el) return null;
+      if (el.id) return '#' + el.id;
+      if (el === document.body) return 'body';
+      let path = [];
+      while (el && el.nodeType === Node.ELEMENT_NODE) {
+          let selector = el.nodeName.toLowerCase();
+          if (el.id) { selector = '#' + el.id; path.unshift(selector); break; } 
+          else {
+              if (el.className && typeof el.className === 'string') {
+                  const classes = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+                  if (classes) selector += '.' + classes;
+              }
+              let sibling = el, nth = 1;
+              while (sibling = sibling.previousElementSibling) { if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++; }
+              selector += ':nth-of-type(' + nth + ')';
+              path.unshift(selector);
+          }
+          el = el.parentNode;
+      }
+      return path.join(' > ');
+  }
+
+  let actionIdCounter = 0;
+  document.addEventListener('click', (e) => {
+      if (e.isTrusted === false || window.isSimulating) return;
+      const selector = getUniqueSelector(e.target); if (!selector) return;
+      actionIdCounter++;
+      window.parent.postMessage({
+          type: 'IFRAME_ACTION_TRIGGERED',
+          payload: { type: 'UNIVERSAL_CLICK', selector: selector, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+      }, '*');
+  }, true);
+
+  let lastCursorTime = 0;
+  document.addEventListener('mousemove', (e) => {
+      const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+      window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload: { type: 'UNIVERSAL_CURSOR', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 } }, '*');
+  });
+
+  document.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+          const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+          window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload: { type: 'UNIVERSAL_CURSOR', pctX: (e.touches[0].clientX / window.innerWidth) * 100, pctY: (e.touches[0].clientY / window.innerHeight) * 100 } }, '*');
+      }
+  }, { passive: true });
+
+  let lastProcessedActionId = null;
+  window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+          const action = event.data.action;
+          if (action.type === 'UNIVERSAL_CURSOR') {
+              const c = document.getElementById('remote-cursor');
+              if (c) {
+                  c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+                  c.style.top = (action.pctY / 100 * window.innerHeight) + 'px';
+                  c.style.display = 'block';
+              }
+              return;
+          }
+          const currentActionId = action.actionId || action.timestamp;
+          if (currentActionId && currentActionId === lastProcessedActionId) return;
+          lastProcessedActionId = currentActionId;
+
+          window.isSimulating = true;
+          if (action.seed !== undefined) window.setSeed(action.seed.toString());
+          
+          if (action.type === 'UNIVERSAL_CLICK') {
+              const element = document.querySelector(action.selector);
+              if (element) element.click();
+          } else if (action.type === 'UPDATE_TRACE') {
+              // Custom Canvas Drag Sync Handling
+              activeStroke = action.stroke;
+              activePoint = action.point;
+              if(action.roundComplete) handleRoundComplete(true);
+              else drawFrame();
+          }
+
+          setTimeout(() => { window.isSimulating = false; }, 50);
+      }
+  });
+
+  // Function to broadcast live drawing progress
+  function sendTraceSync(stroke, point, roundComplete) {
+      if (window.isSimulating) return;
+      window.parent.postMessage({
+          type: 'IFRAME_ACTION_TRIGGERED',
+          payload: { type: 'UPDATE_TRACE', stroke, point, roundComplete, actionId: 'trace_' + Date.now() + Math.random(), seed: localSeed }
+      }, '*');
+  }
+</script>
+
+<style>
+:root {
+  --blue:#3b82f6; --green:#22c55e; --orange:#f97316; --purple:#a855f7; --red:#ef4444; --pink:#ec4899;
+  --ff:'Fredoka One',cursive; --fn:'Nunito',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none; -webkit-user-drag:none;}
+
+/* LAYOUT RULE 1: Strict Body & Wrapper */
+body{
+  width: 100vw; height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center;
+  background:linear-gradient(135deg,#e0f2fe 0%,#fce7f3 50%,#f0fdf4 100%);
+  font-family:var(--ff);
+}
+
+#app-wrapper {
+  width: 95%; max-width: 900px; height: 95%; max-height: 650px; 
+  display: flex; flex-direction: column; align-items: center; position: relative;
+}
+
+/* UI STRUCTURE */
+.topbar{width:100%;display:flex;align-items:center;justify-content:center;
+  padding:8px 12px;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);
+  border-radius: 20px 20px 0 0;
+  border-bottom:2px solid rgba(255,255,255,.9);flex-shrink:0;gap:8px;flex-wrap:wrap;}
+.cat-btn{border:none;border-radius:50px;font-family:var(--ff);font-size:.85rem;
+  color:white;cursor:pointer;padding:7px 14px;transition:all .15s;
+  box-shadow:0 4px 0 rgba(0,0,0,.15);}
+.cat-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.1);}
+.cat-btn.c-abc{background:var(--blue);} .cat-btn.c-abc.active{background:#1d4ed8;outline:3px solid white;}
+.cat-btn.c-sabc{background:var(--green);} .cat-btn.c-sabc.active{background:#15803d;outline:3px solid white;}
+.cat-btn.c-123{background:var(--orange);} .cat-btn.c-123.active{background:#c2410c;outline:3px solid white;}
+.cat-btn.c-lines{background:var(--pink);} .cat-btn.c-lines.active{background:#be185d;outline:3px solid white;}
+.cat-btn.c-shapes{background:var(--purple);} .cat-btn.c-shapes.active{background:#7e22ce;outline:3px solid white;}
+
+.item-strip{width:100%;background:rgba(255,255,255,.6);backdrop-filter:blur(8px);
+  border-bottom:2px solid rgba(255,255,255,.9);padding:6px 10px;
+  display:flex;align-items:center;gap:6px;overflow-x:auto;flex-shrink:0;}
+.item-strip::-webkit-scrollbar{display:none;}
+.item-btn{border:none;border-radius:14px;background:white;min-width:44px;height:44px;
+  font-family:var(--ff);font-size:1.2rem;cursor:pointer;
+  box-shadow:0 3px 8px rgba(0,0,0,.1);transition:all .12s;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0 8px;}
+.item-btn.active{background:var(--blue);color:white;box-shadow:0 4px 12px rgba(59,130,246,.5);}
+
+.main{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;
+  padding:8px 10px 6px;overflow:hidden;position:relative;}
+
+.round-info{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-shrink:0;}
+.round-label{font-family:var(--fn);font-weight:900;font-size:.85rem;color:#6b7280;
+  background:rgba(255,255,255,.8);padding:4px 12px;border-radius:20px;}
+.dots{display:flex;gap:5px;}
+.dot{width:10px;height:10px;border-radius:50%;background:#d1d5db;transition:all .3s;}
+.dot.done{background:var(--green);transform:scale(1.2);}
+.dot.current{background:var(--blue);transform:scale(1.3);box-shadow:0 0 8px var(--blue);}
+
+.guide-label{font-size:clamp(1rem,3vw,1.2rem);color:#374151;font-family:var(--fn);
+  font-weight:900;text-align:center;margin-bottom:5px;flex-shrink:0;}
+
+/* CANVAS */
+.canvas-wrap{position:relative;flex:1;width:100%;max-width:700px;
+  background:white;border-radius:20px;
+  box-shadow:0 8px 32px rgba(0,0,0,.12);
+  border:3px solid rgba(255,255,255,.9);overflow:hidden;min-height:0;touch-action:none;}
+canvas{position:absolute;inset:0;width:100%;height:100%; touch-action:none;}
+
+.bottom-bar{width:100%;display:flex;align-items:center;justify-content:center;
+  gap:12px;padding:6px 10px;flex-shrink:0;}
+.ctrl-btn{border:none;border-radius:50px;font-family:var(--ff);font-size:.9rem;
+  color:white;cursor:pointer;padding:9px 18px;
+  box-shadow:0 4px 0 rgba(0,0,0,.15);transition:all .12s;display:flex;align-items:center;gap:5px;}
+.ctrl-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.1);}
+.btn-retry{background:#6b7280;} .btn-next{background:var(--blue);}
+.btn-audio{background:var(--orange);width:42px;height:42px;border-radius:50%;padding:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;}
+
+.star-pop{position:fixed;inset:0;pointer-events:none;z-index:100;
+  display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s;}
+.star-pop.show{opacity:1;}
+.star-pop span{font-size:6rem;animation:popbounce .6s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
+@keyframes popbounce{0%{transform:scale(0) rotate(-20deg);}50%{transform:scale(1.2) rotate(10deg);}100%{transform:scale(1) rotate(0);}}
+
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) scale(.8);
+  background:rgba(0,0,0,.8);color:white;padding:8px 20px;border-radius:50px;
+  font-family:var(--fn);font-weight:800;font-size:.9rem;z-index:200;
+  opacity:0;pointer-events:none;transition:all .25s;}
+#toast.show{opacity:1;transform:translateX(-50%) scale(1);}
+
+/* Arrow pulsing animation logic (visual feedback) */
+@keyframes pulse{0%{transform:scale(1);}50%{transform:scale(1.15);}100%{transform:scale(1);}}
+</style>
+</head>
+<body>
+
+<!-- MANDATORY RED CURSOR -->
+<div id="remote-cursor" style="position:fixed; width:18px; height:18px; background:red; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(255,0,0,.6); pointer-events:none; z-index:99999; transform:translate(-50%,-50%); display:none;"></div>
+
+<div id="star-pop" class="star-pop"><span>⭐</span></div>
+<div id="toast"></div>
+
+<!-- APP WRAPPER FOR FLAWLESS SCALING -->
+<div id="app-wrapper">
+  <div class="topbar">
+    <button class="cat-btn c-abc active" id="cat-ABC" onclick="setCategory('ABC')"><span style="pointer-events:none">ABC</span></button>
+    <button class="cat-btn c-sabc" id="cat-abc" onclick="setCategory('abc')"><span style="pointer-events:none">abc</span></button>
+    <button class="cat-btn c-123" id="cat-123" onclick="setCategory('123')"><span style="pointer-events:none">123</span></button>
+    <button class="cat-btn c-lines" id="cat-Lines" onclick="setCategory('Lines')"><span style="pointer-events:none">〜 Lines</span></button>
+    <button class="cat-btn c-shapes" id="cat-Shapes" onclick="setCategory('Shapes')"><span style="pointer-events:none">★ Shapes</span></button>
+  </div>
+
+  <div class="item-strip" id="item-strip"></div>
+
+  <div class="main">
+    <div class="round-info">
+      <div class="round-label" id="round-label">Round 1 of 10</div>
+      <div class="dots" id="dots"></div>
+    </div>
+    <div class="guide-label" id="guide-label">Trace it!</div>
+    
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="game-canvas"></canvas>
+    </div>
+    
+    <div class="bottom-bar">
+      <button class="ctrl-btn btn-audio" id="btn-audio" onclick="playAudio()"><span style="pointer-events:none">🔊</span></button>
+      <button class="ctrl-btn btn-retry" id="btn-retry" onclick="resetRound()"><span style="pointer-events:none">↺ Retry</span></button>
+      <button class="ctrl-btn btn-next" id="btn-next" onclick="forceNext()"><span style="pointer-events:none">Next ▶</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* [AIM] - DATA ARCHITECTURE 
+   Using a 100x100 grid string format. M = Move, L = Line, Q = Quad Curve.
+   Pipe | separates individual strokes.
+*/
+const DICT = {
+  // --- CAPITALS ---
+  'A': 'M 50 10 L 20 90 | M 50 10 L 80 90 | M 35 60 L 65 60',
+  'B': 'M 25 10 L 25 90 | M 25 10 Q 75 10 75 30 Q 75 50 25 50 | M 25 50 Q 85 50 85 70 Q 85 90 25 90',
+  'C': 'M 80 20 Q 50 -10 20 50 Q 20 90 80 80',
+  'D': 'M 25 10 L 25 90 | M 25 10 Q 85 10 85 50 Q 85 90 25 90',
+  'E': 'M 25 10 L 25 90 | M 25 10 L 75 10 | M 25 50 L 65 50 | M 25 90 L 75 90',
+  'F': 'M 25 10 L 25 90 | M 25 10 L 75 10 | M 25 50 L 65 50',
+  'G': 'M 80 20 Q 50 -10 20 50 Q 20 90 60 90 Q 80 90 80 70 L 50 70',
+  'H': 'M 25 10 L 25 90 | M 75 10 L 75 90 | M 25 50 L 75 50',
+  'I': 'M 50 10 L 50 90 | M 30 10 L 70 10 | M 30 90 L 70 90',
+  'J': 'M 70 10 L 70 70 Q 70 90 50 90 Q 30 90 30 70',
+  'K': 'M 25 10 L 25 90 | M 75 10 L 25 50 | M 25 50 L 75 90',
+  'L': 'M 25 10 L 25 90 | M 25 90 L 75 90',
+  'M': 'M 20 90 L 20 10 L 50 50 L 80 10 L 80 90',
+  'N': 'M 25 90 L 25 10 L 75 90 L 75 10',
+  'O': 'M 50 10 Q 85 10 85 50 Q 85 90 50 90 Q 15 90 15 50 Q 15 10 50 10',
+  'P': 'M 25 10 L 25 90 | M 25 10 Q 80 10 80 35 Q 80 60 25 60',
+  'Q': 'M 50 10 Q 85 10 85 50 Q 85 90 50 90 Q 15 90 15 50 Q 15 10 50 10 | M 60 60 L 85 85',
+  'R': 'M 25 10 L 25 90 | M 25 10 Q 80 10 80 35 Q 80 60 25 60 | M 25 60 L 80 90',
+  'S': 'M 80 25 Q 80 10 50 10 Q 20 10 20 30 Q 20 50 50 50 Q 80 50 80 70 Q 80 90 50 90 Q 20 90 20 75',
+  'T': 'M 50 10 L 50 90 | M 20 10 L 80 10',
+  'U': 'M 25 10 L 25 60 Q 25 90 50 90 Q 75 90 75 60 L 75 10',
+  'V': 'M 20 10 L 50 90 L 80 10',
+  'W': 'M 15 10 L 30 90 L 50 50 L 70 90 L 85 10',
+  'X': 'M 20 10 L 80 90 | M 80 10 L 20 90',
+  'Y': 'M 20 10 L 50 50 L 80 10 | M 50 50 L 50 90',
+  'Z': 'M 20 10 L 80 10 L 20 90 L 80 90',
+
+  // --- SMALL LETTERS (Approximated geometric paths) ---
+  'a': 'M 70 25 Q 30 25 30 55 Q 30 85 70 85 Q 90 85 90 55 Q 90 25 70 25 | M 90 25 L 90 85',
+  'b': 'M 30 10 L 30 90 | M 30 50 Q 80 50 80 70 Q 80 90 30 90',
+  'c': 'M 80 35 Q 50 20 30 50 Q 30 80 80 85',
+  'd': 'M 70 50 Q 20 50 20 70 Q 20 90 70 90 | M 70 10 L 70 90',
+  'e': 'M 25 55 L 80 55 Q 80 20 50 20 Q 20 20 20 55 Q 20 90 80 85',
+  'f': 'M 70 20 Q 50 10 50 30 L 50 90 | M 30 50 L 80 50',
+  'g': 'M 70 30 Q 30 30 30 55 Q 30 80 70 80 Q 90 80 90 55 Q 90 30 70 30 | M 90 30 L 90 90 Q 90 110 50 110',
+  'h': 'M 30 10 L 30 90 | M 30 50 Q 75 40 75 60 L 75 90',
+  'i': 'M 50 35 L 50 90 | M 50 15 L 50 20', // dot is a tiny line
+  'j': 'M 60 35 L 60 90 Q 60 110 30 110 | M 60 15 L 60 20',
+  'k': 'M 30 10 L 30 90 | M 75 35 L 30 65 | M 45 50 L 75 90',
+  'l': 'M 50 10 L 50 90',
+  'm': 'M 20 35 L 20 90 | M 20 45 Q 50 35 50 60 L 50 90 | M 50 45 Q 80 35 80 60 L 80 90',
+  'n': 'M 30 35 L 30 90 | M 30 45 Q 75 35 75 60 L 75 90',
+  'o': 'M 50 30 Q 80 30 80 60 Q 80 90 50 90 Q 20 90 20 60 Q 20 30 50 30',
+  'p': 'M 30 35 L 30 110 | M 30 50 Q 80 40 80 65 Q 80 90 30 80',
+  'q': 'M 70 50 Q 20 40 20 65 Q 20 90 70 80 | M 70 35 L 70 110',
+  'r': 'M 30 35 L 30 90 | M 30 55 Q 50 30 75 45',
+  's': 'M 80 45 Q 80 30 50 30 Q 30 30 30 45 Q 30 60 50 60 Q 80 60 80 75 Q 80 90 50 90 Q 20 90 20 75',
+  't': 'M 50 10 L 50 80 Q 50 90 70 90 | M 25 40 L 75 40',
+  'u': 'M 30 35 L 30 70 Q 30 90 50 90 Q 70 90 70 70 L 70 35 | M 70 60 L 70 90',
+  'v': 'M 25 35 L 50 90 L 75 35',
+  'w': 'M 15 35 L 30 90 L 50 60 L 70 90 L 85 35',
+  'x': 'M 25 35 L 75 90 | M 75 35 L 25 90',
+  'y': 'M 25 35 L 50 80 | M 75 35 L 50 80 L 30 110',
+  'z': 'M 25 35 L 75 35 L 25 90 L 75 90',
+
+  // --- NUMBERS ---
+  '0': 'M 50 10 Q 85 10 85 50 Q 85 90 50 90 Q 15 90 15 50 Q 15 10 50 10',
+  '1': 'M 30 30 L 50 10 L 50 90 | M 25 90 L 75 90',
+  '2': 'M 25 30 Q 25 10 50 10 Q 75 10 75 35 Q 75 50 25 90 L 80 90',
+  '3': 'M 25 25 Q 50 10 75 25 Q 85 40 50 50 Q 85 60 75 80 Q 50 95 25 80',
+  '4': 'M 70 70 L 20 70 L 50 10 L 50 90',
+  '5': 'M 75 10 L 30 10 L 30 45 Q 80 40 80 70 Q 80 95 30 90',
+  '6': 'M 75 20 Q 30 10 30 50 Q 30 90 55 90 Q 80 90 80 70 Q 80 50 55 50 Q 35 50 30 65',
+  '7': 'M 20 10 L 80 10 L 40 90',
+  '8': 'M 50 50 Q 20 50 20 25 Q 20 10 50 10 Q 80 10 80 25 Q 80 50 50 50 Q 15 50 15 75 Q 15 95 50 95 Q 85 95 85 75 Q 85 50 50 50',
+  '9': 'M 25 80 Q 70 90 70 50 Q 70 10 45 10 Q 20 10 20 30 Q 20 50 45 50 Q 65 50 70 35',
+
+  // --- LINES ---
+  'standing': 'M 50 10 L 50 90',
+  'sleeping': 'M 10 50 L 90 50',
+  'slanting-r': 'M 20 10 L 80 90',
+  'slanting-l': 'M 80 10 L 20 90',
+  'zigzag': 'M 10 30 L 26 70 L 42 30 L 58 70 L 74 30 L 90 70',
+  'curve-up': 'M 15 75 Q 50 10 85 75',
+  'curve-down': 'M 15 25 Q 50 90 85 25',
+  'wave': 'M 10 50 Q 25 20 40 50 Q 55 80 70 50 Q 80 30 90 50',
+  'loop': 'M 10 60 Q 20 20 40 20 Q 50 20 50 40 Q 50 60 40 60 Q 30 60 30 40 Q 30 20 60 20 Q 75 20 75 40 Q 75 60 65 60 Q 55 60 55 40 Q 55 20 90 20',
+  'himalaya': 'M 10 80 L 30 30 L 50 60 L 70 20 L 90 80',
+
+  // --- SHAPES ---
+  'circle': 'M 50 10 Q 90 10 90 50 Q 90 90 50 90 Q 10 90 10 50 Q 10 10 50 10',
+  'square': 'M 20 20 L 80 20 L 80 80 L 20 80 L 20 20',
+  'triangle': 'M 50 15 L 85 80 L 15 80 L 50 15',
+  'rectangle': 'M 15 30 L 85 30 L 85 70 L 15 70 L 15 30',
+  'star': 'M 50 10 L 60 40 L 90 40 L 65 60 L 75 90 L 50 70 L 25 90 L 35 60 L 10 40 L 40 40 L 50 10',
+  'heart': 'M 50 85 Q 10 50 10 30 Q 10 10 30 10 Q 45 10 50 30 Q 55 10 70 10 Q 90 10 90 30 Q 90 50 50 85',
+  'diamond': 'M 50 10 L 85 50 L 50 90 L 15 50 L 50 10',
+  'oval': 'M 50 20 Q 90 20 90 50 Q 90 80 50 80 Q 10 80 10 50 Q 10 20 50 20'
+};
+
+const CATEGORIES = {
+  ABC: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+  abc: 'abcdefghijklmnopqrstuvwxyz'.split(''),
+  '123': '0123456789'.split(''),
+  Lines: ['standing','sleeping','slanting-r','slanting-l','zigzag','curve-up','curve-down','wave','loop','himalaya'],
+  Shapes: ['circle','square','triangle','rectangle','star','heart','diamond','oval']
+};
+
+const LABELS = {
+  standing:'Standing Line', sleeping:'Sleeping Line', 'slanting-r':'Slanting Right', 'slanting-l':'Slanting Left',
+  zigzag:'Zig Zag', 'curve-up':'Curve Up', 'curve-down':'Curve Down', wave:'Wave', loop:'Loops', himalaya:'Mountains',
+  circle:'Circle', square:'Square', triangle:'Triangle', rectangle:'Rectangle', star:'Star', heart:'Heart', diamond:'Diamond', oval:'Oval'
+};
+
+/* [SHOOT] - CORE STATE & CANVAS SETUP */
+let curCat = 'ABC', curItem = 'A', curRound = 0;
+const TOTAL_ROUNDS = 10;
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvas-wrap');
+
+// Math & Path State
+let parsedStrokes = []; // Array of Arrays of {x,y} points
+let activeStroke = 0;
+let activePoint = 0;
+let isDragging = false;
+let pulseTime = 0;
+let lastTraceSync = 0; // Throttle for custom sync
+
+// Colors
+const COLORS = { ABC:'#3b82f6', abc:'#22c55e', '123':'#f97316', Lines:'#ec4899', Shapes:'#a855f7' };
+
+/* [SKIN] - PROCEDURAL PATH GENERATION (The Engine) 
+   Officer Focus: This turns the strings above into dense mathematical coordinates.
+*/
+function parseDataString(str, w, h) {
+  const strokes = str.split('|').map(s => s.trim());
+  const size = Math.min(w, h) * 0.8;
+  const offX = (w - size) / 2, offY = (h - size) / 2;
+  
+  const mapPt = (val) => (val / 100) * size;
+  let finalStrokes = [];
+
+  strokes.forEach(strokeData => {
+    const parts = strokeData.split(' ');
+    let pts = [];
+    let curX = 0, curY = 0;
+    
+    for(let i=0; i<parts.length; i++) {
+      let cmd = parts[i];
+      if (cmd === 'M' || cmd === 'L') {
+        curX = mapPt(parseFloat(parts[++i])) + offX;
+        curY = mapPt(parseFloat(parts[++i])) + offY;
+        pts.push({x: curX, y: curY});
+      } 
+      else if (cmd === 'Q') {
+        const cx = mapPt(parseFloat(parts[++i])) + offX;
+        const cy = mapPt(parseFloat(parts[++i])) + offY;
+        const ex = mapPt(parseFloat(parts[++i])) + offX;
+        const ey = mapPt(parseFloat(parts[++i])) + offY;
+        // Interpolate Quadratic Curve (High Density for "Bead" effect)
+        const steps = 30; 
+        for(let t=1; t<=steps; t++) {
+          const nv = t/steps;
+          const inv = 1 - nv;
+          const x = inv*inv*curX + 2*inv*nv*cx + nv*nv*ex;
+          const y = inv*inv*curY + 2*inv*nv*cy + nv*nv*ey;
+          pts.push({x, y});
+        }
+        curX = ex; curY = ey;
+      }
+    }
+    
+    // Line Interpolation (Fill gaps so we have a continuous wire of points)
+    let densePoints = [];
+    for(let i=0; i<pts.length-1; i++) {
+      const p1 = pts[i], p2 = pts[i+1];
+      const dist = Math.hypot(p2.x-p1.x, p2.y-p1.y);
+      const steps = Math.max(2, Math.floor(dist / 4)); // Point every 4 pixels
+      for(let t=0; t<steps; t++) {
+        densePoints.push({
+          x: p1.x + (p2.x - p1.x) * (t/steps),
+          y: p1.y + (p2.y - p1.y) * (t/steps)
+        });
+      }
+    }
+    densePoints.push(pts[pts.length-1]);
+    finalStrokes.push(densePoints);
+  });
+  
+  return finalStrokes;
+}
+
+function resize() {
+  if (wrap.clientWidth === 0) return;
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  initPath();
+}
+new ResizeObserver(resize).observe(wrap);
+
+function initPath() {
+  const data = DICT[curItem] || DICT['A']; // Fallback
+  parsedStrokes = parseDataString(data, canvas.width, canvas.height);
+  activeStroke = 0;
+  activePoint = 0;
+  isDragging = false;
+  drawFrame();
+}
+
+/* ═══════════════════════════════════════════
+   UI & NAVIGATION
+═══════════════════════════════════════════ */
+function setCategory(cat) {
+  curCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('cat-' + cat).classList.add('active');
+  buildStrip();
+  selectItem(CATEGORIES[cat][0]);
+}
+
+function buildStrip() {
+  const strip = document.getElementById('item-strip');
+  strip.innerHTML = '';
+  CATEGORIES[curCat].forEach((item, index) => {
+    const b = document.createElement('button');
+    b.id = 'item-btn-' + index; // Mandatory Rule 3: Unique Static ID
+    b.className = 'item-btn';
+    b.innerHTML = `<span style="pointer-events:none">${LABELS[item] ? LABELS[item].split(' ')[0] : item}</span>`;
+    b.onclick = () => selectItem(item);
+    strip.appendChild(b);
+  });
+}
+
+function selectItem(item) {
+  curItem = item;
+  curRound = 0;
+  document.querySelectorAll('.item-btn').forEach((b, i) => {
+    b.classList.toggle('active', CATEGORIES[curCat][i] === item);
+    if(CATEGORIES[curCat][i] === item) b.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  });
+  updateHeader();
+  initPath();
+  playAudio();
+}
+
+function updateHeader() {
+  document.getElementById('round-label').textContent = `Round ${curRound + 1} of ${TOTAL_ROUNDS}`;
+  document.getElementById('guide-label').textContent = LABELS[curItem] || `Letter "${curItem}"`;
+  
+  const dots = document.getElementById('dots');
+  dots.innerHTML = '';
+  for(let i=0; i<TOTAL_ROUNDS; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < curRound ? ' done' : i === curRound ? ' current' : '');
+    dots.appendChild(d);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   RENDERING ENGINE
+═══════════════════════════════════════════ */
+function drawFrame(time = 0) {
+  if(!parsedStrokes.length || canvas.width === 0) return;
+  pulseTime = time * 0.005; // For animation
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const color = COLORS[curCat];
+  const lw = Math.min(canvas.width, canvas.height) * 0.045; // Line thickness
+
+  // 1. Draw Base Path (Gray Outline)
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  parsedStrokes.forEach(stroke => {
+    ctx.beginPath();
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = lw;
+    ctx.moveTo(stroke[0].x, stroke[0].y);
+    stroke.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+    // Inner dash for guide look
+    ctx.beginPath();
+    ctx.strokeStyle = '#9ca3af';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]);
+    ctx.moveTo(stroke[0].x, stroke[0].y);
+    stroke.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // 2. Draw Completed Strokes
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw * 0.9;
+  for(let i=0; i<activeStroke; i++) {
+    ctx.beginPath();
+    ctx.moveTo(parsedStrokes[i][0].x, parsedStrokes[i][0].y);
+    parsedStrokes[i].forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+  }
+
+  // 3. Draw Current Active Stroke Progress
+  if(activeStroke < parsedStrokes.length) {
+    const cStroke = parsedStrokes[activeStroke];
+    if(activePoint > 0) {
+      ctx.beginPath();
+      ctx.moveTo(cStroke[0].x, cStroke[0].y);
+      for(let i=1; i<=activePoint; i++) ctx.lineTo(cStroke[i].x, cStroke[i].y);
+      ctx.stroke();
+    }
+
+    // 4. Draw Start Dot (Green)
+    if(activePoint === 0 && !isDragging) {
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(cStroke[0].x, cStroke[0].y, lw * 0.8, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // 5. Draw Arrow Bead
+    drawArrow(cStroke, activePoint, lw);
+  }
+
+  if(!isDragging && activeStroke < parsedStrokes.length) {
+    requestAnimationFrame(drawFrame); // Keep animating pulse if idle
+  }
+}
+
+function drawArrow(stroke, pIndex, size) {
+  const pt = stroke[pIndex];
+  // Look ahead a few points to get a smooth direction angle
+  const nextPt = stroke[Math.min(pIndex + 5, stroke.length - 1)]; 
+  let angle = Math.atan2(nextPt.y - pt.y, nextPt.x - pt.x);
+  
+  if(pIndex === stroke.length - 1) angle = 0; // Pointing flat at end
+
+  const s = isDragging ? 1 : 1 + Math.sin(pulseTime)*0.15; // Pulse effect
+
+  ctx.save();
+  ctx.translate(pt.x, pt.y);
+  ctx.rotate(angle);
+  ctx.scale(s, s);
+
+  // Draw Blue Triangle/Arrow
+  ctx.fillStyle = '#2563eb';
+  ctx.shadowColor = 'rgba(0,0,0,0.3)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 4;
+  
+  ctx.beginPath();
+  const arrSz = size * 0.8;
+  ctx.moveTo(arrSz, 0); // Tip
+  ctx.lineTo(-arrSz, arrSz*0.8); // Bottom wings
+  ctx.lineTo(-arrSz*0.4, 0); // Inner cut
+  ctx.lineTo(-arrSz, -arrSz*0.8); // Top wing
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════
+   INTERACTION & SYNC LOGIC
+═══════════════════════════════════════════ */
+function getPt(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const src = e.touches ? e.touches[0] : e;
+  return {x: (src.clientX - rect.left)*scaleX, y: (src.clientY - rect.top)*scaleY};
+}
+
+function handleDrag(pos) {
+  if(activeStroke >= parsedStrokes.length) return;
+  const stroke = parsedStrokes[activeStroke];
+  
+  // Logic: Search ahead of current point. If finger is near a future point, snap to it.
+  const lookAhead = 40; // How many points ahead we check (determines speed)
+  const snapRadius = Math.min(canvas.width, canvas.height) * 0.15; // Hitbox size
+  
+  let maxAdv = activePoint;
+  
+  for(let i = activePoint; i < Math.min(activePoint + lookAhead, stroke.length); i++) {
+    const dist = Math.hypot(stroke[i].x - pos.x, stroke[i].y - pos.y);
+    if(dist < snapRadius) {
+      maxAdv = i;
+    }
+  }
+
+  if(maxAdv > activePoint) {
+    activePoint = maxAdv;
+    
+    let roundComplete = false;
+    if(activePoint === stroke.length - 1) {
+      activeStroke++;
+      activePoint = 0;
+      isDragging = false; 
+      if(activeStroke >= parsedStrokes.length) roundComplete = true;
+    }
+    
+    drawFrame();
+    
+    // CUSTOM SYNC: Broadcast the drag progress so the other screen renders it beautifully
+    const now = Date.now();
+    if (now - lastTraceSync > 40 || roundComplete) {
+        lastTraceSync = now;
+        sendTraceSync(activeStroke, activePoint, roundComplete);
+    }
+
+    if (roundComplete) {
+        handleRoundComplete(false); // Call locally
+    }
+  }
+}
+
+// 🛑 Prevent touch scroll to stop mobile freezing
+canvas.addEventListener('pointerdown', e => {
+  if(window.isSimulating) return;
+  e.preventDefault();
+  isDragging = true;
+  handleDrag(getPt(e));
+  drawFrame(); 
+});
+
+canvas.addEventListener('pointermove', e => {
+  if(!isDragging || window.isSimulating) return;
+  e.preventDefault();
+  handleDrag(getPt(e));
+});
+
+canvas.addEventListener('pointerup', e => {
+  e.preventDefault();
+  isDragging = false;
+  requestAnimationFrame(drawFrame); 
+});
+
+/* ═══════════════════════════════════════════
+   PROGRESSION & EFFECTS
+═══════════════════════════════════════════ */
+function handleRoundComplete(fromSync = false) {
+  drawFrame(); 
+  if(curRound < TOTAL_ROUNDS - 1) {
+    showStar(false);
+    curRound++;
+    updateHeader();
+    setTimeout(initPath, 800);
+  } else {
+    showStar(true);
+    setTimeout(() => {
+      const arr = CATEGORIES[curCat];
+      const idx = arr.indexOf(curItem);
+      if(idx < arr.length - 1) {
+        selectItem(arr[idx + 1]);
+      } else {
+        showToast("Awesome! Category Completed! 🎉");
+        curRound = 0; updateHeader(); initPath();
+      }
+    }, 1200);
+  }
+}
+
+function forceNext() {
+  if(curRound < TOTAL_ROUNDS - 1) { curRound++; updateHeader(); initPath(); }
+  else {
+    const arr = CATEGORIES[curCat];
+    const idx = arr.indexOf(curItem);
+    if(idx < arr.length-1) selectItem(arr[idx+1]);
+  }
+}
+
+function resetRound() {
+  activeStroke = 0; activePoint = 0; drawFrame();
+}
+
+function showStar(isTrophy) {
+  const el = document.getElementById('star-pop');
+  el.querySelector('span').textContent = isTrophy ? '🏆' : '⭐';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 900);
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+/* ═══════════════════════════════════════════
+   AUDIO
+═══════════════════════════════════════════ */
+function playAudio() {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  let text = LABELS[curItem] || curItem;
+  if(curCat === 'ABC') text = `Capital letter ${text}`;
+  if(curCat === 'abc') text = `Small letter ${text}`;
+  if(curCat === '123') text = `Number ${text}`;
+  
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.85; utt.pitch = 1.1;
+  const voices = speechSynthesis.getVoices();
+  const pref = voices.find(v => v.lang.startsWith('en') && /female|girl|zira/i.test(v.name));
+  if(pref) utt.voice = pref;
+  speechSynthesis.speak(utt);
+}
+speechSynthesis.onvoiceschanged = () => {};
+
+// Safari audio initialization hack
+window.addEventListener('click', () => { if(window.speechSynthesis) window.speechSynthesis.getVoices(); }, {once: true});
+
+/* INIT */
+window.onload = () => {
+  setCategory('ABC');
+  setTimeout(resize, 100);
+};
+</script>
+</body>
+</html>

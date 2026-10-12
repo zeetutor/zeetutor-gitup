@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Direction Master - Live Tutor App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- ============================================================
+         PART 1 — LIVETUTOR SYNC BLOCK (THE GOLDEN RULES)
+         ============================================================ -->
+    <script>
+        window.isSimulating = false;
+        const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#','?'));
+        const roomId = urlParams.get('room') || '54321';
+        let localSeed = 0;
+        
+        window.setSeed = function(str) {
+            let tempSeed = 0;
+            for (let i = 0; i < str.length; i++) { tempSeed = str.charCodeAt(i) + ((tempSeed << 5) - tempSeed); }
+            localSeed = Math.abs(tempSeed);
+        };
+        window.setSeed(roomId);
+        
+        window.seededRandom = function() {
+            let x = Math.sin(localSeed++) * 10000;
+            return x - Math.floor(x);
+        };
+        Math.random = window.seededRandom;
+
+        function getUniqueSelector(el) {
+            if (!el) return null;
+            if (el.id) return '#' + el.id;
+            if (el === document.body) return 'body';
+            let path = [];
+            while (el && el.nodeType === Node.ELEMENT_NODE) {
+                let selector = el.nodeName.toLowerCase();
+                if (el.id) { selector = '#' + el.id; path.unshift(selector); break; } 
+                else {
+                    if (el.className && typeof el.className === 'string') {
+                        const classes = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+                        if (classes) selector += '.' + classes;
+                    }
+                    let sibling = el, nth = 1;
+                    while (sibling = sibling.previousElementSibling) { if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++; }
+                    selector += ':nth-of-type(' + nth + ')';
+                    path.unshift(selector);
+                }
+                el = el.parentNode;
+            }
+            return path.join(' > ');
+        }
+
+        // UNIVERSAL CLICK TRACKER
+        let actionIdCounter = 0;
+        document.addEventListener('click', (e) => {
+            if (e.isTrusted === false || window.isSimulating) return;
+            const selector = getUniqueSelector(e.target); if (!selector) return;
+            actionIdCounter++;
+            window.parent.postMessage({
+                type: 'IFRAME_ACTION_TRIGGERED',
+                payload: { type: 'UNIVERSAL_CLICK', selector: selector, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+            }, '*');
+        }, true);
+
+        // UNIVERSAL INPUT TRACKER
+        document.addEventListener('input', (e) => {
+            if (window.isSimulating) return;
+            const selector = getUniqueSelector(e.target); if (!selector) return;
+            window.parent.postMessage({
+                type: 'IFRAME_ACTION_TRIGGERED',
+                payload: { type: 'UNIVERSAL_INPUT', selector: selector, value: e.target.value }
+            }, '*');
+        }, true);
+
+        // PERCENTAGE BASE SYNC CURSOR TRACKERS
+        let lastCursorTime = 0;
+        document.addEventListener('mousemove', (e) => {
+            const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+            window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 }, '*');
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+                window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (e.touches[0].clientX / window.innerWidth) * 100, pctY: (e.touches[0].clientY / window.innerHeight) * 100 }, '*');
+            }
+        }, { passive: true });
+
+        // ACTION REPLAY ENGINE BRIDGE
+        let lastProcessedActionId = null;
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+                const action = event.data.action;
+                
+                if (action.type === 'UNIVERSAL_CURSOR') {
+                    const c = document.getElementById('remote-cursor');
+                    if (c) {
+                        c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+                        c.style.top = (action.pctY / 100 * window.innerHeight) + 'px';
+                        c.style.display = 'block';
+                    }
+                    return;
+                }
+                
+                if (action.type === 'UNIVERSAL_INPUT') {
+                    const element = document.querySelector(action.selector);
+                    if (element) {
+                        element.value = action.value;
+                        element.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    return;
+                }
+
+                const currentActionId = action.actionId || action.timestamp;
+                if (currentActionId && currentActionId === lastProcessedActionId) return;
+                lastProcessedActionId = currentActionId;
+
+                window.isSimulating = true;
+                if (action.seed !== undefined) window.setSeed(action.seed.toString());
+                
+                if (action.type === 'UNIVERSAL_CLICK') {
+                    const element = document.querySelector(action.selector);
+                    if (element) element.click();
+                } 
+                else if (action.type === 'FIT_ARROW') {
+                    if (window.handleDropAttempt) {
+                        window.handleDropAttempt(action.sourceDir, action.dropZoneId, true);
+                    }
+                }
+
+                setTimeout(() => { window.isSimulating = false; }, 50);
+            }
+        });
+
+        function shuf(arr) {
+            arr = [...arr];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(window.seededRandom() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+    </script>
+
+    <style>
+        /* ============================================================
+           PART 2 — CSS & GOLDEN SCALE CONSTRAINTS
+           ============================================================ */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap');
+
+        html, body {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            background-color: #f0f4f8;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; touch-action: none;
+            font-family: 'Nunito', sans-serif;
+            -webkit-user-drag: none; user-select: none;
+        }
+
+        /* Prevent children clicking inside dynamic synced nodes */
+        button *, .card-btn *, .drag-item *, .sync-btn *, .grid-select-btn * { pointer-events: none; }
+
+        /* The App Wrapper Bounds */
+        #app-wrapper {
+            width: 100vw; height: 100vh;
+            max-width: 800px; max-height: 850px;
+            background-color: #ffffff;
+            border: 4px solid #ffffff;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+            display: flex; flex-direction: column;
+            overflow: hidden; position: relative;
+            border-radius: 1.5rem;
+        }
+
+        .game-canvas {
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+            position: relative; padding: 1.5rem;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: flex-start;
+        }
+
+        .number-bank {
+            flex-shrink: 0; min-height: 110px;
+            background-color: #f8fafc; border-top: 3px solid #e2e8f0;
+            display: flex; justify-content: center; align-items: center;
+            gap: 1.25rem; padding: 1rem; z-index: 10;
+        }
+
+        .card-btn { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
+        .card-btn:active { transform: scale(0.95); }
+
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+            40%, 60% { transform: translate3d(3px, 0, 0); }
+        }
+
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Drag & Drop Bounds styling */
+        .drop-zone { border: 3px dashed #cbd5e1; transition: all 0.2s ease; aspect-ratio: 1; width: 100%; max-width: 120px; }
+        .drop-zone.active { border-color: #4f46e5; background-color: #eef2ff; }
+        .drag-item { cursor: grab; touch-action: none; width: 68px; height: 68px; flex-shrink: 0; }
+        .drag-item:active { cursor: grabbing; }
+        .dragging-clone { position: fixed; pointer-events: none; z-index: 9999; opacity: 0.9; transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+    <!-- REALTIME REMOTE VISUAL CURSOR -->
+    <div id="remote-cursor" style="position:fixed; width:22px; height:22px; background:rgba(220, 38, 38, 0.85); border-radius:50%; border:3px solid white; box-shadow:0 0 12px rgba(220, 38, 38, 0.7); pointer-events:none; z-index:99999; transform:translate(-50%,-50%); display:none;"></div>
+
+    <div id="app-wrapper">
+        <header class="bg-indigo-600 text-white p-4 flex justify-between items-center shadow-md flex-shrink-0 z-20">
+            <h1 class="text-xl font-bold flex items-center gap-2" id="header-title">
+                <i data-lucide="compass"></i> Direction Master
+            </h1>
+            <div class="flex gap-2">
+                <button id="btn-home" onclick="renderHome()" class="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-400 rounded-lg text-sm font-bold transition-colors flex items-center gap-1 hidden shadow-md sync-btn">
+                    <i data-lucide="home" class="w-4 h-4"></i> Main Menu
+                </button>
+            </div>
+        </header>
+
+        <div id="game-canvas" class="game-canvas">
+            <!-- Dynamically Loaded Screen Views Injection -->
+        </div>
+
+        <div id="number-bank" class="number-bank hidden">
+            <!-- Dynamic drag banks injected here -->
+        </div>
+        
+        <!-- Celebration Overlay System -->
+        <div id="success-overlay" class="absolute inset-0 bg-white/95 z-50 hidden flex-col items-center justify-center pop-in">
+            <div class="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center text-white mb-4 shadow-xl">
+                <i data-lucide="check" class="w-12 h-12"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2" id="success-headline">Excellent Job!</h2>
+            <p class="text-gray-500 text-lg mb-6" id="success-subline">You nailed it perfectly.</p>
+            <button id="btn-next" class="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xl rounded-xl font-bold shadow-md active:scale-95 transition-transform sync-btn">
+                Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PART 3 — AUDIO SYNTHESIZER & CORE ENGINE LOGIC
+         ============================================================ -->
+    <script>
+        const SoundEngine = {
+            ctx: null,
+            init() { if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } },
+            playCorrect() {
+                this.init(); const now = this.ctx.currentTime;
+                const osc1 = this.ctx.createOscillator(); const gain1 = this.ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, now); osc1.frequency.setValueAtTime(659.25, now + 0.1); osc1.frequency.setValueAtTime(783.99, now + 0.2);
+                gain1.gain.setValueAtTime(0.15, now); gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc1.connect(gain1); gain1.connect(this.ctx.destination);
+                osc1.start(now); osc1.stop(now + 0.5);
+            },
+            playWrong() {
+                this.init(); const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(140, now); osc.frequency.linearRampToValueAtTime(90, now + 0.25);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+        };
+
+        const AppState = {
+            currentScreen: 'home',
+            oddOutLevel: 1,
+            oddGridSize: 3, // Chosen dynamic grid size variable
+            locked: false,
+            directionTarget: '',
+            directionRound: 1
+        };
+
+        const DIRECTIONS = {
+            'up': { icon: 'arrow-up', color: 'bg-blue-500', text: 'Up' },
+            'down': { icon: 'arrow-down', color: 'bg-green-500', text: 'Down' },
+            'left': { icon: 'arrow-left', color: 'bg-orange-500', text: 'Left' },
+            'right': { icon: 'arrow-right', color: 'bg-purple-500', text: 'Right' }
+        };
+
+        const canvas = document.getElementById('game-canvas');
+        const bank = document.getElementById('number-bank');
+        const btnHome = document.getElementById('btn-home');
+        const overlay = document.getElementById('success-overlay');
+
+        function initApp() {
+            document.getElementById('btn-next').addEventListener('click', () => {
+                overlay.classList.replace('flex', 'hidden');
+                if (AppState.currentScreen === 'learn_dir') {
+                    if (AppState.directionRound < 10) { AppState.directionRound++; renderDirectionTask(); } 
+                    else { renderHome(); }
+                } else if (AppState.currentScreen === 'odd_out') {
+                    if (AppState.oddOutLevel < 10) { AppState.oddOutLevel++; renderOddLevel(); } 
+                    else { renderHome(); }
+                } else if (AppState.currentScreen === 'drag_drop') {
+                    renderHome();
+                }
+            });
+            renderHome();
+        }
+
+        let activeDragClone = null;
+        function clearDragGhost() { if (activeDragClone) { activeDragClone.remove(); activeDragClone = null; } }
+
+        // ============================================================
+        // MODULE 0: Home Dashboard view
+        // ============================================================
+        window.renderHome = function() {
+            clearDragGhost();
+            AppState.currentScreen = 'home'; AppState.locked = false;
+            btnHome.classList.add('hidden'); bank.classList.add('hidden');
+            document.getElementById('header-title').innerHTML = `<i data-lucide="compass"></i> Direction Master`;
+
+            canvas.innerHTML = `
+                <div class="text-center mb-8 mt-6 w-full">
+                    <h2 class="text-3xl font-extrabold text-gray-800">Learn & Practice Directions!</h2>
+                    <p class="text-gray-500 mt-2 text-md">Choose an activity mode below to start playing.</p>
+                </div>
+                <div class="flex flex-col gap-5 max-w-md mx-auto w-full mb-10">
+                    <!-- SECTION 1: Direction Selection Practice -->
+                    <button id="menu-btn-learn" onclick="startDirectionMode()" class="card-btn flex items-center p-5 bg-white rounded-2xl shadow-md border-2 border-gray-100 hover:border-indigo-400 hover:shadow-lg transition-all text-left">
+                        <div class="w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-4 shrink-0"><i data-lucide="compass" class="w-8 h-8"></i></div>
+                        <div><h3 class="text-xl font-bold text-gray-800">1. Learn Directions</h3><p class="text-gray-500 text-sm">Practice Left, Right, Up, and Down arrows over 10 Rounds!</p></div>
+                    </button>
+                    <!-- SECTION 2: Progressive Odd One Out Challenge (Loads Grid Selector First) -->
+                    <button id="menu-btn-odd" onclick="renderOddSelector()" class="card-btn flex items-center p-5 bg-white rounded-2xl shadow-md border-2 border-gray-100 hover:border-purple-400 hover:shadow-lg transition-all text-left">
+                        <div class="w-14 h-14 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-4 shrink-0 font-extrabold text-xl">10</div>
+                        <div><h3 class="text-xl font-bold text-gray-800">2. Odd One Out Challenge</h3><p class="text-gray-500 text-sm">Spot the mismatched direction. Pick your grid size!</p></div>
+                    </button>
+                    <!-- SECTION 3: Drag & Drop Arrow Matching -->
+                    <button id="menu-btn-drag" onclick="startDragMode()" class="card-btn flex items-center p-5 bg-white rounded-2xl shadow-md border-2 border-gray-100 hover:border-emerald-400 hover:shadow-lg transition-all text-left">
+                        <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-4 shrink-0"><i data-lucide="blocks" class="w-8 h-8"></i></div>
+                        <div><h3 class="text-xl font-bold text-gray-800">3. Arrow Matching Hub</h3><p class="text-gray-500 text-sm">Drag and drop arrows to fit them correctly!</p></div>
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        // ============================================================
+        // MODULE 1: Learn Direction Training Task (10 Rounds)
+        // ============================================================
+        window.startDirectionMode = function() { AppState.currentScreen = 'learn_dir'; AppState.directionRound = 1; renderDirectionTask(); }
+        window.renderDirectionTask = function() {
+            AppState.locked = false; btnHome.classList.remove('hidden'); bank.classList.add('hidden');
+            document.getElementById('header-title').innerHTML = `Learn Directions: Round ${AppState.directionRound}/10`;
+
+            window.setSeed(roomId + "_learn_round_" + AppState.directionRound);
+            const dirs = Object.keys(DIRECTIONS);
+            const target = dirs[Math.floor(window.seededRandom() * dirs.length)];
+            AppState.directionTarget = target;
+
+            let html = `
+                <div class="text-center mb-8 mt-4 w-full">
+                    <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">Round ${AppState.directionRound} of 10</span>
+                    <h2 class="text-2xl font-black text-gray-800 mt-3">Tap the arrow pointing <span class="text-indigo-600 underline">${DIRECTIONS[target].text.toUpperCase()}</span>!</h2>
+                </div>
+                <div class="grid grid-cols-2 gap-6 max-w-md mx-auto w-full pb-10">
+            `;
+            shuf(dirs).forEach((dirKey) => {
+                const item = DIRECTIONS[dirKey];
+                html += `
+                    <button id="dir-card-${dirKey}" onclick="handleDirectionChoice(this, '${dirKey}')" class="card-btn aspect-square bg-white rounded-2xl shadow-md hover:shadow-lg border-4 border-gray-100 flex flex-col items-center justify-center p-4 transition-all">
+                        <div class="w-20 h-20 rounded-full ${item.color} text-white flex items-center justify-center shadow-md mb-2"><i data-lucide="${item.icon}" class="w-12 h-12"></i></div>
+                        <span class="text-lg font-bold text-gray-700">${item.text}</span>
+                    </button>
+                `;
+            });
+            html += `</div>`; canvas.innerHTML = html; lucide.createIcons();
+        }
+
+        window.handleDirectionChoice = function(el, selectedDir) {
+            if (AppState.locked) return;
+            if (selectedDir === AppState.directionTarget) {
+                AppState.locked = true; SoundEngine.playCorrect();
+                el.classList.replace('border-gray-100', 'border-green-500'); el.classList.add('bg-green-50');
+                setTimeout(() => { showCustomSuccess("That's Correct!", `Great job! You found the ${DIRECTIONS[selectedDir].text} arrow.`, AppState.directionRound === 10 ? "Return to Menu" : "Next Round"); }, 550);
+            } else {
+                SoundEngine.playWrong(); el.classList.add('shake', 'border-red-400', 'bg-red-50');
+                setTimeout(() => el.classList.remove('shake', 'border-red-400', 'bg-red-50'), 450);
+            }
+        }
+
+        // ============================================================
+        // MODULE 2: Odd One Out Challenge (Manual Grid Selector Screen)
+        // ============================================================
+        window.renderOddSelector = function() {
+            clearDragGhost();
+            AppState.currentScreen = 'odd_select'; AppState.locked = false;
+            btnHome.classList.remove('hidden'); bank.classList.add('hidden');
+            document.getElementById('header-title').innerHTML = `Select Grid Size`;
+
+            canvas.innerHTML = `
+                <div class="text-center mb-8 mt-6 w-full">
+                    <span class="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full uppercase tracking-wider">Level Setup</span>
+                    <h2 class="text-3xl font-extrabold text-gray-800 mt-2">Choose Your Grid Size</h2>
+                    <p class="text-gray-500 mt-2 text-md">Both teacher and student screens will lock into this grid size for 10 Levels!</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6 max-w-md mx-auto w-full mb-10 px-4">
+                    <!-- 3x3 Grid Selection Button -->
+                    <button id="odd-select-3" onclick="startOddWithGrid(3)" class="grid-select-btn aspect-square bg-white rounded-2xl shadow-md hover:shadow-lg border-4 border-gray-100 hover:border-purple-400 flex flex-col items-center justify-center p-4 transition-all">
+                        <div class="w-16 h-16 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+                            <span class="font-black text-2xl">3x3</span>
+                        </div>
+                        <span class="text-lg font-bold text-gray-700">9 Elements</span>
+                    </button>
+
+                    <!-- 4x4 Grid Selection Button -->
+                    <button id="odd-select-4" onclick="startOddWithGrid(4)" class="grid-select-btn aspect-square bg-white rounded-2xl shadow-md hover:shadow-lg border-4 border-gray-100 hover:border-purple-400 flex flex-col items-center justify-center p-4 transition-all">
+                        <div class="w-16 h-16 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+                            <span class="font-black text-2xl">4x4</span>
+                        </div>
+                        <span class="text-lg font-bold text-gray-700">16 Elements</span>
+                    </button>
+
+                    <!-- 5x5 Grid Selection Button -->
+                    <button id="odd-select-5" onclick="startOddWithGrid(5)" class="grid-select-btn aspect-square bg-white rounded-2xl shadow-md hover:shadow-lg border-4 border-gray-100 hover:border-purple-400 flex flex-col items-center justify-center p-4 transition-all">
+                        <div class="w-16 h-16 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+                            <span class="font-black text-2xl">5x5</span>
+                        </div>
+                        <span class="text-lg font-bold text-gray-700">25 Elements</span>
+                    </button>
+
+                    <!-- 6x6 Grid Selection Button -->
+                    <button id="odd-select-6" onclick="startOddWithGrid(6)" class="grid-select-btn aspect-square bg-white rounded-2xl shadow-md hover:shadow-lg border-4 border-gray-100 hover:border-purple-400 flex flex-col items-center justify-center p-4 transition-all">
+                        <div class="w-16 h-16 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+                            <span class="font-black text-2xl">6x6</span>
+                        </div>
+                        <span class="text-lg font-bold text-gray-700">36 Elements</span>
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        window.startOddWithGrid = function(gridSize) {
+            AppState.oddGridSize = gridSize;
+            AppState.currentScreen = 'odd_out';
+            AppState.oddOutLevel = 1;
+            renderOddLevel();
+        }
+
+        // Selected static configuration lookup based on AppState.oddGridSize
+        function getOddOutConfig(gridSize) {
+            if (gridSize === 3) {
+                return { size: 9, cols: 'grid-cols-3', gap: 'gap-3 sm:gap-4', maxW: 'max-w-md', iconSize: 'w-10 h-10 sm:w-14 sm:h-14' };
+            } else if (gridSize === 4) {
+                return { size: 16, cols: 'grid-cols-4', gap: 'gap-2 sm:gap-3', maxW: 'max-w-lg', iconSize: 'w-8 h-8 sm:w-11 sm:h-11' };
+            } else if (gridSize === 5) {
+                return { size: 25, cols: 'grid-cols-5', gap: 'gap-1.5 sm:gap-2', maxW: 'max-w-xl', iconSize: 'w-6 h-6 sm:w-9 sm:h-9' };
+            } else {
+                return { size: 36, cols: 'grid-cols-6', gap: 'gap-1 sm:gap-1.5', maxW: 'max-w-2xl', iconSize: 'w-5 h-5 sm:w-7 sm:h-7' };
+            }
+        }
+
+        window.renderOddLevel = function() {
+            AppState.locked = false; btnHome.classList.remove('hidden'); bank.classList.add('hidden');
+            document.getElementById('header-title').innerHTML = `Odd One Out: Level ${AppState.oddOutLevel}/10`;
+
+            window.setSeed(roomId + "_odd_matrix_seed_" + AppState.oddOutLevel);
+            const dirs = Object.keys(DIRECTIONS);
+            
+            const indexDom = Math.floor(window.seededRandom() * dirs.length);
+            let indexOdd = Math.floor(window.seededRandom() * dirs.length);
+            while (indexOdd === indexDom) { indexOdd = Math.floor(window.seededRandom() * dirs.length); }
+
+            const domDir = dirs[indexDom]; const oddDir = dirs[indexOdd];
+
+            // Lock into selected user grid size (never progressive!)
+            const config = getOddOutConfig(AppState.oddGridSize);
+
+            let cardsList = Array(config.size - 1).fill(domDir); cardsList.push(oddDir);
+            cardsList = shuf(cardsList);
+
+            let html = `
+                <div class="text-center mb-6 mt-2 w-full">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4 max-w-xs mx-auto">
+                        <div class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: ${AppState.oddOutLevel * 10}%"></div>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-700">Level ${AppState.oddOutLevel}: Find the different arrow direction! (${AppState.oddGridSize}x${AppState.oddGridSize} Grid)</h2>
+                </div>
+                <div class="grid ${config.cols} ${config.gap} ${config.maxW} mx-auto w-full pb-10 px-4">
+            `;
+
+            cardsList.forEach((dir, index) => {
+                html += `
+                    <button id="odd-btn-${index}" onclick="handleOddSelection(this, '${dir}', '${oddDir}')" class="card-btn aspect-square bg-white rounded-2xl shadow-md border-4 border-gray-100 flex items-center justify-center transition-all p-2 sm:p-3">
+                        <i data-lucide="${DIRECTIONS[dir].icon}" class="${config.iconSize} text-gray-700"></i>
+                    </button>
+                `;
+            });
+
+            html += `</div>`; canvas.innerHTML = html; lucide.createIcons();
+        }
+
+        window.handleOddSelection = function(el, currentDir, oddTargetDir) {
+            if (AppState.locked) return;
+            
+            // Safe SVG locator to avoid querySelector null crashes on student screen replays
+            const icon = el.querySelector('svg') || el.querySelector('i');
+            
+            if (currentDir === oddTargetDir) {
+                AppState.locked = true; SoundEngine.playCorrect();
+                el.classList.replace('border-gray-100', 'border-green-500'); el.classList.add('bg-green-50');
+                if (icon) icon.classList.add('text-green-600');
+                
+                setTimeout(() => {
+                    const nextTextStr = AppState.oddOutLevel === 10 ? "Congratulations! You completed all levels of the " + AppState.oddGridSize + "x" + AppState.oddGridSize + " grid!" : "Awesome! You found the correct mismatched arrow.";
+                    showCustomSuccess(
+                        `Level ${AppState.oddOutLevel} Cleared!`, 
+                        nextTextStr, 
+                        AppState.oddOutLevel === 10 ? "Return to Menu" : "Next Level"
+                    );
+                }, 550);
+            } else {
+                SoundEngine.playWrong(); el.classList.add('shake', 'border-red-400', 'bg-red-50');
+                if (icon) icon.classList.add('text-red-500');
+                setTimeout(() => {
+                    el.classList.remove('shake', 'border-red-400', 'bg-red-50');
+                    if (icon) icon.classList.remove('text-red-500');
+                }, 450);
+            }
+        }
+
+        // ============================================================
+        // MODULE 3: Drag & Drop Arrow Matching Game
+        // ============================================================
+        window.startDragMode = function() {
+            AppState.currentScreen = 'drag_drop'; AppState.locked = false;
+            btnHome.classList.remove('hidden'); bank.classList.remove('hidden');
+            document.getElementById('header-title').innerHTML = `Arrow Match Puzzle`;
+
+            let topHtml = `
+                <div class="text-center mb-6 w-full"><h2 class="text-xl font-bold text-gray-700">Drag arrows into their matching destination slots!</h2></div>
+                <div class="grid grid-cols-2 gap-6 max-w-sm mx-auto w-full pb-6">
+            `;
+            Object.keys(DIRECTIONS).forEach(dir => {
+                topHtml += `
+                    <div id="drop-${dir}" data-target-dir="${dir}" class="drop-zone rounded-2xl flex flex-col items-center justify-center relative bg-gray-50 border-3"><i data-lucide="${DIRECTIONS[dir].icon}" class="w-12 h-12 text-gray-300 absolute opacity-50"></i></div>
+                `;
+            });
+            topHtml += `</div>`; canvas.innerHTML = topHtml;
+
+            window.setSeed(roomId + "_drag_placement_matrix");
+            let bankHtml = '';
+            shuf(Object.keys(DIRECTIONS)).forEach(dir => {
+                const data = DIRECTIONS[dir];
+                bankHtml += `
+                    <div id="drag-${dir}" data-dir="${dir}" class="drag-item rounded-xl ${data.color} shadow-lg flex items-center justify-center text-white z-20"><i data-lucide="${data.icon}" class="w-8 h-8 sm:w-10 sm:h-10"></i></div>
+                `;
+            });
+            bank.innerHTML = bankHtml; lucide.createIcons();
+            window.dragMatchCount = 0; initDragAndDropCore();
+        }
+
+        function initDragAndDropCore() {
+            const dragItems = document.querySelectorAll('.drag-item');
+            const dropZones = document.querySelectorAll('.drop-zone');
+            let activeItem = null, startX, startY;
+
+            dragItems.forEach(item => {
+                item.addEventListener('pointerdown', (e) => {
+                    if (AppState.locked || window.isSimulating) return;
+                    e.preventDefault(); activeItem = item;
+                    
+                    const rect = activeItem.getBoundingClientRect();
+                    activeDragClone = activeItem.cloneNode(true);
+                    activeDragClone.classList.add('dragging-clone');
+                    activeDragClone.style.left = `${rect.left}px`; activeDragClone.style.top = `${rect.top}px`;
+                    activeDragClone.style.width = `${rect.width}px`; activeDragClone.style.height = `${rect.height}px`;
+                    document.body.appendChild(activeDragClone);
+                    
+                    activeItem.style.opacity = '0.3';
+                    startX = e.clientX - rect.left; startY = e.clientY - rect.top;
+                    
+                    document.addEventListener('pointermove', onPointerMove);
+                    document.addEventListener('pointerup', onPointerUp);
+                });
+            });
+
+            function onPointerMove(e) {
+                if (!activeDragClone) return; e.preventDefault();
+                activeDragClone.style.left = `${e.clientX - startX}px`; activeDragClone.style.top = `${e.clientY - startY}px`;
+                
+                activeDragClone.hidden = true;
+                const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+                activeDragClone.hidden = false;
+                
+                dropZones.forEach(z => z.classList.remove('active'));
+                const dropZone = elemBelow ? elemBelow.closest('.drop-zone') : null;
+                if (dropZone && !dropZone.hasAttribute('data-filled')) dropZone.classList.add('active');
+            }
+
+            function onPointerUp(e) {
+                document.removeEventListener('pointermove', onPointerMove); document.removeEventListener('pointerup', onPointerUp);
+                if (!activeDragClone || !activeItem) return;
+                
+                activeDragClone.hidden = true;
+                const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+                activeDragClone.hidden = false;
+
+                const dropZone = elemBelow ? elemBelow.closest('.drop-zone') : null;
+                const sourceDir = activeItem.getAttribute('data-dir');
+                
+                if (dropZone && !dropZone.hasAttribute('data-filled') && sourceDir === dropZone.getAttribute('data-target-dir')) {
+                    if(!window.isSimulating) {
+                        window.parent.postMessage({
+                            type: 'IFRAME_ACTION_TRIGGERED',
+                            payload: { type: 'FIT_ARROW', sourceDir: sourceDir, dropZoneId: dropZone.id, seed: localSeed, actionId: 'fit_' + Date.now() }
+                        }, '*');
+                    }
+                    window.handleDropAttempt(sourceDir, dropZone.id, false);
+                } else if(dropZone && sourceDir !== dropZone.getAttribute('data-target-dir')) {
+                    SoundEngine.playWrong(); dropZone.classList.add('shake', 'border-red-400');
+                    setTimeout(() => dropZone.classList.remove('shake', 'border-red-400'), 400);
+                }
+
+                clearDragGhost(); if(activeItem) activeItem.style.opacity = '1';
+                activeItem = null; dropZones.forEach(z => z.classList.remove('active'));
+            }
+
+            window.handleDropAttempt = function(sourceDir, dropZoneId, fromSync = false) {
+                const originalItem = document.getElementById(`drag-${sourceDir}`);
+                const dropZoneElement = document.getElementById(dropZoneId);
+                if(!originalItem || !dropZoneElement) return;
+
+                SoundEngine.playCorrect(); dropZoneElement.innerHTML = ''; 
+                const placedItem = originalItem.cloneNode(true);
+                placedItem.classList.remove('drag-item', 'cursor-grab'); placedItem.classList.add('w-full', 'h-full', 'rounded-2xl', 'pop-in');
+                dropZoneElement.appendChild(placedItem); dropZoneElement.setAttribute('data-filled', 'true');
+                dropZoneElement.classList.replace('bg-gray-50', 'bg-white'); dropZoneElement.style.border = 'none';
+
+                originalItem.style.visibility = 'hidden'; window.dragMatchCount++;
+                if (window.dragMatchCount === 4) {
+                    AppState.locked = true;
+                    setTimeout(() => { showCustomSuccess("Fitted Perfectly!", "Awesome! All arrows have been successfully matched.", "Finish Game"); }, 550);
+                }
+            };
+        }
+
+        // ============================================================
+        // OVERLAYS & SUCCESS ACTIONS
+        // ============================================================
+        function showCustomSuccess(title, subtitle, buttonText) {
+            document.getElementById('success-headline').innerText = title;
+            document.getElementById('success-subline').innerText = subtitle;
+            document.getElementById('btn-next').innerText = buttonText;
+            overlay.classList.replace('hidden', 'flex');
+            
+            confetti({ 
+                particleCount: 110, spread: 70, origin: { y: 0.65 }, 
+                colors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'], zIndex: 99999 
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

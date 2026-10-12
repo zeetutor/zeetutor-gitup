@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alphabet Match Game</title>
+  <!-- Tailwind CSS Integration for Premium UI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for Friendly Cartoonish Style -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Fredoka One', 'Quicksand', sans-serif;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+    .shake-error {
+      animation: shake 0.3s ease-in-out;
+    }
+    .bubble-bounce:active {
+      transform: scale(0.92);
+    }
+
+    /* Responsive image sizing — scales with viewport (vmin) instead of a
+       fixed px size, with sane min/max caps, so images stay readable on
+       phones and don't look tiny on laptop screens. */
+    .clamp-img-main {
+      width: clamp(6rem, 22vmin, 11rem);
+      height: clamp(6rem, 22vmin, 11rem);
+    }
+    .clamp-img-gallery {
+      width: clamp(3.5rem, 9vmin, 5.5rem);
+      height: clamp(3.5rem, 9vmin, 5.5rem);
+    }
+    .clamp-img-match {
+      width: clamp(3.5rem, 10vmin, 6rem);
+      height: clamp(3.5rem, 10vmin, 6rem);
+    }
+    .clamp-bubble {
+      width: clamp(4.5rem, 14vmin, 6.5rem);
+      height: clamp(4.5rem, 14vmin, 6.5rem);
+      font-size: clamp(1.5rem, 5vmin, 2.25rem);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 min-h-screen flex flex-col justify-between text-slate-800">
+
+  <!-- Main Container relative for console tracking -->
+  <div id="app-wrapper" class="relative w-[96vw] max-w-4xl mx-auto p-2 sm:p-4 flex-grow flex flex-col justify-between min-h-[100dvh]">
+    
+    <!-- HEADER (Visible when inside worksheets) -->
+    <header id="game-header" class="hidden bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm p-4 mb-4 flex items-center justify-between gap-4 border-b-4 border-indigo-100">
+      <div class="flex items-center gap-3">
+        <button id="btn-back-menu" onclick="goBackToMenu()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl border-b-2 border-slate-300 transition-all flex items-center gap-2">
+          ← Back to Menu
+        </button>
+        <h1 id="current-worksheet-title" class="text-lg md:text-xl text-indigo-600 font-bold tracking-wide">Worksheet Title</h1>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <span id="room-info" class="hidden md:inline px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-lg">Room: default_room</span>
+        <span id="score-display" class="px-4 py-1.5 bg-emerald-500 text-white text-sm font-bold rounded-xl shadow-sm">Score: 0</span>
+      </div>
+    </header>
+
+    <!-- MAIN INTERACTIVE WORKSPACE -->
+    <main class="flex-grow flex flex-col justify-center relative min-h-[450px]">
+      
+      <!-- STARTING MAIN MENU (Full Page View) -->
+      <div id="main-menu" class="w-full flex flex-col items-center justify-center py-8 px-4 gap-8">
+        <div class="text-center max-w-md animate-fade-in">
+          <div class="text-6xl mb-4">🎈</div>
+          <h1 class="text-4xl md:text-5xl text-indigo-600 font-bold tracking-tight mb-2">Alphabet Fun!</h1>
+          <p class="text-sm md:text-base text-slate-500 font-medium">Practice matching uppercase and lowercase letters with simple, colorful games.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full max-w-4xl">
+          <!-- Card 1 -->
+          <button id="menu-btn-dab" onclick="changeMode('dabIt')" class="group bg-white p-6 rounded-3xl shadow-md hover:shadow-xl border-4 border-amber-200 hover:border-amber-400 transform hover:-translate-y-1 transition-all text-center flex flex-col items-center justify-between gap-4">
+            <div class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">🔴</div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-700 mb-1">Worksheet 1</h2>
+              <p class="text-xs text-slate-400 font-semibold">Identify the correct lowercase letter in a bubble pop style.</p>
+            </div>
+            <span class="w-full py-2 bg-amber-400 group-hover:bg-amber-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors">Play Mode</span>
+          </button>
+
+          <!-- Card 2 -->
+          <button id="menu-btn-match" onclick="changeMode('matchLetters')" class="group bg-white p-6 rounded-3xl shadow-md hover:shadow-xl border-4 border-sky-200 hover:border-sky-400 transform hover:-translate-y-1 transition-all text-center flex flex-col items-center justify-between gap-4">
+            <div class="w-16 h-16 bg-sky-100 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">🔗</div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-700 mb-1">Worksheet 2</h2>
+              <p class="text-xs text-slate-400 font-semibold">Connect capitals on the left to lowercase letters on the right.</p>
+            </div>
+            <span class="w-full py-2 bg-sky-400 group-hover:bg-sky-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors">Play Mode</span>
+          </button>
+
+          <!-- Card 3 -->
+          <button id="menu-btn-images" onclick="changeMode('matchImages')" class="group bg-white p-6 rounded-3xl shadow-md hover:shadow-xl border-4 border-rose-200 hover:border-rose-400 transform hover:-translate-y-1 transition-all text-center flex flex-col items-center justify-between gap-4">
+            <div class="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">🍎</div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-700 mb-1">Worksheet 3</h2>
+              <p class="text-xs text-slate-400 font-semibold">Match colourful picture icons to their starting lowercase letters.</p>
+            </div>
+            <span class="w-full py-2 bg-rose-400 group-hover:bg-rose-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors">Play Mode</span>
+          </button>
+
+          <!-- Card 4: Image Gallery -->
+          <button id="menu-btn-gallery" onclick="changeMode('gallery')" class="group bg-white p-6 rounded-3xl shadow-md hover:shadow-xl border-4 border-violet-200 hover:border-violet-400 transform hover:-translate-y-1 transition-all text-center flex flex-col items-center justify-between gap-4">
+            <div class="w-16 h-16 bg-violet-100 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">🖼️</div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-700 mb-1">Image Gallery</h2>
+              <p class="text-xs text-slate-400 font-semibold">See every image loaded from your manifest, letter by letter.</p>
+            </div>
+            <span class="w-full py-2 bg-violet-400 group-hover:bg-violet-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors">View Gallery</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- WORKSHEET CONTAINER (Visible during game sessions) -->
+      <div id="game-container" class="hidden bg-white rounded-3xl shadow-lg border-4 border-indigo-100 p-6 flex-grow flex flex-col justify-center relative min-h-[400px]">
+
+        <!-- WORKSHEET 1: CATEGORY SELECTION SCREEN (shown first) -->
+        <div id="ws-dab-category" class="hidden w-full flex flex-col items-center justify-center flex-grow gap-6 py-4">
+          <p class="text-base md:text-lg text-slate-600 font-bold">Choose a letter group to practice:</p>
+          <div id="dab-category-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl w-full">
+            <!-- Dynamically generated group buttons -->
+          </div>
+        </div>
+
+        <!-- WORKSHEET 1 UI: Dab-It Style -->
+        <div id="ws-dab-it" class="hidden w-full flex flex-col items-center justify-around flex-grow gap-6">
+          <div class="text-center">
+            <p class="text-base md:text-lg text-slate-500 font-bold mb-3">Find the correct lowercase letter for this picture:</p>
+            <div id="target-capital" class="w-auto h-auto min-w-[9rem] min-h-[9rem] bg-amber-50 border-b-8 border-amber-400 rounded-3xl flex flex-col items-center justify-center shadow-md select-none p-3">
+              <img id="dab-target-img" src="" alt="" class="clamp-img-main object-contain">
+              <span id="dab-target-emoji" class="text-6xl hidden"></span>
+              <span id="dab-target-label" class="text-xs font-bold text-slate-500 mt-1"></span>
+            </div>
+          </div>
+
+          <!-- Bubble Options -->
+          <div class="flex flex-wrap justify-center gap-6 w-full max-w-md my-4" id="bubble-container">
+            <!-- Dynamically generated bubble buttons -->
+          </div>
+
+          <div id="dab-feedback" class="h-8 text-lg font-bold text-center"></div>
+        </div>
+
+        <!-- WORKSHEET 2: LETTER SELECTION SCREEN (before matching starts) -->
+        <div id="ws-letter-select" class="hidden w-full flex flex-col items-center justify-center flex-grow gap-6 py-4">
+          <div class="text-center">
+            <p class="text-base md:text-lg text-slate-600 font-bold mb-1">Pick up to 5 letters to practice:</p>
+            <p id="letter-select-count" class="text-xs text-slate-400 font-semibold">0 / 5 selected</p>
+          </div>
+          <div id="letter-select-grid" class="grid grid-cols-6 sm:grid-cols-8 gap-3 max-w-xl">
+            <!-- Dynamically generated letter buttons -->
+          </div>
+          <button id="btn-start-worksheet2" onclick="startWorksheet2Match()" class="hidden px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-base rounded-xl border-b-4 border-emerald-700 shadow-md transition-all">
+            Start Matching ▶️
+          </button>
+        </div>
+
+        <!-- WORKSHEET 3: CATEGORY SELECTION SCREEN (before matching starts) -->
+        <div id="ws-w3-category" class="hidden w-full flex flex-col items-center justify-center flex-grow gap-6 py-4">
+          <p class="text-base md:text-lg text-slate-600 font-bold">Choose a letter group to practice:</p>
+          <div id="w3-category-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl w-full">
+            <!-- Dynamically generated group buttons -->
+          </div>
+        </div>
+
+        <!-- WORKSHEET 2 & 3 UI: Matching Column Style -->
+        <div id="ws-matching" class="hidden w-full flex-col flex-grow relative">
+          <p class="text-center text-slate-500 font-bold mb-4 text-base md:text-lg" id="matching-instruction">
+            Match the items on the left to their lowercase letter on the right:
+          </p>
+          
+          <!-- SVG layer for connection lines -->
+          <svg id="match-svg-container" class="absolute inset-0 w-full h-full pointer-events-none z-10"></svg>
+
+          <div class="grid grid-cols-2 gap-12 md:gap-24 relative z-20 w-full max-w-2xl mx-auto my-auto">
+            <!-- Left Column (Capitals or Images) -->
+            <div class="flex flex-col gap-4" id="left-column">
+              <!-- Dynamically generated cards -->
+            </div>
+            
+            <!-- Right Column (Lowercase Options) -->
+            <div class="flex flex-col gap-4" id="right-column">
+              <!-- Dynamically generated cards -->
+            </div>
+          </div>
+
+          <div class="text-center mt-6">
+            <button id="btn-next-match" onclick="loadNextMatchRound()" class="hidden px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-base rounded-xl border-b-4 border-emerald-700 shadow-md transition-all">
+              Next Round ➡️
+            </button>
+          </div>
+        </div>
+
+        <!-- IMAGE GALLERY: shows every image from the loaded manifest -->
+        <div id="ws-gallery" class="hidden w-full flex-col flex-grow">
+          <div class="flex items-center justify-between mb-4">
+            <p class="text-slate-500 font-bold text-sm md:text-base">All images currently loaded from your manifest:</p>
+            <span id="gallery-count" class="px-3 py-1 bg-violet-100 text-violet-700 text-xs font-bold rounded-lg">0 images</span>
+          </div>
+          <div id="gallery-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 overflow-y-auto max-h-[420px] p-1">
+            <!-- Dynamically generated gallery cards -->
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- FOOTER SCOREBOARD -->
+    <footer class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
+      <div class="text-xs font-semibold text-slate-400">
+        Classroom Activity: <span class="text-indigo-400">English Letter Matching System</span>
+      </div>
+      <button id="btn-reset-game" onclick="resetGameProgress()" class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-xl text-xs border border-rose-200 transition-colors">
+        Reset Progress 🔄
+      </button>
+    </footer>
+
+  </div>
+
+  <!-- Audio Synthesis & Game Logic Script -->
+  <script>
+    // --- MANIFEST DATA & FALLBACKS ---
+    const LETTERS_MANIFEST_FALLBACK = [
+      { "capital": "A", "correct": "a", "distractors": ["b", "k"], "emoji": "🍎", "label": "Apple", "image": "apple.png" },
+      { "capital": "B", "correct": "b", "distractors": ["c", "n"], "emoji": "🎈", "label": "Ball", "image": "ball.png" },
+      { "capital": "C", "correct": "c", "distractors": ["e", "o"], "emoji": "🐱", "label": "Cat", "image": "cat.png" },
+      { "capital": "D", "correct": "d", "distractors": ["p", "q"], "emoji": "🐕", "label": "Dog", "image": "dog.png" },
+      { "capital": "E", "correct": "e", "distractors": ["f", "g"], "emoji": "🥚", "label": "Egg", "image": "egg.png" },
+      { "capital": "F", "correct": "f", "distractors": ["t", "r"], "emoji": "🐟", "label": "Fish", "image": "fish.png" },
+      { "capital": "G", "correct": "g", "distractors": ["q", "y"], "emoji": "🍇", "label": "Grapes", "image": "grapes.png" },
+      { "capital": "H", "correct": "h", "distractors": ["n", "m"], "emoji": "🏠", "label": "House", "image": "house.png" },
+      { "capital": "I", "correct": "i", "distractors": ["l", "j"], "emoji": "🍦", "label": "Ice Cream", "image": "ice_cream.png" },
+      { "capital": "J", "correct": "j", "distractors": ["i", "g"], "emoji": "🏺", "label": "Jar", "image": "jar.png" },
+      { "capital": "K", "correct": "k", "distractors": ["x", "v"], "emoji": "🪁", "label": "Kite", "image": "kite.png" },
+      { "capital": "L", "correct": "l", "distractors": ["i", "t"], "emoji": "🦁", "label": "Lion", "image": "lion.png" },
+      { "capital": "M", "correct": "m", "distractors": ["n", "w"], "emoji": "🐒", "label": "Monkey", "image": "monkey.png" },
+      { "capital": "N", "correct": "n", "distractors": ["u", "v"], "emoji": "🪹", "label": "Nest", "image": "nest.png" },
+      { "capital": "O", "correct": "o", "distractors": ["c", "a"], "emoji": "🍊", "label": "Orange", "image": "orange.png" },
+      { "capital": "P", "correct": "p", "distractors": ["q", "g"], "emoji": "🖊️", "label": "Pen", "image": "pen.png" },
+      { "capital": "Q", "correct": "q", "distractors": ["p", "d"], "emoji": "👑", "label": "Queen", "image": "queen.png" },
+      { "capital": "R", "correct": "r", "distractors": ["v", "s"], "emoji": "🌹", "label": "Rose", "image": "rose.png" },
+      { "capital": "S", "correct": "s", "distractors": ["c", "z"], "emoji": "☀️", "label": "Sun", "image": "sun.png" },
+      { "capital": "T", "correct": "t", "distractors": ["f", "l"], "emoji": "🌲", "label": "Tree", "image": "tree.png" },
+      { "capital": "U", "correct": "u", "distractors": ["v", "w"], "emoji": "☂️", "label": "Umbrella", "image": "umbrella.png" },
+      { "capital": "V", "correct": "v", "distractors": ["u", "w"], "emoji": "🎻", "label": "Violin", "image": "violin.png" },
+      { "capital": "W", "correct": "w", "distractors": ["m", "v"], "emoji": "🍉", "label": "Watermelon", "image": "watermelon.png" },
+      { "capital": "X", "correct": "x", "distractors": ["y", "z"], "emoji": "🪵", "label": "Xylophone", "image": "xylophone.png" },
+      { "capital": "Y", "correct": "y", "distractors": ["u", "v"], "emoji": "🛥️", "label": "Yacht", "image": "yacht.png" },
+      { "capital": "Z", "correct": "z", "distractors": ["s", "x"], "emoji": "🦓", "label": "Zebra", "image": "zebra.png" }
+    ];
+
+    let gameData = [...LETTERS_MANIFEST_FALLBACK];
+    let currentMode = 'menu'; // 'menu' | 'dabIt' | 'matchLetters' | 'matchImages'
+    let roomId = 'default_room';
+    let currentSeed = 12345;
+    let score = 0;
+    window.isSimulating = false; // Flag to gate local message loops
+
+    // Worksheet 1 (Dab-It) State
+    let currentDabItem = null;
+    let currentDabOptions = [];
+    let dabActiveGroupData = []; // filtered gameData for the selected letter group
+
+    // Worksheet 1 Letter Groups (Mixed always last)
+    const DAB_GROUPS = [
+      { id: 'AD', label: 'A - D', letters: ['A','B','C','D'] },
+      { id: 'EH', label: 'E - H', letters: ['E','F','G','H'] },
+      { id: 'IL', label: 'I - L', letters: ['I','J','K','L'] },
+      { id: 'MP', label: 'M - P', letters: ['M','N','O','P'] },
+      { id: 'QT', label: 'Q - T', letters: ['Q','R','S','T'] },
+      { id: 'UZ', label: 'U - Z', letters: ['U','V','W','X','Y','Z'] },
+      { id: 'MIX', label: 'Mixed', letters: null } // null = all letters
+    ];
+
+    // Worksheet 2 & 3 Matching State
+    let selectedLeftId = null;
+    let selectedRightId = null;
+    let matchedPairs = []; 
+    let matchingRoundData = []; 
+
+    // Worksheet 2 Letter Pre-Selection State (max 5)
+    let selectedLettersW2 = [];
+
+    // Worksheet 3 Category State
+    let w3ActiveGroupData = [];
+
+    // --- CONSOLE ROOM INITIALIZATION ---
+    // Real console sets the room via URL HASH: `...#room=${roomId}` —
+    // NOT a query string. Reading from window.location.search (the old
+    // code) never matched anything the console actually sends, so
+    // roomId stayed stuck on the 'default_room' fallback always.
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+    const urlParams = new URLSearchParams(window.location.search);
+    if (hashParams.has('room')) {
+      roomId = hashParams.get('room');
+      document.getElementById('room-info').innerText = `Room: ${roomId}`;
+    } else if (urlParams.has('roomId')) {
+      roomId = urlParams.get('roomId');
+      document.getElementById('room-info').innerText = `Room: ${roomId}`;
+    }
+
+    // Seeded Random Helper
+    window.setSeed = function(seed) {
+      let hash = 0;
+      const seedStr = String(seed);
+      for (let i = 0; i < seedStr.length; i++) {
+        hash = seedStr.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      currentSeed = Math.abs(hash) || 12345;
+    };
+
+    function seededRandom() {
+      let x = Math.sin(currentSeed++) * 10000;
+      return x - Math.floor(x);
+    }
+
+    function seededShuffle(array) {
+      let m = array.length, t, i;
+      while (m) {
+        i = Math.floor(seededRandom() * m--);
+        t = array[m];
+        array[m] = array[i];
+        array[i] = t;
+      }
+      return array;
+    }
+
+    // --- GET UNIQUE SELECTOR FOR PLAYBACK SYNC ---
+    function getUniqueSelector(el) {
+      if (el.id) return `#${el.id}`;
+      let path = [];
+      while (el && el.nodeType === Node.ELEMENT_NODE) {
+        let selector = el.nodeName.toLowerCase();
+        if (el.className) {
+          const firstClass = el.className.split(/\s+/)[0];
+          if (firstClass && !firstClass.includes(':') && !firstClass.includes('[')) {
+            selector += `.${firstClass}`;
+          }
+        }
+        let sib = el, sibCount = 0;
+        while (sib) {
+          if (sib.nodeName === el.nodeName) sibCount++;
+          sib = sib.previousElementSibling;
+        }
+        if (sibCount > 1) {
+          selector += `:nth-of-type(${sibCount})`;
+        }
+        path.unshift(selector);
+        el = el.parentNode;
+      }
+      return path.join(' > ');
+    }
+
+    // --- SOUND SYNTHESIS (Web Audio API) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      if (type === 'correct') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); 
+        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); 
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.3);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } else if (type === 'select') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+      }
+    }
+
+    // --- IMAGE FALLBACK CHAIN ---
+    // If the exact filename from the manifest 404s (common cause: case
+    // mismatch, e.g. "Cat.png" in the JSON vs "cat.png" on disk), try
+    // a few case/extension variants before giving up to the emoji icon.
+    function tryImageFallback(imgEl, originalName, emojiEl, emojiChar) {
+      const attempts = imgEl.dataset.fbAttempts ? parseInt(imgEl.dataset.fbAttempts) : 0;
+      const dot = originalName.lastIndexOf('.');
+      const base = dot > -1 ? originalName.slice(0, dot) : originalName;
+      const ext = dot > -1 ? originalName.slice(dot) : '.png';
+      const variants = [
+        base.toLowerCase() + ext,
+        base.toLowerCase() + ext.toLowerCase(),
+        base + ext.toLowerCase(),
+        base.charAt(0).toUpperCase() + base.slice(1).toLowerCase() + ext
+      ];
+      if (attempts < variants.length) {
+        imgEl.dataset.fbAttempts = attempts + 1;
+        imgEl.src = 'images/' + variants[attempts];
+      } else {
+        imgEl.style.display = 'none';
+        if (emojiEl) {
+          emojiEl.innerText = emojiChar || '❓';
+          emojiEl.style.display = 'block';
+        } else if (imgEl.nextElementSibling) {
+          imgEl.nextElementSibling.style.display = 'block';
+        }
+      }
+    }
+
+    // --- DATA MANIFEST FETCH ---
+    // Tries several common manifest filenames so a naming mismatch
+    // (manifest.json vs letters_manifest.json etc.) doesn't silently
+    // fall back to the hardcoded list with no visible reason.
+    const MANIFEST_CANDIDATES = [
+      'images/letters_Match.json',
+      'images/letters_match.json',
+      'images/letters_manifest.json',
+      'images/manifest.json',
+      'letters_Match.json',
+      'letters_match.json',
+      'letters_manifest.json',
+      'manifest.json'
+    ];
+
+    async function loadData() {
+      let loaded = false;
+      for (const path of MANIFEST_CANDIDATES) {
+        try {
+          const response = await fetch(path);
+          if (response.ok) {
+            const fetchedData = await response.json();
+            if (Array.isArray(fetchedData) && fetchedData.length > 0) {
+              gameData = fetchedData;
+              loaded = true;
+              showManifestStatus(`Loaded manifest: ${path} (${fetchedData.length} items)`, false);
+              break;
+            }
+          }
+        } catch (err) {
+          // try next candidate
+        }
+      }
+      if (!loaded) {
+        gameData = [...LETTERS_MANIFEST_FALLBACK];
+        showManifestStatus(
+          `No manifest file found (tried: ${MANIFEST_CANDIDATES.join(', ')}). Using built-in 26-letter defaults.`,
+          true
+        );
+      }
+      initGame();
+
+      // Data is ready now — flush any replayed actions that arrived
+      // while the manifest fetch was still in flight.
+      dataReady = true;
+      while (pendingActionQueue.length > 0) {
+        processReplayAction(pendingActionQueue.shift());
+      }
+    }
+
+    // On-screen status so manifest problems are visible instead of
+    // silent — shows briefly in the corner, auto-hides after 6s.
+    function showManifestStatus(msg, isWarning) {
+      console[isWarning ? 'warn' : 'log'](msg);
+      const el = document.createElement('div');
+      el.id = 'manifest-status-toast';
+      el.style.cssText = `position:fixed; bottom:12px; left:12px; z-index:99999; max-width:90vw;
+        padding:8px 14px; border-radius:10px; font-family:sans-serif; font-size:12px; font-weight:700;
+        color:#fff; background:${isWarning ? '#dc2626' : '#059669'}; box-shadow:0 4px 12px rgba(0,0,0,0.25);`;
+      el.innerText = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 6000);
+    }
+
+    // --- GAME CONTROL & NAVIGATION ---
+    function initGame() {
+      if (currentMode === 'menu') {
+        document.getElementById('main-menu').classList.remove('hidden');
+        document.getElementById('game-container').classList.add('hidden');
+        document.getElementById('game-header').classList.add('hidden');
+      } else {
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('game-container').classList.remove('hidden');
+        document.getElementById('game-header').classList.remove('hidden');
+        
+        // Update Title UI
+        let headerTitle = "Worksheet";
+        if (currentMode === 'dabIt') headerTitle = "Worksheet 1: Bubble Tap Game";
+        if (currentMode === 'matchLetters') headerTitle = "Worksheet 2: Match Letters";
+        if (currentMode === 'matchImages') headerTitle = "Worksheet 3: Match Images";
+        if (currentMode === 'gallery') headerTitle = "Image Gallery";
+        document.getElementById('current-worksheet-title').innerText = headerTitle;
+
+        // Reset tracking states
+        matchedPairs = [];
+        selectedLeftId = null;
+        selectedRightId = null;
+
+        // Apply Seeded RNG unique to mode
+        window.setSeed(roomId + "_" + currentMode);
+
+        if (currentMode === 'dabIt') {
+          document.getElementById('ws-dab-it').classList.add('hidden');
+          document.getElementById('ws-letter-select').classList.add('hidden');
+          document.getElementById('ws-w3-category').classList.add('hidden');
+          document.getElementById('ws-matching').classList.add('hidden');
+          document.getElementById('ws-gallery').classList.add('hidden');
+          document.getElementById('ws-dab-category').classList.remove('hidden');
+          renderDabCategoryScreen();
+        } else if (currentMode === 'matchLetters') {
+          document.getElementById('ws-dab-it').classList.add('hidden');
+          document.getElementById('ws-dab-category').classList.add('hidden');
+          document.getElementById('ws-w3-category').classList.add('hidden');
+          document.getElementById('ws-matching').classList.add('hidden');
+          document.getElementById('ws-gallery').classList.add('hidden');
+          document.getElementById('ws-letter-select').classList.remove('hidden');
+          selectedLettersW2 = [];
+          renderLetterSelectScreen();
+        } else if (currentMode === 'matchImages') {
+          document.getElementById('ws-dab-it').classList.add('hidden');
+          document.getElementById('ws-dab-category').classList.add('hidden');
+          document.getElementById('ws-letter-select').classList.add('hidden');
+          document.getElementById('ws-matching').classList.add('hidden');
+          document.getElementById('ws-gallery').classList.add('hidden');
+          document.getElementById('ws-w3-category').classList.remove('hidden');
+          renderW3CategoryScreen();
+        } else if (currentMode === 'gallery') {
+          document.getElementById('ws-dab-it').classList.add('hidden');
+          document.getElementById('ws-dab-category').classList.add('hidden');
+          document.getElementById('ws-letter-select').classList.add('hidden');
+          document.getElementById('ws-w3-category').classList.add('hidden');
+          document.getElementById('ws-matching').classList.add('hidden');
+          document.getElementById('ws-gallery').classList.remove('hidden');
+          renderGalleryView();
+        } else {
+          document.getElementById('ws-dab-it').classList.add('hidden');
+          document.getElementById('ws-dab-category').classList.add('hidden');
+          document.getElementById('ws-letter-select').classList.add('hidden');
+          document.getElementById('ws-w3-category').classList.add('hidden');
+          document.getElementById('ws-gallery').classList.add('hidden');
+          document.getElementById('ws-matching').classList.remove('hidden');
+          setupMatchingRound();
+        }
+      }
+    }
+
+    function changeMode(mode) {
+      currentMode = mode;
+      initGame();
+    }
+
+    function goBackToMenu() {
+      currentMode = 'menu';
+      initGame();
+    }
+
+    function updateScoreUI() {
+      document.getElementById('score-display').innerText = `Score: ${score}`;
+    }
+
+    function resetGameProgress() {
+      score = 0;
+      updateScoreUI();
+      initGame();
+    }
+
+    // --- WORKSHEET 1: DAB-IT LOGIC ---
+    // --- WORKSHEET 1: CATEGORY SELECTION (A-D, E-H, ... Mixed) ---
+    function renderDabCategoryScreen() {
+      const grid = document.getElementById('dab-category-grid');
+      grid.innerHTML = "";
+
+      DAB_GROUPS.forEach(group => {
+        const btn = document.createElement('button');
+        btn.id = `dab-cat-${group.id}`;
+        const isMixed = group.id === 'MIX';
+        btn.className = isMixed
+          ? "col-span-2 sm:col-span-4 py-4 bg-gradient-to-r from-fuchsia-500 to-purple-500 hover:from-fuchsia-600 hover:to-purple-600 text-white font-extrabold text-base rounded-2xl shadow-md transition-all"
+          : "py-4 bg-amber-50 hover:bg-amber-100 border-4 border-amber-300 text-amber-700 font-extrabold text-base rounded-2xl shadow-sm transition-all";
+        btn.innerText = group.label;
+        btn.onclick = (e) => selectDabCategory(group, e);
+        grid.appendChild(btn);
+      });
+    }
+
+    function selectDabCategory(group, event) {
+      playSound('select');
+
+      dabActiveGroupData = group.letters
+        ? gameData.filter(item => group.letters.includes(item.capital))
+        : [...gameData]; // Mixed = everything
+
+      // Reseed per-category so both sides pick the same sequence
+      window.setSeed(roomId + "_" + currentMode + "_" + group.id);
+
+      document.getElementById('ws-dab-category').classList.add('hidden');
+      document.getElementById('ws-dab-it').classList.remove('hidden');
+      loadDabItQuestion();
+    }
+
+    function loadDabItQuestion() {
+      const pool = dabActiveGroupData.length > 0 ? dabActiveGroupData : gameData;
+      const randomIndex = Math.floor(seededRandom() * pool.length);
+      currentDabItem = pool[randomIndex];
+
+      const imgEl = document.getElementById('dab-target-img');
+      const emojiEl = document.getElementById('dab-target-emoji');
+      const labelEl = document.getElementById('dab-target-label');
+
+      imgEl.style.display = '';
+      emojiEl.style.display = 'none';
+      imgEl.dataset.fbAttempts = '0';
+      imgEl.src = `images/${currentDabItem.image}`;
+      imgEl.alt = currentDabItem.label;
+      imgEl.onerror = () => tryImageFallback(imgEl, currentDabItem.image, emojiEl, currentDabItem.emoji);
+      labelEl.innerText = currentDabItem.label || '';
+
+      document.getElementById('dab-feedback').innerText = "";
+      document.getElementById('dab-feedback').className = "h-8 text-lg font-bold text-center";
+
+      const options = [currentDabItem.correct, ...currentDabItem.distractors];
+      currentDabOptions = seededShuffle([...options]);
+
+      const container = document.getElementById('bubble-container');
+      container.innerHTML = "";
+
+      currentDabOptions.forEach((opt, idx) => {
+        const bubble = document.createElement('button');
+        bubble.className = "bubble-btn clamp-bubble bg-sky-100 hover:bg-sky-200 border-4 border-sky-400 text-sky-700 rounded-full font-extrabold shadow-md flex items-center justify-center transition-all bubble-bounce transform active:scale-90 select-none cursor-pointer";
+        bubble.innerText = opt;
+        bubble.setAttribute('id', `bubble-${idx}`);
+        bubble.onclick = (e) => handleDabSelection(opt, bubble, e);
+        container.appendChild(bubble);
+      });
+    }
+
+    function handleDabSelection(selectedVal, el, event) {
+      if (selectedVal === currentDabItem.correct) {
+        playSound('correct');
+        el.className = "bubble-btn clamp-bubble bg-emerald-400 border-4 border-emerald-600 text-white rounded-full font-extrabold shadow-inner flex items-center justify-center transform scale-110 transition-all pointer-events-none";
+        
+        const feedback = document.getElementById('dab-feedback');
+        feedback.innerText = "Excellent! 🎉";
+        feedback.className = "h-8 text-lg font-bold text-center text-emerald-600 animate-bounce";
+
+        score++;
+        updateScoreUI();
+
+        setTimeout(() => {
+          loadDabItQuestion();
+        }, 1500);
+      } else {
+        playSound('wrong');
+        el.classList.add('shake-error', 'bg-rose-400', 'border-rose-600', 'text-white');
+        
+        const feedback = document.getElementById('dab-feedback');
+        feedback.innerText = "Try again! 🥺";
+        feedback.className = "h-8 text-lg font-bold text-center text-rose-500";
+
+        setTimeout(() => {
+          el.classList.remove('shake-error', 'bg-rose-400', 'border-rose-600', 'text-white');
+          el.classList.add('bg-sky-100', 'text-sky-700', 'border-sky-400');
+        }, 1000);
+      }
+    }
+
+    // --- IMAGE GALLERY (shows every manifest item, all variants) ---
+    function renderGalleryView() {
+      const grid = document.getElementById('gallery-grid');
+      grid.innerHTML = "";
+      document.getElementById('gallery-count').innerText = `${gameData.length} images`;
+
+      // Sort by capital letter so the gallery reads A→Z
+      const sorted = [...gameData].sort((a, b) => a.capital.localeCompare(b.capital) || a.label.localeCompare(b.label));
+
+      sorted.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = "bg-white border-2 border-slate-100 rounded-2xl p-2 flex flex-col items-center shadow-sm";
+        card.innerHTML = `
+          <span class="text-[10px] font-bold text-violet-500 mb-1">${item.capital} → ${item.correct}</span>
+          <div class="relative w-full flex items-center justify-center clamp-img-gallery mx-auto">
+            <img id="gallery-img-${idx}" src="images/${item.image}" alt="${item.label}" class="clamp-img-gallery object-contain" data-fb-attempts="0">
+            <span id="gallery-emoji-${idx}" class="text-3xl hidden absolute inset-0 flex items-center justify-center">${item.emoji || '❓'}</span>
+          </div>
+          <span class="text-[10px] font-semibold text-slate-500 mt-1 text-center leading-tight">${item.label}</span>
+        `;
+        grid.appendChild(card);
+
+        const imgEl = card.querySelector(`#gallery-img-${idx}`);
+        const emojiEl = card.querySelector(`#gallery-emoji-${idx}`);
+        imgEl.onerror = () => tryImageFallback(imgEl, item.image, emojiEl, item.emoji);
+      });
+    }
+
+    // --- WORKSHEET 2: LETTER PRE-SELECTION (max 5) ---
+    function getUniqueLettersFromData() {
+      const seen = {};
+      const list = [];
+      gameData.forEach(item => {
+        if (!seen[item.capital]) {
+          seen[item.capital] = item; // first occurrence used as representative
+          list.push(item);
+        }
+      });
+      return list.sort((a, b) => a.capital.localeCompare(b.capital));
+    }
+
+    function renderLetterSelectScreen() {
+      const grid = document.getElementById('letter-select-grid');
+      grid.innerHTML = "";
+      const letters = getUniqueLettersFromData();
+
+      letters.forEach(item => {
+        const btn = document.createElement('button');
+        btn.id = `letter-pick-${item.capital}`;
+        btn.className = "letter-pick-btn w-12 h-12 bg-white border-4 border-indigo-200 hover:border-indigo-400 rounded-xl font-extrabold text-lg text-indigo-600 shadow-sm transition-all select-none";
+        btn.innerText = item.capital;
+        btn.onclick = (e) => toggleLetterSelection(item.capital, btn, e);
+        grid.appendChild(btn);
+      });
+      updateLetterSelectUI();
+    }
+
+    function toggleLetterSelection(capital, btnEl) {
+      const idx = selectedLettersW2.indexOf(capital);
+      if (idx > -1) {
+        selectedLettersW2.splice(idx, 1);
+      } else {
+        if (selectedLettersW2.length >= 5) return; // hard cap at 5
+        selectedLettersW2.push(capital);
+      }
+      playSound('select');
+      updateLetterSelectUI();
+    }
+
+    function updateLetterSelectUI() {
+      document.querySelectorAll('.letter-pick-btn').forEach(btn => {
+        const capital = btn.innerText;
+        const isSelected = selectedLettersW2.includes(capital);
+        btn.className = isSelected
+          ? "letter-pick-btn w-12 h-12 bg-indigo-500 border-4 border-indigo-700 rounded-xl font-extrabold text-lg text-white shadow-md scale-105 transition-all select-none"
+          : "letter-pick-btn w-12 h-12 bg-white border-4 border-indigo-200 hover:border-indigo-400 rounded-xl font-extrabold text-lg text-indigo-600 shadow-sm transition-all select-none";
+      });
+      document.getElementById('letter-select-count').innerText = `${selectedLettersW2.length} / 5 selected`;
+
+      const startBtn = document.getElementById('btn-start-worksheet2');
+      if (selectedLettersW2.length > 0) {
+        startBtn.classList.remove('hidden');
+      } else {
+        startBtn.classList.add('hidden');
+      }
+    }
+
+    function startWorksheet2Match() {
+      if (selectedLettersW2.length === 0) return;
+
+      document.getElementById('ws-letter-select').classList.add('hidden');
+      document.getElementById('ws-matching').classList.remove('hidden');
+      setupMatchingRound();
+    }
+
+    // --- WORKSHEET 2 & 3: MATCHING STYLE LOGIC ---
+    // --- WORKSHEET 3: CATEGORY SELECTION (A-D, E-H ... Mixed) ---
+    function renderW3CategoryScreen() {
+      const grid = document.getElementById('w3-category-grid');
+      grid.innerHTML = "";
+
+      DAB_GROUPS.forEach(group => {
+        const btn = document.createElement('button');
+        btn.id = `w3-cat-${group.id}`;
+        const isMixed = group.id === 'MIX';
+        btn.className = isMixed
+          ? "col-span-2 sm:col-span-4 py-4 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold text-base rounded-2xl shadow-md transition-all"
+          : "py-4 bg-rose-50 hover:bg-rose-100 border-4 border-rose-300 text-rose-700 font-extrabold text-base rounded-2xl shadow-sm transition-all";
+        btn.innerText = group.label;
+        btn.onclick = (e) => selectW3Category(group, e);
+        grid.appendChild(btn);
+      });
+    }
+
+    function selectW3Category(group, event) {
+      playSound('select');
+
+      // Dedupe to one representative image per letter within the group —
+      // the matching cards are keyed by capital/correct letter, so two
+      // items sharing the same letter (e.g. multiple "A" words) would
+      // collide on the same card ID otherwise.
+      const uniquePerLetter = getUniqueLettersFromData();
+      w3ActiveGroupData = group.letters
+        ? uniquePerLetter.filter(item => group.letters.includes(item.capital))
+        : uniquePerLetter; // Mixed = one per letter, A-Z
+
+      // Reseed per-category so both sides pick the same 5 items
+      window.setSeed(roomId + "_" + currentMode + "_" + group.id);
+
+      document.getElementById('ws-w3-category').classList.add('hidden');
+      document.getElementById('ws-matching').classList.remove('hidden');
+      setupMatchingRound();
+    }
+
+    function setupMatchingRound() {
+      matchedPairs = [];
+      selectedLeftId = null;
+      selectedRightId = null;
+      document.getElementById('btn-next-match').classList.add('hidden');
+      clearSVG();
+
+      if (currentMode === 'matchLetters') {
+        // Worksheet 2: use the teacher-selected letters (max 5), one entry per letter
+        const uniqueLetters = getUniqueLettersFromData();
+        matchingRoundData = uniqueLetters.filter(item => selectedLettersW2.includes(item.capital));
+      } else if (currentMode === 'matchImages') {
+        // Worksheet 3: use the selected category's letters, capped at 5 per round
+        const pool = w3ActiveGroupData.length > 0 ? w3ActiveGroupData : getUniqueLettersFromData();
+        matchingRoundData = seededShuffle([...pool]).slice(0, 5);
+      } else {
+        // Fallback: random 5 from everything
+        const dataCopy = [...gameData];
+        const shuffledAll = seededShuffle(dataCopy);
+        matchingRoundData = shuffledAll.slice(0, 5);
+      }
+
+      const leftColItems = [...matchingRoundData];
+      const rightColItems = matchingRoundData.map(item => ({ ...item, id: item.capital }));
+
+      seededShuffle(leftColItems);
+      seededShuffle(rightColItems);
+
+      const leftContainer = document.getElementById('left-column');
+      const rightContainer = document.getElementById('right-column');
+      leftContainer.innerHTML = "";
+      rightContainer.innerHTML = "";
+
+      // Left Column Render — always the letter card (capital) for both worksheets
+      leftColItems.forEach(item => {
+        const card = document.createElement('div');
+        card.id = `left-${item.capital}`;
+        card.className = "match-card left-card bg-amber-50 hover:bg-amber-100 border-4 border-amber-300 p-4 rounded-2xl flex flex-col items-center justify-center cursor-pointer shadow-sm transform hover:scale-105 active:scale-95 transition-all text-center select-none min-h-[6.5rem] h-auto py-2";
+        card.innerHTML = `<span class="text-3xl font-extrabold text-amber-700">${item.capital}</span>`;
+
+        if (currentMode === 'matchImages') {
+          document.getElementById('matching-instruction').innerText = "Match the letter on the left to its correct picture on the right:";
+        } else {
+          document.getElementById('matching-instruction').innerText = "Connect uppercase letters to lowercase letters:";
+        }
+
+        card.onclick = (e) => handleLeftClick(item.capital, card, e);
+        leftContainer.appendChild(card);
+      });
+
+      // Right Column Render — image card for Worksheet 3, plain lowercase card for Worksheet 2
+      rightColItems.forEach(item => {
+        const card = document.createElement('div');
+        card.id = `right-${item.correct}`;
+        card.className = "match-card right-card bg-sky-50 hover:bg-sky-100 border-4 border-sky-300 p-4 rounded-2xl flex items-center justify-center cursor-pointer shadow-sm transform hover:scale-105 active:scale-95 transition-all text-center select-none min-h-[6.5rem] h-auto py-2";
+
+        if (currentMode === 'matchImages') {
+          card.innerHTML = `
+            <div class="relative w-full h-full flex flex-col items-center justify-center">
+              <img src="images/${item.image}" alt="${item.label}" class="clamp-img-match object-contain" onerror="tryImageFallback(this, '${item.image}')">
+              <span class="text-4xl hidden" role="img" aria-label="${item.label}">${item.emoji || '❓'}</span>
+              <span class="text-xs font-bold text-slate-500 mt-1">${item.label}</span>
+            </div>
+          `;
+        } else {
+          card.innerHTML = `<span class="text-3xl font-extrabold text-sky-700">${item.correct}</span>`;
+        }
+
+        card.onclick = (e) => handleRightClick(item.correct, card, e);
+        rightContainer.appendChild(card);
+      });
+
+      window.onresize = () => drawAllConnectedLines();
+    }
+
+    function handleLeftClick(capital, cardEl, event) {
+      if (matchedPairs.some(p => p.leftId === capital)) return;
+
+      playSound('select');
+
+      document.querySelectorAll('.left-card').forEach(el => {
+        if (!el.classList.contains('locked-match')) {
+          el.className = "match-card left-card bg-amber-50 hover:bg-amber-100 border-4 border-amber-300 p-4 rounded-2xl flex flex-col items-center justify-center cursor-pointer shadow-sm transform hover:scale-105 active:scale-95 transition-all text-center select-none min-h-[6.5rem] h-auto py-2";
+        }
+      });
+
+      selectedLeftId = capital;
+      cardEl.className = "match-card left-card bg-amber-200 border-4 border-amber-500 p-4 rounded-2xl flex flex-col items-center justify-center cursor-pointer shadow-md transform scale-105 transition-all text-center select-none min-h-[6.5rem] h-auto py-2 ring-4 ring-amber-300 ring-offset-2";
+
+      checkAndFinalizeMatch();
+    }
+
+    function handleRightClick(smallLetter, cardEl, event) {
+      if (matchedPairs.some(p => p.rightId === smallLetter)) return;
+
+      playSound('select');
+
+      document.querySelectorAll('.right-card').forEach(el => {
+        if (!el.classList.contains('locked-match')) {
+          el.className = "match-card right-card bg-sky-50 hover:bg-sky-100 border-4 border-sky-300 p-4 rounded-2xl flex items-center justify-center cursor-pointer shadow-sm transform hover:scale-105 active:scale-95 transition-all text-center select-none min-h-[6.5rem] h-auto py-2";
+        }
+      });
+
+      selectedRightId = smallLetter;
+      cardEl.className = "match-card right-card bg-sky-200 border-4 border-sky-500 p-4 rounded-2xl flex items-center justify-center cursor-pointer shadow-md transform scale-105 transition-all text-center select-none min-h-[6.5rem] h-auto py-2 ring-4 ring-sky-300 ring-offset-2";
+
+      checkAndFinalizeMatch();
+    }
+
+    function checkAndFinalizeMatch() {
+      if (!selectedLeftId || !selectedRightId) return;
+
+      const matchingItem = matchingRoundData.find(item => item.capital === selectedLeftId);
+
+      if (matchingItem && matchingItem.correct === selectedRightId) {
+        playSound('correct');
+
+        const leftEl = document.getElementById(`left-${selectedLeftId}`);
+        const rightEl = document.getElementById(`right-${selectedRightId}`);
+
+        leftEl.className = "match-card left-card locked-match bg-emerald-100 border-4 border-emerald-500 p-4 rounded-2xl flex flex-col items-center justify-center shadow-inner text-center select-none min-h-[6.5rem] h-auto py-2 pointer-events-none";
+        rightEl.className = "match-card right-card locked-match bg-emerald-100 border-4 border-emerald-500 p-4 rounded-2xl flex items-center justify-center shadow-inner text-center select-none min-h-[6.5rem] h-auto py-2 pointer-events-none";
+
+        matchedPairs.push({ leftId: selectedLeftId, rightId: selectedRightId });
+        
+        // --- PROPER WRAPPED ACTION SYNC FOR CONSOLE ---
+        if (window.parent && window.parent.postMessage) {
+          window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: {
+              type: currentMode === 'matchImages' ? 'IMAGE_MATCH' : 'LETTER_MATCH',
+              capitalId: selectedLeftId,
+              lowerId: selectedRightId
+            }
+          }, '*');
+        }
+
+        drawAllConnectedLines();
+
+        selectedLeftId = null;
+        selectedRightId = null;
+        score++;
+        updateScoreUI();
+
+        if (matchedPairs.length === matchingRoundData.length) {
+          setTimeout(() => {
+            document.getElementById('btn-next-match').classList.remove('hidden');
+          }, 500);
+        }
+      } else {
+        playSound('wrong');
+
+        const leftEl = document.getElementById(`left-${selectedLeftId}`);
+        const rightEl = document.getElementById(`right-${selectedRightId}`);
+
+        if (leftEl) leftEl.classList.add('shake-error', 'bg-rose-100', 'border-rose-400');
+        if (rightEl) rightEl.classList.add('shake-error', 'bg-rose-100', 'border-rose-400');
+
+        setTimeout(() => {
+          if (leftEl) {
+            leftEl.classList.remove('shake-error', 'bg-rose-100', 'border-rose-400');
+            leftEl.className = "match-card left-card bg-amber-50 hover:bg-amber-100 border-4 border-amber-300 p-4 rounded-2xl flex flex-col items-center justify-center cursor-pointer shadow-sm transform hover:scale-105 active:scale-95 transition-all text-center select-none min-h-[6.5rem] h-auto py-2";
+          }
+          if (rightEl) {
+            rightEl.classList.remove('shake-error', 'bg-rose-100', 'border-rose-400');
+            rightEl.className = "match-card right-card bg-sky-50 hover:bg-sky-100 border-4 border-sky-300 p-4 rounded-2xl flex items-center justify-center cursor-pointer shadow-sm transform hover:scale-105 active:scale-95 transition-all text-center select-none min-h-[6.5rem] h-auto py-2";
+          }
+          selectedLeftId = null;
+          selectedRightId = null;
+        }, 1000);
+      }
+    }
+
+    // --- REPLICATION LISTENER ---
+    window.handleLetterMatchReplication = function(capitalId, lowerId) {
+      const leftEl = document.getElementById(`left-${capitalId}`);
+      const rightEl = document.getElementById(`right-${lowerId}`);
+
+      if (leftEl && rightEl) {
+        leftEl.className = "match-card left-card locked-match bg-emerald-100 border-4 border-emerald-500 p-4 rounded-2xl flex flex-col items-center justify-center shadow-inner text-center select-none min-h-[6.5rem] h-auto py-2 pointer-events-none";
+        rightEl.className = "match-card right-card locked-match bg-emerald-100 border-4 border-emerald-500 p-4 rounded-2xl flex items-center justify-center shadow-inner text-center select-none min-h-[6.5rem] h-auto py-2 pointer-events-none";
+
+        if (!matchedPairs.some(p => p.leftId === capitalId)) {
+          matchedPairs.push({ leftId: capitalId, rightId: lowerId });
+        }
+        drawAllConnectedLines();
+        score++;
+        updateScoreUI();
+
+        if (matchedPairs.length === matchingRoundData.length) {
+          document.getElementById('btn-next-match').classList.remove('hidden');
+        }
+      }
+    };
+
+    // --- UNIVERSAL CONSOLE SYNC & MESSAGE REPLICATION INTEGRATION ---
+    document.addEventListener('click', function(e) {
+      if (window.isSimulating) return; // Ignore synthesized action triggers
+
+      const clickTarget = e.target.closest('button, .match-card, .bubble-btn');
+      if (clickTarget) {
+        const selector = getUniqueSelector(clickTarget);
+        if (window.parent && window.parent.postMessage) {
+          window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: {
+              type: 'UNIVERSAL_CLICK',
+              selector: selector
+            }
+          }, '*');
+        }
+      }
+    });
+
+    // Listen for events from console/companion
+    // NOTE: the console relays replayed actions using type
+    // 'EXECUTE_UNIVERSAL_ACTION' with the data under `.action` —
+    // NOT 'IFRAME_ACTION_TRIGGERED'/`.payload` (that type/field pair
+    // is only what THIS game sends OUT to the console, not what the
+    // console sends back IN). This was the actual sync bug.
+    //
+    // Also: replayed actions are queued until the manifest finishes
+    // loading (dataReady). Without this, a fast click-replay arriving
+    // before loadData()'s fetch resolves would run against the
+    // temporary fallback list while the other tab already has the
+    // real manifest — causing mismatched questions on each side even
+    // though the seed matches.
+    let dataReady = false;
+    let pendingActionQueue = [];
+
+    function processReplayAction(action) {
+      window.isSimulating = true;
+
+      if (action.type === 'UNIVERSAL_CLICK') {
+        const matchedEl = document.querySelector(action.selector);
+        if (matchedEl) {
+          matchedEl.click();
+        }
+      } else if (action.type === 'LETTER_MATCH' || action.type === 'IMAGE_MATCH') {
+        window.handleLetterMatchReplication(action.capitalId, action.lowerId);
+      }
+
+      window.isSimulating = false;
+    }
+
+    window.addEventListener('message', function(event) {
+      const data = event.data;
+      if (!data) return;
+
+      if (data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+        const action = data.action;
+        if (!action) return;
+
+        if (!dataReady) {
+          pendingActionQueue.push(action);
+          return;
+        }
+        processReplayAction(action);
+      }
+    });
+
+    // --- SVG CONNECTING LINES RENDERING ---
+    function clearSVG() {
+      const svg = document.getElementById('match-svg-container');
+      svg.innerHTML = "";
+    }
+
+    function drawAllConnectedLines() {
+      clearSVG();
+      if (currentMode === 'menu' || currentMode === 'dabIt') return;
+
+      const svg = document.getElementById('match-svg-container');
+      const svgRect = svg.getBoundingClientRect();
+
+      matchedPairs.forEach(pair => {
+        const leftEl = document.getElementById(`left-${pair.leftId}`);
+        const rightEl = document.getElementById(`right-${pair.rightId}`);
+
+        if (leftEl && rightEl) {
+          const rLeft = leftEl.getBoundingClientRect();
+          const rRight = rightEl.getBoundingClientRect();
+
+          // Anchor points on left edge and right edge
+          const x1 = rLeft.right - svgRect.left;
+          const y1 = (rLeft.top + rLeft.bottom) / 2 - svgRect.top;
+
+          const x2 = rRight.left - svgRect.left;
+          const y2 = (rRight.top + rRight.bottom) / 2 - svgRect.top;
+
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", x1);
+          line.setAttribute("y1", y1);
+          line.setAttribute("x2", x2);
+          line.setAttribute("y2", y2);
+          line.setAttribute("stroke", "#10B981"); 
+          line.setAttribute("stroke-width", "6");
+          line.setAttribute("stroke-linecap", "round");
+          line.setAttribute("stroke-dasharray", "8, 4");
+          svg.appendChild(line);
+        }
+      });
+    }
+
+    function loadNextMatchRound() {
+      setupMatchingRound();
+    }
+
+    // --- ON LOAD ---
+    window.onload = function() {
+      loadData();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Missing Letter</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<!-- ============================================================
+     PART 1 — SYNC BLOCK (RESPONSIVE FIX)
+     ============================================================ -->
+<script>
+  window.isSimulating = false;
+  const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#','?'));
+  const roomId = urlParams.get('room') || '54321';
+  let localSeed = 0;
+  window.setSeed = function(str) {
+    let t = 0;
+    for (let i = 0; i < str.length; i++) {
+      t = str.charCodeAt(i) + ((t << 5) - t);
+    }
+    localSeed = Math.abs(t);
+  };
+  window.setSeed(roomId);
+  window.seededRandom = function() {
+    let x = Math.sin(localSeed++) * 10000;
+    return x - Math.floor(x);
+  };
+  
+  function getUniqueSelector(el) {
+    if (!el) return null;
+    if (el.id) return '#' + el.id;
+    if (el === document.body) return 'body';
+    let path = [];
+    while (el && el.nodeType === Node.ELEMENT_NODE) {
+      let sel = el.nodeName.toLowerCase();
+      if (el.id) { sel = '#' + el.id; path.unshift(sel); break; }
+      else {
+        if (el.className && typeof el.className === 'string') {
+          const cls = Array.from(el.classList)
+            .filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/'))
+            .join('.');
+          if (cls) sel += '.' + cls;
+        }
+        let sib = el, nth = 1;
+        while (sib = sib.previousElementSibling)
+          if (sib.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++;
+        sel += ':nth-of-type(' + nth + ')';
+        path.unshift(sel);
+      }
+      el = el.parentNode;
+    }
+    return path.join(' > ');
+  }
+
+  let actionIdCounter = 0;
+  document.addEventListener('click', (e) => {
+    if (e.isTrusted === false || window.isSimulating) return;
+    const sel = getUniqueSelector(e.target);
+    if (!sel) return;
+    actionIdCounter++;
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: { type: 'UNIVERSAL_CLICK', selector: sel, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+    }, '*');
+  }, true);
+  
+  let lastCursorTime = 0;
+  document.addEventListener('mousemove', (e) => {
+    const now = Date.now();
+    if (now - lastCursorTime < 40) return;
+    lastCursorTime = now;
+    window.parent.postMessage({
+      type: 'IFRAME_MOUSE_TRACK',
+      pctX: (e.clientX / window.innerWidth) * 100,
+      pctY: (e.clientY / window.innerHeight) * 100
+    }, '*');
+  });
+  
+  let lastTouchTime = 0;
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 0) return;
+    const now = Date.now();
+    if (now - lastTouchTime < 40) return;
+    lastTouchTime = now;
+    window.parent.postMessage({
+      type: 'IFRAME_MOUSE_TRACK',
+      pctX: (e.touches[0].clientX / window.innerWidth) * 100,
+      pctY: (e.touches[0].clientY / window.innerHeight) * 100
+    }, '*');
+  }, { passive: true });
+  
+  // 🔥 MEGA FIX: Replaced aggressive scaling with gentle dimension management
+  function applyScale() {
+      // In this specific game, CSS Flexbox handles the scaling perfectly.
+      // We only ensure overflow behaves nicely.
+      document.body.style.transform = 'none';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+  }
+  window.addEventListener('resize', applyScale);
+  window.addEventListener('load', applyScale);
+  
+  let lastProcessedActionId = null;
+  window.addEventListener('message', (event) => {
+    if (event.data?.type === 'EXECUTE_UNIVERSAL_ACTION') {
+      const action = event.data.action;
+      if (action.type === 'UNIVERSAL_CURSOR') return; 
+      
+      const currentActionId = action.actionId || action.timestamp;
+      if (currentActionId && currentActionId === lastProcessedActionId) return;
+      lastProcessedActionId = currentActionId;
+      
+      window.isSimulating = true;
+      if (action.seed !== undefined) localSeed = action.seed;
+      if (action.type === 'UNIVERSAL_CLICK') {
+        const el = document.querySelector(action.selector);
+        if (el) el.click();
+      }
+      setTimeout(() => { window.isSimulating = false; }, 50);
+    }
+  });
+</script>
+
+<!-- ============================================================
+     PART 2 — CSS & RESPONSIVE FIX
+     ============================================================ -->
+<style>
+:root {
+    --pink: #FFB3D1; --mint: #B3F0E0; --sky: #B3D9FF; --sun: #FFE8A3;
+    --dpink: #FF6B9D; --dmint: #00C896; --dsky: #4A90D9; --dsun: #F5A623;
+    --dlav: #8B5CF6; --dpeach: #F97316; --dgreen: #22C55E; --dcoral: #EF4444;
+    --font: 'Fredoka One', cursive;
+}
+/* Anti-Flicker Armor */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-drag: none; }
+button *, .sel-card *, .btn-reward * { pointer-events: none; } 
+
+/* 🔥 MEGA FIX: Allow vertical scrolling if the screen is too tiny, prevent squishing */
+html, body { height: 100%; min-height: 100vh; overflow-y: auto; overflow-x: hidden; background: linear-gradient(135deg, #FFF0F5 0%, #F0FAFF 40%, #F5F0FF 100%); font-family: var(--font); color: #333; touch-action: manipulation;}
+
+/* Bubbles Background */
+.bubble { position: fixed; border-radius: 50%; pointer-events: none; animation: rise linear infinite; z-index: 0; opacity: 0.35; }
+@keyframes rise { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 10% { opacity: 0.4; } 90% { opacity: 0.4; } 100% { transform: translateY(-120px) scale(1.2); opacity: 0; } }
+
+/* Screen Management */
+.screen { display: none; position: relative; width: 100%; min-height: 100vh; flex-direction: column; align-items: center; padding: 0 0 20px; z-index: 10; }
+.screen.active { display: flex; }
+
+/* Topbars */
+.topbar { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); border-bottom: 2px solid rgba(255,255,255,0.9); z-index: 50; position: sticky; top: 0;}
+.btn-round { width: 40px; height: 40px; border-radius: 50%; border: none; background: white; color: #555; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.1s; display: flex; align-items: center; justify-content: center; }
+.btn-round:active { transform: scale(0.9); }
+
+/* Common Buttons */
+.btn-3d { border: none; border-radius: 15px; font-family: var(--font); font-size: 1rem; color: white; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.15), 0 6px 15px rgba(0,0,0,0.1); transition: transform 0.1s; padding: 12px 15px; text-align: center; }
+.btn-3d:active { transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0.1); }
+.btn-3d.inactive { opacity: 0.5; pointer-events: none; }
+
+/* ==== MENU SCREEN ==== */
+.menu-header { width: 100%; background: linear-gradient(135deg, #FF6B9D, #C44AE0, #4A90D9); padding: 30px 15px 20px; text-align: center; clip-path: ellipse(100% 85% at 50% 15%); color: white; margin-bottom: 15px; }
+.menu-title { font-size: clamp(2.2rem, 6vw, 3rem); text-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1.1; margin-bottom: 5px; }
+.menu-subtitle { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1rem; opacity: 0.9; }
+
+.grid-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 400px; padding: 0 15px; margin-bottom: 15px; }
+.btn-group { background: linear-gradient(135deg, #FF6B9D, #FF8E53); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+
+/* ==== SELECTION SCREEN ==== */
+.upload-wrap { width: 100%; max-width: 500px; padding: 10px 15px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.sel-header { text-align: center; margin: 5px 0; }
+.sel-header h2 { font-size: 1.6rem; color: var(--dlav); }
+.sel-header p { font-family: 'Nunito', sans-serif; font-weight: 700; color: #666; font-size: 0.9rem;}
+
+.db-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-bottom: 15px; padding-bottom: 15px;}
+.sel-card { background: white; border-radius: 12px; padding: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.08); position: relative; display: flex; flex-direction: column; align-items: center; border: 3px solid transparent; transition: all 0.2s; cursor: pointer; }
+.sel-card.selected { border-color: var(--dmint); background: #f0fff9; transform: scale(1.05); }
+.sel-card .check { position: absolute; top: 4px; left: 4px; background: var(--dmint); color: white; width: 20px; height: 20px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 0.7rem; z-index: 2; }
+.sel-card.selected .check { display: flex; }
+.db-img { width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: contain; background: #f8f9fa; pointer-events: none;}
+.db-name { font-family: 'Nunito', sans-serif; font-size: 0.8rem; font-weight: 800; color: #555; text-transform: capitalize; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; pointer-events: none;}
+
+/* ==== QUIZ SCREEN ==== */
+.quiz-wrap { width: 100%; max-width: 450px; padding: 15px; display: flex; flex-direction: column; align-items: center; flex: 1; justify-content: center; }
+.quiz-card { background: white; border-radius: 24px; padding: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; border: 3px solid rgba(255,255,255,0.9); }
+.q-img-wrap { width: 100%; max-width: 200px; aspect-ratio: 1; border-radius: 16px; background: #F8F9FA; border: 5px solid var(--dlav); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 6px 15px rgba(0,0,0,0.08); padding: 8px; }
+.q-img-wrap img { width: 100%; height: 100%; object-fit: contain; }
+
+.q-word-wrap { width: 100%; background: #F5F0FF; border-radius: 15px; padding: 12px; text-align: center; border: 2px solid rgba(139,92,246,0.15); }
+.q-word { font-size: clamp(1.8rem, 6vw, 2.5rem); letter-spacing: 2px; color: #333; line-height: 1.2; text-transform: uppercase; display: flex; justify-content: center; gap: 3px; }
+.q-blank { color: var(--dlav); border-bottom: 5px solid var(--dlav); min-width: 25px; text-align: center; display: inline-block; padding-bottom: 2px; }
+
+.q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-top: 5px; }
+.btn-opt { background: var(--dsky); font-size: 1.8rem; padding: 12px; border-radius: 15px; box-shadow: 0 5px 0 #1A5A99, 0 8px 15px rgba(0,0,0,0.1); border:none; color:white; font-family: var(--font); cursor: pointer; transition: transform 0.1s; }
+.btn-opt:active { transform: translateY(5px); box-shadow: 0 0px 0 #1A5A99; }
+.btn-opt.correct { animation: popCorrect 0.6s ease forwards; }
+.btn-opt.wrong { animation: shakeWrong 0.4s ease; background: var(--dcoral) !important; box-shadow: 0 5px 0 #9B1818 !important; }
+@keyframes popCorrect { 0% { transform: scale(1); } 50% { transform: scale(1.1); box-shadow: 0 0 0 5px gold; } 100% { transform: scale(1.05); box-shadow: 0 0 0 5px gold; } }
+@keyframes shakeWrong { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+/* Rewards */
+.tracker-bar { display: flex; gap: 8px; background: rgba(255,255,255,0.6); padding: 6px 12px; border-radius: 50px; }
+.t-icon { font-size: 1.2rem; color: #ccc; transition: all 0.3s; }
+.t-icon.active.star { color: #F5A623; filter: drop-shadow(0 0 4px gold); }
+.t-icon.active.ice { color: #FF6B9D; filter: drop-shadow(0 0 4px pink); }
+
+.bottom-rewards { position: fixed; bottom: 15px; left: 0; width: 100%; padding: 0 15px; display: flex; justify-content: space-between; z-index: 100; pointer-events: none; }
+.btn-reward { pointer-events: auto; background: white; border: 2px solid #eee; border-radius: 50px; padding: 8px 15px; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.9rem; color: #555; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 6px; transition: transform 0.1s; }
+.btn-reward:active { transform: scale(0.9); }
+
+/* Win Screen */
+.win-content { text-align: center; margin-top: 30px; }
+.win-content h1 { font-size: 3rem; color: var(--dlav); margin-bottom: 5px; }
+.win-content p { font-family: 'Nunito', sans-serif; font-size: 1.2rem; color: #555; font-weight: 800; margin-bottom: 30px; }
+
+</style>
+</head>
+<body>
+
+<!-- RED DOT REQUIRED -->
+<div id="remote-cursor" style="position:fixed; width:18px; height:18px; background:red; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(255,0,0,.6); pointer-events:none; z-index:9999; transform:translate(-50%,-50%); display:none;"></div>
+
+<div id="bubbles"></div>
+
+<!-- BOTTOM REWARD BUTTONS -->
+<div class="bottom-rewards">
+    <button id="btn-treat" class="btn-reward" onclick="giveReward('ice')"><span style="font-size: 1.2rem">🍦</span> Treat</button>
+    <button id="btn-star" class="btn-reward" onclick="giveReward('star')"><span style="font-size: 1.2rem">⭐</span> Star</button>
+</div>
+
+<!-- 1. MAIN MENU -->
+<div class="screen active" id="scr-menu">
+    <div class="topbar">
+        <div></div>
+        <div class="tracker-bar">
+            <div><i class="fas fa-star t-icon star" id="ts-1"></i><i class="fas fa-star t-icon star" id="ts-2"></i><i class="fas fa-star t-icon star" id="ts-3"></i></div>
+            <div style="width: 2px; background: #ddd; margin: 0 4px;"></div>
+            <div><i class="fas fa-ice-cream t-icon ice" id="ti-1"></i><i class="fas fa-ice-cream t-icon ice" id="ti-2"></i><i class="fas fa-ice-cream t-icon ice" id="ti-3"></i></div>
+            <i class="fas fa-redo" id="btn-reset-rewards" style="color:#aaa; margin-left:5px; cursor:pointer;" onclick="resetRewards()"></i>
+        </div>
+    </div>
+    
+    <div class="menu-header">
+        <h1 class="menu-title">Missing<br>Letter</h1>
+        <p class="menu-subtitle">Find the first letter! ✨</p>
+    </div>
+
+    <div class="grid-groups" id="groups-container">
+        <!-- Generated by JS -->
+    </div>
+</div>
+
+<!-- 3. GROUP SELECTION SCREEN -->
+<div class="screen" id="scr-select">
+    <div class="topbar">
+        <button id="btn-back-menu" class="btn-round" onclick="showScreen('scr-menu')"><i class="fas fa-arrow-left"></i></button>
+        <h2 style="color: var(--dsky); font-size: 1rem;" id="sel-group-title">Group A - D</h2>
+        <button id="btn-select-all" class="btn-round" onclick="toggleSelectAll()"><i class="fas fa-check-double"></i></button>
+    </div>
+
+    <div class="upload-wrap">
+        <div class="sel-header">
+            <h2>Select Images to Play</h2>
+            <p>Tap to pick images for the quiz.</p>
+        </div>
+        <div class="db-grid" id="select-grid"></div>
+        <button class="btn-3d inactive" id="btn-start-quiz" style="background: var(--dgreen); width: 100%; margin-top:10px; margin-bottom: 20px;" onclick="startQuiz()">
+            Select at least 1 image
+        </button>
+    </div>
+</div>
+
+<!-- 4. QUIZ SCREEN -->
+<div class="screen" id="scr-quiz">
+    <div class="topbar">
+        <button id="btn-close-quiz" class="btn-round" onclick="showScreen('scr-menu')"><i class="fas fa-times"></i></button>
+        <span id="q-progress" style="font-family:'Nunito',sans-serif; font-weight:800; color:#888; font-size:1rem;">1 / 5</span>
+        <div></div>
+    </div>
+
+    <div class="quiz-wrap">
+        <div class="quiz-card">
+            <div class="q-img-wrap" id="q-color-wrap">
+                <!-- Smart Image Scanner will inject image here -->
+                <img id="q-image" src="" alt="Quiz Image">
+            </div>
+            
+            <div class="q-word-wrap">
+                <div class="q-word" id="q-word-display">
+                    <!-- e.g. <span class="q-blank">_</span> p p l e -->
+                </div>
+            </div>
+
+            <div class="q-options" id="q-options-container">
+                <!-- Buttons injected here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. WIN SCREEN -->
+<div class="screen" id="scr-win">
+    <div class="win-content">
+        <h1 style="font-size: 4rem;">🎉</h1>
+        <h1>AWESOME!</h1>
+        <p>You completed the quiz perfectly!</p>
+        <button id="btn-win-home" class="btn-3d" style="background: var(--dsky); width: 220px;" onclick="showScreen('scr-menu')">
+            <i class="fas fa-home"></i> Back to Menu
+        </button>
+    </div>
+</div>
+
+<script>
+/* =========================================
+   LIVETUTOR COMPLIANT SHUFFLE
+========================================= */
+function shuf(arr) {
+    arr = [...arr];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(window.seededRandom() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+/* =========================================
+   SMART IMAGE SCANNER
+   Tries .png, .jpg, .gif, .webp automatically!
+========================================= */
+function applySmartImage(imgEl, basePath, word, size) {
+    const exts = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif'];
+    let idx = 0;
+    
+    // Clear old src first
+    imgEl.src = '';
+    
+    imgEl.onerror = () => {
+        idx++;
+        if (idx < exts.length) {
+            imgEl.src = basePath + exts[idx];
+        } else {
+            // Fallback if image literally doesn't exist
+            imgEl.src = `https://placehold.co/${size}x${size}/eee/999?text=` + encodeURIComponent(word);
+        }
+    };
+    // Trigger the first attempt
+    imgEl.src = basePath + exts[0];
+}
+
+
+/* =========================================
+   NAMES DATABASE (No extensions needed!)
+========================================= */
+const RAW_NAMES = [
+    'aeroplane', 'ant', 'ballon', 'bee', 'car', 'cat', 'doll', 'dolphine', 
+    'eagel', 'eye', 'fox', 'frog', 'goat', 'hat', 'horse', 'icecream', 
+    'injection', 'jelly fish', 'juice', 'kangaroo', 'kite', 'lion', 
+    'mango', 'monkey', 'nest', 'notebook', 'onion', 'owl', 'panda', 
+    'pencil', 'quail', 'queen', 'rabbit', 'rat', 'santa', 'spider', 
+    'table', 'truck', 'ubmerla', 'umbralla', 'van', 'vegetables', 
+    'watermelon', 'world', 'xmas tree', 'xray', 'yarwn', 'york', 
+    'zerba', 'ziga'
+];
+
+let allImages = [];
+
+// Auto-process names into objects
+function buildDatabase() {
+    RAW_NAMES.forEach((name, index) => {
+        let word = name.replace(/[_\-]/g, ' ').trim();
+        let capWord = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        let letter = capWord.charAt(0);
+        
+        allImages.push({
+            id: 'img-' + index + '-' + word.replace(/\s+/g, '-').toLowerCase(),
+            basePath: 'images/' + name, // Store path WITHOUT extension
+            word: capWord,
+            letter: letter
+        });
+    });
+    // Sort alphabetically
+    allImages.sort((a, b) => a.word.localeCompare(b.word));
+}
+
+/* =========================================
+   STATE & DATA
+========================================= */
+const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const PALETTE = ['#FF6B9D','#F97316','#F5A623','#22C55E','#4A90D9','#8B5CF6','#EF4444','#00C896','#00B4D8'];
+const GROUPS = [
+    { id: 'g1', label: 'A – D', letters: ['A','B','C','D'], color: 'linear-gradient(135deg, #FF6B9D, #FF8E53)' },
+    { id: 'g2', label: 'E – H', letters: ['E','F','G','H'], color: 'linear-gradient(135deg, #4A90D9, #00C896)' },
+    { id: 'g3', label: 'I – L', letters: ['I','J','K','L'], color: 'linear-gradient(135deg, #8B5CF6, #C44AE0)' },
+    { id: 'g4', label: 'M – P', letters: ['M','N','O','P'], color: 'linear-gradient(135deg, #F97316, #EF4444)' },
+    { id: 'g5', label: 'Q – T', letters: ['Q','R','S','T'], color: 'linear-gradient(135deg, #22C55E, #4A90D9)' },
+    { id: 'g6', label: 'U – Z', letters: ['U','V','W','X','Y','Z'], color: 'linear-gradient(135deg, #F5A623, #FF6B9D)' }
+];
+
+let currentGroupLetters = [];
+let availableGroupImages = [];
+let selectedImageIds = new Set();
+
+let quizQueue = [];
+let qIdx = 0;
+let isAnimating = false;
+
+/* =========================================
+   INITIALIZATION
+========================================= */
+window.onload = () => {
+    createBubbles();
+    buildDatabase();
+    buildMenu();
+    updateRewardsUI();
+    document.addEventListener('click', initAudio, { once: true });
+};
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+/* =========================================
+   UI BUILDERS
+========================================= */
+function buildMenu() {
+    const cont = document.getElementById('groups-container');
+    cont.innerHTML = '';
+    GROUPS.forEach(g => {
+        const btn = document.createElement('button');
+        btn.id = 'btn-grp-' + g.id;
+        btn.className = 'btn-3d btn-group';
+        btn.style.background = g.color;
+        btn.innerHTML = `<span style="font-size:1.4rem; font-weight:900;">${g.label}</span>`;
+        btn.onclick = () => openGroupSelection(g);
+        cont.appendChild(btn);
+    });
+}
+
+function createBubbles() {
+    const wrap = document.getElementById('bubbles');
+    const cols = ['#FFB3D1', '#B3F0E0', '#B3D9FF', '#FFE8A3', '#D4B3FF'];
+    // Visual only, Math.random is safe here
+    for(let i=0; i<15; i++) {
+        const b = document.createElement('div'); b.className = 'bubble';
+        const sz = 20 + Math.random()*40;
+        b.style.cssText = `width:${sz}px; height:${sz}px; left:${Math.random()*100}vw; background:${cols[i%cols.length]}; animation-duration:${10+Math.random()*10}s; animation-delay:${-Math.random()*15}s;`;
+        wrap.appendChild(b);
+    }
+}
+
+/* =========================================
+   GROUP SELECTION LOGIC
+========================================= */
+window.openGroupSelection = function(group) {
+    currentGroupLetters = group.letters;
+    document.getElementById('sel-group-title').textContent = `Group ${group.label}`;
+    
+    // Filter available images for these letters
+    availableGroupImages = allImages.filter(img => currentGroupLetters.includes(img.letter));
+    
+    selectedImageIds.clear();
+    // Default select all
+    availableGroupImages.forEach(img => selectedImageIds.add(img.id));
+    
+    renderSelectGrid();
+    showScreen('scr-select');
+    playTone(400, 'sine', 0.1);
+}
+
+function renderSelectGrid() {
+    const grid = document.getElementById('select-grid');
+    grid.innerHTML = '';
+    
+    availableGroupImages.forEach(img => {
+        const isSel = selectedImageIds.has(img.id);
+        const div = document.createElement('div');
+        div.id = 'sel-card-' + img.id; // MANDATORY UNIQUE ID
+        div.className = `sel-card ${isSel ? 'selected' : ''}`;
+        
+        div.onclick = () => {
+            if(selectedImageIds.has(img.id)) selectedImageIds.delete(img.id);
+            else selectedImageIds.add(img.id);
+            renderSelectGrid();
+            playTone(isSel ? 300 : 500, 'sine', 0.1);
+        };
+        
+        div.innerHTML = `
+            <div class="check"><i class="fas fa-check"></i></div>
+            <img class="db-img smart-grid-img" id="img-thumb-${img.id}">
+            <div class="db-name">${img.word}</div>
+        `;
+        grid.appendChild(div);
+        
+        // Trigger smart image loader
+        const imgEl = div.querySelector('img');
+        applySmartImage(imgEl, img.basePath, img.word, 100);
+    });
+    
+    const btn = document.getElementById('btn-start-quiz');
+    if (selectedImageIds.size > 0) {
+        btn.textContent = `▶ Play Quiz (${selectedImageIds.size})`;
+        btn.classList.remove('inactive');
+    } else {
+        btn.textContent = `Select at least 1 image`;
+        btn.classList.add('inactive');
+    }
+}
+
+window.toggleSelectAll = function() {
+    if(selectedImageIds.size === availableGroupImages.length) {
+        selectedImageIds.clear();
+    } else {
+        availableGroupImages.forEach(img => selectedImageIds.add(img.id));
+    }
+    renderSelectGrid();
+    playTone(400, 'sine', 0.1);
+}
+
+/* =========================================
+   QUIZ LOGIC (MISSING LETTER ONLY)
+========================================= */
+window.startQuiz = function() {
+    if(selectedImageIds.size === 0) return;
+    
+    let chosenImages = availableGroupImages.filter(img => selectedImageIds.has(img.id));
+    
+    // Create interleaved sequence based on letters (e.g. A1, B1, C1, A2, B2)
+    let grouped = {};
+    currentGroupLetters.forEach(l => grouped[l] = []);
+    chosenImages.forEach(img => { if(grouped[img.letter]) grouped[img.letter].push(img); });
+    
+    quizQueue = [];
+    let maxLen = Math.max(...Object.values(grouped).map(arr => arr.length));
+    for(let i=0; i<maxLen; i++) {
+        currentGroupLetters.forEach(l => {
+            if(grouped[l] && grouped[l][i]) quizQueue.push(grouped[l][i]);
+        });
+    }
+    
+    qIdx = 0;
+    showScreen('scr-quiz');
+    loadQuizCard();
+}
+
+function loadQuizCard() {
+    if(qIdx >= quizQueue.length) {
+        showWin();
+        return;
+    }
+    
+    isAnimating = false;
+    const imgData = quizQueue[qIdx];
+    const correctLetter = imgData.letter;
+    const restOfWord = imgData.word.slice(1);
+    
+    document.getElementById('q-progress').textContent = `${qIdx + 1} / ${quizQueue.length}`;
+    
+    // Smart Image Loader
+    const imgEl = document.getElementById('q-image');
+    applySmartImage(imgEl, imgData.basePath, imgData.word, 200);
+    
+    const themeCol = PALETTE[AZ.indexOf(correctLetter) % PALETTE.length];
+    document.getElementById('q-color-wrap').style.borderColor = themeCol;
+    
+    // Set Word
+    document.getElementById('q-word-display').innerHTML = `
+        <span class="q-blank" id="lbl-blank" style="color:${themeCol}; border-color:${themeCol}">_</span> 
+        <span>${restOfWord}</span>
+    `;
+    
+    // Generate Options using SEEDED RANDOM
+    let wrongLetters = AZ.filter(l => l !== correctLetter);
+    wrongLetters = shuf(wrongLetters); // LIVETUTOR SHUFFLE
+    
+    let options = [correctLetter, wrongLetters[0], wrongLetters[1], wrongLetters[2]];
+    options = shuf(options); // LIVETUTOR SHUFFLE
+    
+    const optCont = document.getElementById('q-options-container');
+    optCont.innerHTML = '';
+    
+    options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.id = 'btn-opt-' + idx; // MANDATORY UNIQUE ID
+        btn.className = 'btn-opt';
+        const btnCol = PALETTE[(AZ.indexOf(correctLetter) + idx) % PALETTE.length];
+        btn.style.background = btnCol;
+        btn.style.boxShadow = `0 4px 0 ${adjustColor(btnCol, -40)}, 0 8px 15px rgba(0,0,0,0.1)`;
+        btn.textContent = opt;
+        
+        btn.onclick = () => checkAnswer(opt, correctLetter, btn.id);
+        optCont.appendChild(btn);
+    });
+}
+
+window.checkAnswer = function(chosen, correct, btnId) {
+    if(isAnimating) return;
+    
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    
+    isAnimating = true;
+    
+    if(chosen === correct) {
+        // Correct
+        btn.classList.add('correct');
+        const blank = document.getElementById('lbl-blank');
+        blank.textContent = correct;
+        blank.style.borderBottomColor = 'transparent';
+        
+        playSfxMatch();
+        try { confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } }); } catch(e){}
+        
+        setTimeout(() => {
+            qIdx++;
+            loadQuizCard();
+        }, 1200);
+    } else {
+        // Wrong
+        btn.classList.add('wrong');
+        playTone(200, 'sawtooth', 0.2);
+        setTimeout(() => { playTone(150, 'sawtooth', 0.3); }, 150);
+        
+        setTimeout(() => {
+            btn.classList.remove('wrong');
+            isAnimating = false;
+        }, 500);
+    }
+}
+
+function showWin() {
+    showScreen('scr-win');
+    playSfxWin();
+    const dur = 3000, end = Date.now() + dur;
+    (function frame() {
+        try {
+            confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: PALETTE });
+            confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: PALETTE });
+        } catch(e){}
+        if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+}
+
+/* =========================================
+   REWARDS SYSTEM (STAR & ICECREAM)
+========================================= */
+let rewards = { star: 0, ice: 0 };
+
+window.giveReward = function(type) {
+    if(rewards[type] < 3) {
+        rewards[type]++;
+        updateRewardsUI();
+        if(type==='star') { playTone(880, 'sine', 0.1); setTimeout(() => playTone(1108, 'sine', 0.3), 100); }
+        else { playSfxMatch(); }
+        try { confetti({ particleCount: 40, spread: 60, origin: { y: 0.9 }, zIndex: 9999 }); } catch(e){}
+        
+        // Bounce the icon
+        const icon = document.getElementById(`t${type.charAt(0)}-${rewards[type]}`);
+        icon.style.transform = 'scale(1.5)';
+        setTimeout(() => icon.style.transform = 'none', 300);
+    }
+}
+
+window.resetRewards = function() {
+    rewards = { star: 0, ice: 0 };
+    updateRewardsUI();
+    playTone(400, 'sine', 0.1);
+}
+
+function updateRewardsUI() {
+    for(let i=1; i<=3; i++) {
+        document.getElementById(`ts-${i}`).classList.toggle('active', i <= rewards.star);
+        document.getElementById(`ti-${i}`).classList.toggle('active', i <= rewards.ice);
+    }
+}
+
+/* =========================================
+   AUDIO & UTILS
+========================================= */
+function adjustColor(color, amount) {
+    return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
+}
+
+let audioCtx;
+function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+function playTone(freq, type, duration) {
+    try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+}
+function playSfxMatch() {
+    [523, 659, 784].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.2), i * 100));
+}
+function playSfxWin() {
+    [[523,0], [659,150], [784,300], [1046,450], [784,650], [1046,800]].forEach(([f, d]) => setTimeout(() => playTone(f, 'triangle', 0.3), d));
+}
+
+</script>
+</body>
+</html>

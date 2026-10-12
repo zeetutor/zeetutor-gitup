@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jolly Phonics & Picture Browser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Fredoka One', 'Quicksand', sans-serif;
+    }
+    .clamp-media {
+      width: clamp(8rem, 30vmin, 16rem);
+      height: clamp(8rem, 30vmin, 16rem);
+    }
+    /* Simple Confetti Particles */
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      opacity: 0.8;
+      border-radius: 50%;
+      animation: fall 3s ease-out infinite;
+    }
+    @keyframes fall {
+      0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(350px) rotate(360deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-sky-50 via-indigo-50 to-emerald-50 min-h-screen text-slate-800 flex flex-col justify-between">
+
+  <!-- APP WRAPPER -->
+  <div id="app-wrapper" class="relative w-full max-w-5xl mx-auto p-4 flex-grow flex flex-col justify-between">
+    
+    <!-- HEADER CONTROLS -->
+    <header class="bg-white/80 backdrop-blur-md rounded-3xl p-4 shadow-sm border-b-4 border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+      <div class="flex items-center gap-3">
+        <button id="btn-back-menu" class="hidden px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-2xl border-b-2 border-slate-300 transition-all flex items-center gap-1 cursor-pointer">
+          ← Main Menu
+        </button>
+        <span class="text-2xl">⚡</span>
+        <h1 id="app-title" class="text-xl md:text-2xl text-indigo-600 font-bold tracking-tight">LiveTutor Phonics Hub</h1>
+      </div>
+      
+      <!-- Room Info -->
+      <div class="flex items-center gap-2">
+        <div id="badge-room" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-100">
+          Room: <span id="text-room">loading...</span>
+        </div>
+        <div id="badge-role" class="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-xl border border-amber-100">
+          Role: <span id="text-role">loading...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- LANDING SCREEN -->
+    <div id="screen-menu" class="flex-grow flex flex-col items-center justify-center py-8 gap-8">
+      <div class="text-center max-w-md">
+        <span class="text-6xl inline-block mb-3 animate-bounce">🎨</span>
+        <h2 class="text-3xl md:text-4xl text-slate-700 font-extrabold tracking-tight">Interactive Phonics</h2>
+        <p class="text-slate-400 font-semibold text-sm mt-1">Select a worksheet below to begin your sync-learning journey.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+        <!-- Worksheet 1 Trigger -->
+        <button id="btn-mode-ws1" class="group bg-white p-6 rounded-3xl border-4 border-amber-200 hover:border-amber-400 hover:shadow-lg transform hover:-translate-y-1 transition-all text-center flex flex-col items-center justify-between gap-4 cursor-pointer">
+          <div class="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-3xl pointer-events-none">🎵</div>
+          <div class="pointer-events-none">
+            <h3 class="text-lg font-bold text-slate-700">Worksheet 1</h3>
+            <p class="text-xs text-slate-400 font-semibold mt-1">Jolly Phonics sound sequencing & GIF instructions.</p>
+          </div>
+          <span class="w-full py-2 bg-amber-400 group-hover:bg-amber-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors pointer-events-none">Open Sound Hub</span>
+        </button>
+
+        <!-- Worksheet 2 Trigger -->
+        <button id="btn-mode-ws2" class="group bg-white p-6 rounded-3xl border-4 border-emerald-200 hover:border-emerald-400 hover:shadow-lg transform hover:-translate-y-1 transition-all text-center flex flex-col items-center justify-between gap-4 cursor-pointer">
+          <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl pointer-events-none">🖼️</div>
+          <div class="pointer-events-none">
+            <h3 class="text-lg font-bold text-slate-700">Worksheet 2</h3>
+            <p class="text-xs text-slate-400 font-semibold mt-1">Explore words and beautiful illustrative fallback graphics from A-Z.</p>
+          </div>
+          <span class="w-full py-2 bg-emerald-400 group-hover:bg-emerald-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors pointer-events-none">Browse Pictures</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- WORKSHEET 1 SCREEN: JOLLY PHONICS SOUNDS -->
+    <div id="screen-ws1" class="hidden flex-grow flex flex-col">
+      <div class="text-center mb-6">
+        <h3 class="text-2xl text-amber-500 font-extrabold">Jolly Phonics Sounds</h3>
+        <p class="text-sm text-slate-400 font-semibold mt-1">Choose a group, then a letter, to hear its phonic tone & learn the action steps.</p>
+      </div>
+
+      <!-- Group Selector Tabs -->
+      <div id="ws1-group-tabs" class="flex flex-wrap justify-center gap-2 mb-6">
+        <!-- Dynamically generated Group 1-7 tab buttons -->
+      </div>
+
+      <!-- Tile Grid Selection -->
+      <div id="ws1-letters-grid" class="grid grid-cols-3 md:grid-cols-6 gap-4 w-full max-w-3xl mx-auto my-auto justify-items-center">
+        <!-- Dynamically generated cards for the active group -->
+      </div>
+
+      <!-- Interactive GIF Playback Phase Screen -->
+      <div id="ws1-interactive-area" class="hidden flex flex-col items-center justify-center bg-white rounded-3xl p-6 border-4 border-dashed border-amber-100 max-w-xl mx-auto w-full gap-6 relative overflow-hidden">
+        
+        <!-- Celebration Container overlay -->
+        <div id="confetti-container" class="absolute inset-0 pointer-events-none"></div>
+
+        <!-- Upper Details -->
+        <div class="text-center">
+          <span id="ws1-sound-letter" class="text-5xl font-extrabold text-amber-500">S</span>
+          <p id="ws1-sound-instruction" class="text-sm text-slate-400 mt-1 font-bold">Sound: "sss"</p>
+        </div>
+
+        <!-- GIF media visual wrapper -->
+        <div class="flex items-center justify-center bg-slate-50 border-2 border-slate-100 rounded-3xl p-4 relative">
+          <img id="ws1-gif-viewer" class="clamp-media object-contain rounded-2xl shadow-sm" src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%20width%3D'100'%20height%3D'100'%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20fill%3D'%23f3f4f6'%2F%3E%3Ctext%20x%3D'50%25'%20y%3D'50%25'%20dominant-baseline%3D'middle'%20text-anchor%3D'middle'%20fill%3D'%239ca3af'%20font-size%3D'8'%3EAsset%20Pending%3C%2Ftext%3E%3C%2Fsvg%3E" alt="Sound Demonstration Phase">
+          
+          <!-- Complete Badge Overlay -->
+          <div id="ws1-complete-check" class="hidden absolute inset-0 bg-white/95 rounded-3xl flex flex-col items-center justify-center gap-2">
+            <span class="text-6xl animate-bounce">🎉</span>
+            <span class="text-emerald-500 font-extrabold text-xl">Perfect! Done!</span>
+          </div>
+        </div>
+
+        <!-- Step indicator tracker -->
+        <div class="flex items-center justify-center gap-2">
+          <span id="dot-step-1" class="w-3 h-3 rounded-full bg-amber-400 transition-all"></span>
+          <span id="dot-step-2" class="w-3 h-3 rounded-full bg-slate-200 transition-all"></span>
+          <span id="dot-step-3" class="w-3 h-3 rounded-full bg-slate-200 transition-all"></span>
+        </div>
+
+        <!-- Sequence Buttons -->
+        <div class="flex gap-4 w-full justify-between items-center mt-2">
+          <button id="btn-ws1-back" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold border-b-2 border-slate-300 transition-all text-xs flex items-center justify-center cursor-pointer">
+            ↩ Change Letter
+          </button>
+          
+          <button id="btn-ws1-next" class="px-6 py-2.5 bg-amber-400 hover:bg-amber-500 text-white rounded-xl font-extrabold border-b-4 border-amber-600 shadow-md transition-all text-sm flex items-center gap-1 cursor-pointer">
+            <span>Next Step</span> ➡️
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKSHEET 2 SCREEN: A TO Z PICTURE BROWSER -->
+    <div id="screen-ws2" class="hidden flex-grow flex flex-col">
+      <div class="text-center mb-6">
+        <h3 class="text-2xl text-emerald-500 font-extrabold">A to Z Picture Browser</h3>
+        <p class="text-sm text-slate-400 font-semibold mt-1">Tap any alphabet tile below to browse its visual target gallery.</p>
+      </div>
+
+      <!-- Complete letter selector (26 letters) -->
+      <div id="ws2-index-container" class="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto my-auto p-4 bg-white/50 rounded-3xl border border-slate-100">
+        <!-- Dynamically populated letters A-Z -->
+      </div>
+
+      <!-- Specific Letter Picture Gallery Overlay -->
+      <div id="ws2-gallery-area" class="hidden flex flex-col items-center justify-center bg-white rounded-3xl p-6 border-4 border-emerald-100 max-w-3xl mx-auto w-full gap-6">
+        <div class="flex items-center justify-between w-full border-b border-slate-100 pb-3">
+          <h4 class="text-xl font-extrabold text-emerald-600">
+            Letter <span id="ws2-active-letter" class="text-3xl">A</span> Sound Objects
+          </h4>
+          <button id="btn-ws2-return" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border-b-2 border-slate-300 transition-all cursor-pointer">
+            ← Letters
+          </button>
+        </div>
+
+        <div id="ws2-gallery-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+          <!-- Populated from chosen letter images array -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN FOOTER -->
+    <footer class="mt-4 flex flex-col md:flex-row justify-between items-center text-slate-400 text-xs gap-3 font-semibold">
+      <span>Sync State Engine: v2.4.2</span>
+      <span>Jolly Phonics Interactive Learning Center</span>
+    </footer>
+
+  </div>
+
+  <script>
+    // --- GLOBAL STATE ---
+    let manifestData = null;
+    let room = 'default_room';
+    let role = 'guest';
+
+    // Worksheet 1 session details
+    let ws1ActiveLetterObj = null;
+    let ws1ActiveStep = 1; // 1 | 2 | 3
+    let ws1ActiveStoryIndex = 0; // which story in .stories[] is currently playing
+    let ws1AwaitingPostCompleteAction = false; // true when step-3 gif has finished and waiting for Next Story / Restart
+    let ws1StepTimer = null;
+
+    // Hardcoded Fallback Dataset
+    const LOCAL_MANIFEST_FALLBACK = {
+      "group1": ["S", "A", "T", "I", "P", "N"],
+      "letters": [
+        {
+          "letter": "S",
+          "sound": "sss",
+          "emoji": "🐍",
+          "gifs": {
+            "gif1": "gifs/s_gif1.gif",
+            "gif2": "gifs/s_gif2.gif",
+            "gif3": "gifs/s_gif3.gif"
+          },
+          "images": [
+            { "word": "Sun", "image": "images/sun.png", "emoji": "☀️" },
+            { "word": "Snake", "image": "images/snake.png", "emoji": "🐍" },
+            { "word": "Spider", "image": "images/spider.png", "emoji": "🕷️" }
+          ]
+        },
+        {
+          "letter": "A",
+          "sound": "ah",
+          "emoji": "🍎",
+          "gifs": {
+            "gif1": "gifs/a_gif1.gif",
+            "gif2": "gifs/a_gif2.gif",
+            "gif3": "gifs/a_gif3.gif"
+          },
+          "images": [
+            { "word": "Apple", "image": "images/apple.png", "emoji": "🍎" },
+            { "word": "Ant", "image": "images/ant.png", "emoji": "🐜" },
+            { "word": "Alligator", "image": "images/alligator.png", "emoji": "🐊" }
+          ]
+        },
+        {
+          "letter": "T",
+          "sound": "t-t-t",
+          "emoji": "🎾",
+          "gifs": {
+            "gif1": "gifs/t_gif1.gif",
+            "gif2": "gifs/t_gif2.gif",
+            "gif3": "gifs/t_gif3.gif"
+          },
+          "images": [
+            { "word": "Tennis", "image": "images/tennis.png", "emoji": "🎾" },
+            { "word": "Tiger", "image": "images/tiger.png", "emoji": "🐅" },
+            { "word": "Tree", "image": "images/tree.png", "emoji": "🌲" }
+          ]
+        },
+        {
+          "letter": "I",
+          "sound": "ih",
+          "emoji": "🦎",
+          "gifs": {
+            "gif1": "gifs/i_gif1.gif",
+            "gif2": "gifs/i_gif2.gif",
+            "gif3": "gifs/i_gif3.gif"
+          },
+          "images": [
+            { "word": "Ink", "image": "images/ink.png", "emoji": "✒️" },
+            { "word": "Iguana", "image": "images/iguana.png", "emoji": "🦎" },
+            { "word": "Igloo", "image": "images/igloo.png", "emoji": "❄️" }
+          ]
+        },
+        {
+          "letter": "P",
+          "sound": "puh",
+          "emoji": "🐼",
+          "gifs": {
+            "gif1": "gifs/p_gif1.gif",
+            "gif2": "gifs/p_gif2.gif",
+            "gif3": "gifs/p_gif3.gif"
+          },
+          "images": [
+            { "word": "Panda", "image": "images/panda.png", "emoji": "🐼" },
+            { "word": "Pen", "image": "images/pen.png", "emoji": "🖊️" },
+            { "word": "Pig", "image": "images/pig.png", "emoji": "🐷" }
+          ]
+        },
+        {
+          "letter": "N",
+          "sound": "nnn",
+          "emoji": "🪹",
+          "gifs": {
+            "gif1": "gifs/n_gif1.gif",
+            "gif2": "gifs/n_gif2.gif",
+            "gif3": "gifs/n_gif3.gif"
+          },
+          "images": [
+            { "word": "Nest", "image": "images/nest.png", "emoji": "🪹" },
+            { "word": "Nut", "image": "images/nut.png", "emoji": "🥜" },
+            { "word": "Net", "image": "images/net.png", "emoji": "🕸️" }
+          ]
+        }
+      ]
+    };
+
+    // Populate extra structural elements for visual consistency A-Z
+    (function generateFullAZFallback() {
+      const allLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+      allLetters.forEach(char => {
+        const found = LOCAL_MANIFEST_FALLBACK.letters.some(l => l.letter === char);
+        if (!found) {
+          LOCAL_MANIFEST_FALLBACK.letters.push({
+            "letter": char,
+            "sound": char.toLowerCase(),
+            "emoji": "🎨",
+            "gifs": {
+              "gif1": "gifs/blank.gif",
+              "gif2": "gifs/blank.gif",
+              "gif3": "gifs/blank.gif"
+            },
+            "images": [
+              { "word": `${char}-Object`, "image": `images/${char.toLowerCase()}_image.png`, "emoji": "🖼️" }
+            ]
+          });
+        }
+      });
+      // Sort to alphabetical arrangement
+      LOCAL_MANIFEST_FALLBACK.letters.sort((a,b) => a.letter.localeCompare(b.letter));
+    })();
+
+
+    // --- SYNC ENGINE PROTOCOLS ---
+    
+    // Hash state extractor (#room=...&role=...)
+    function parseHashParams() {
+      const hash = window.location.hash.substring(1);
+      const params = {};
+      if (!hash) return params;
+      hash.split('&').forEach(pair => {
+        const parts = pair.split('=');
+        if (parts.length === 2) {
+          params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+        }
+      });
+      return params;
+    }
+
+    // LiveTutor selector recovery (id first, tag:nth-of-type selector path fallback)
+    function getUniqueSelector(el) {
+      if (!el) return null;
+      if (el.id) return `#${el.id}`;
+      let path = [];
+      while (el && el.nodeType === Node.ELEMENT_NODE) {
+        let selector = el.nodeName.toLowerCase();
+        let sib = el, sibCount = 0;
+        while (sib) {
+          if (sib.nodeName === el.nodeName) sibCount++;
+          sib = sib.previousElementSibling;
+        }
+        if (sibCount > 1) {
+          selector += `:nth-of-type(${sibCount})`;
+        }
+        path.unshift(selector);
+        el = el.parentNode;
+      }
+      return path.join(' > ');
+    }
+
+    // Outgoing Transmitter (Intercepts physical clicks only)
+    document.addEventListener('click', function(e) {
+      if (window.isSimulating) return; // Critical gate context ONLY at listener header
+
+      const clickable = e.target.closest('button, [id^="tile-"], [id^="btn-"], .action-card');
+      if (clickable && clickable.id) {
+        const selector = getUniqueSelector(clickable);
+        if (window.parent && window.parent.postMessage) {
+          window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: {
+              type: 'UNIVERSAL_CLICK',
+              selector: selector
+            }
+          }, '*');
+        }
+      }
+    });
+
+    // Incoming Receiver (Standard universal message consumer)
+    window.addEventListener('message', function(event) {
+      const envelope = event.data;
+      if (envelope && envelope.type === 'EXECUTE_UNIVERSAL_ACTION') {
+        const action = envelope.action;
+        if (action && action.selector) {
+          const matchedTarget = document.querySelector(action.selector);
+          if (matchedTarget) {
+            window.isSimulating = true;
+            matchedTarget.click();
+            window.isSimulating = false;
+          }
+        }
+      }
+    });
+
+
+    // --- MULTIPATH MANIFEST LOADER ---
+    async function loadManifest() {
+      const candidates = [
+        'manifest.json',
+        'data/manifest.json',
+        'images/letters_manifest.json'
+      ];
+
+      let loadedFrom = null;
+
+      for (let path of candidates) {
+        try {
+          console.log(`Checking path: ${path}`);
+          const response = await fetch(path);
+          if (response.ok) {
+            const parsed = await response.json();
+            if (parsed && parsed.group1 && parsed.letters) {
+              manifestData = parsed;
+              loadedFrom = path;
+              console.log(`Successfully fetched manifest from: ${path}`);
+              break;
+            }
+          }
+        } catch (e) {
+          console.warn(`Path failed: ${path}`);
+        }
+      }
+
+      if (!manifestData) {
+        console.warn("No active remote manifest resolved. Running standard built-in fallback set.");
+        manifestData = LOCAL_MANIFEST_FALLBACK;
+      }
+
+      showManifestLoadStatus(loadedFrom);
+      setupWorkspaceUI();
+    }
+
+    // Visible on-screen confirmation of whether the real manifest.json
+    // loaded, or the code silently fell back to the built-in group1-only
+    // sample data. Shows for a few seconds in the corner.
+    function showManifestLoadStatus(loadedFrom) {
+      const el = document.createElement('div');
+      el.style.cssText = `position:fixed; bottom:10px; left:10px; z-index:99999; max-width:90vw;
+        padding:8px 14px; border-radius:10px; font-family:sans-serif; font-size:12px; font-weight:700;
+        color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.25);`;
+      if (loadedFrom) {
+        el.style.background = '#059669';
+        el.innerText = `✅ Loaded manifest from "${loadedFrom}" (${manifestData.letters.length} sounds, ${getAvailableGroupKeysForStatus()} groups)`;
+      } else {
+        el.style.background = '#dc2626';
+        el.innerText = `⚠️ Could not fetch manifest.json — using built-in Group 1 only. Check: are you opening this via file:// (won't work) or a real server/Live Server (needed)? Is manifest.json in the same folder as this file?`;
+      }
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 9000);
+    }
+
+    function getAvailableGroupKeysForStatus() {
+      return Object.keys(manifestData).filter(k => /^group\d+$/.test(k) && Array.isArray(manifestData[k]) && manifestData[k].length > 0).length;
+    }
+
+
+    // --- INTERACTIVE VISUAL CONTROLS ---
+
+    let ws1ActiveGroupKey = 'group1';
+
+    function getAvailableGroupKeys() {
+      // Picks up any group1..group7 (or more) keys present in the manifest
+      return Object.keys(manifestData)
+        .filter(k => /^group\d+$/.test(k) && Array.isArray(manifestData[k]) && manifestData[k].length > 0)
+        .sort((a, b) => parseInt(a.replace('group','')) - parseInt(b.replace('group','')));
+    }
+
+    function renderWS1GroupTabs() {
+      const tabWrap = document.getElementById('ws1-group-tabs');
+      tabWrap.innerHTML = "";
+      const groupKeys = getAvailableGroupKeys();
+
+      if (!groupKeys.includes(ws1ActiveGroupKey)) {
+        ws1ActiveGroupKey = groupKeys[0] || 'group1';
+      }
+
+      groupKeys.forEach(key => {
+        const num = key.replace('group', '');
+        const btn = document.createElement('button');
+        btn.id = `tile-ws1-group-${key}`;
+        const isActive = key === ws1ActiveGroupKey;
+        btn.className = isActive
+          ? "action-card px-4 py-2 bg-amber-400 text-white font-extrabold text-sm rounded-xl border-b-2 border-amber-600 cursor-pointer"
+          : "action-card px-4 py-2 bg-white text-slate-500 font-bold text-sm rounded-xl border-2 border-slate-200 hover:border-amber-300 cursor-pointer";
+        btn.innerText = `Group ${num}`;
+        btn.onclick = () => {
+          ws1ActiveGroupKey = key;
+          setupWorkspaceUI();
+        };
+        tabWrap.appendChild(btn);
+      });
+    }
+
+    function setupWorkspaceUI() {
+      // Setup Room & Role Visuals
+      const hashData = parseHashParams();
+      room = hashData.room || 'default_room';
+      role = hashData.role || 'guest';
+      
+      document.getElementById('text-room').innerText = room;
+      document.getElementById('text-role').innerText = role;
+
+      renderWS1GroupTabs();
+
+      // Populate Worksheet 1 Letter Tiles for the currently active group
+      const ws1Grid = document.getElementById('ws1-letters-grid');
+      ws1Grid.innerHTML = "";
+
+      const activeGroupList = manifestData[ws1ActiveGroupKey] || manifestData.group1 || [];
+      activeGroupList.forEach(char => {
+        const letterObj = manifestData.letters.find(l => l.letter === char.toUpperCase());
+        if (letterObj) {
+          const tile = document.createElement('button');
+          tile.id = `tile-ws1-letter-${char}`;
+          tile.className = "action-card w-20 h-20 bg-white hover:bg-amber-50 border-4 border-amber-200 hover:border-amber-400 rounded-3xl flex flex-col items-center justify-center shadow-sm hover:shadow-md transform hover:scale-105 active:scale-95 transition-all cursor-pointer relative";
+          tile.innerHTML = `
+            <span class="text-2xl font-extrabold text-slate-700 pointer-events-none">${char}</span>
+            <span class="text-xs text-slate-400 font-bold pointer-events-none">${letterObj.sound}</span>
+          `;
+          tile.onclick = () => selectWS1Letter(letterObj);
+          ws1Grid.appendChild(tile);
+        }
+      });
+
+      // Populate Worksheet 2 AZ Index List
+      const ws2Index = document.getElementById('ws2-index-container');
+      ws2Index.innerHTML = "";
+      
+      manifestData.letters.forEach(letterObj => {
+        const tile = document.createElement('button');
+        tile.id = `tile-ws2-letter-${letterObj.letter}`;
+        tile.className = "action-card w-12 h-12 bg-white hover:bg-emerald-50 border-2 border-slate-200 hover:border-emerald-400 rounded-2xl flex items-center justify-center font-extrabold text-lg text-slate-700 hover:text-emerald-600 transition-all cursor-pointer shadow-sm relative";
+        tile.innerHTML = `<span class="pointer-events-none">${letterObj.letter}</span>`;
+        tile.onclick = () => selectWS2Letter(letterObj);
+        ws2Index.appendChild(tile);
+      });
+    }
+
+    // Navigation Switches
+    function showScreen(screenId) {
+      document.getElementById('screen-menu').classList.add('hidden');
+      document.getElementById('screen-ws1').classList.add('hidden');
+      document.getElementById('screen-ws2').classList.add('hidden');
+      document.getElementById('btn-back-menu').classList.remove('hidden');
+
+      if (screenId === 'menu') {
+        document.getElementById('screen-menu').classList.remove('hidden');
+        document.getElementById('btn-back-menu').classList.add('hidden');
+      } else {
+        document.getElementById(screenId).classList.remove('hidden');
+      }
+    }
+
+
+    // --- SPEECH ENGINE FUNCTION ---
+    function executeAudioSpokenInstruction(soundText) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); 
+        const actionUtterance = new SpeechSynthesisUtterance(`Sound, ${soundText}`);
+        actionUtterance.rate = 0.8;
+        actionUtterance.pitch = 1.1;
+        actionUtterance.lang = 'en-US';
+        window.speechSynthesis.speak(actionUtterance);
+      }
+    }
+
+
+    // --- IMAGE LOADING WITH SECURE FALLBACKS ---
+    function safelyAssignImageSource(imgEl, mainSrc, fallbackEmoji, alternateTerm) {
+      imgEl.src = encodeURI(mainSrc);
+      imgEl.classList.remove('hidden');
+
+      let attemptIndex = 0;
+      imgEl.onerror = function() {
+        attemptIndex++;
+        if (attemptIndex === 1) {
+          // Attempt lowercase conversion
+          imgEl.src = encodeURI(mainSrc.toLowerCase());
+        } else if (attemptIndex === 2) {
+          // Attempt uppercase extension check
+          imgEl.src = encodeURI(mainSrc.replace('.png', '.PNG').replace('.gif', '.GIF'));
+        } else if (attemptIndex === 3) {
+          // Swap image box completely for elegant emoji view
+          imgEl.src = `https://placehold.co/150x150/e0e7ff/3730a3?text=${alternateTerm || 'Phonics'}`;
+        } else {
+          // Terminate attempts to prevent infinity loop
+          imgEl.onerror = null;
+        }
+      };
+    }
+
+
+    // --- WORKSHEET 1 CONTROLS (PHASES & TIMERS) ---
+
+    function selectWS1Letter(letterObj) {
+      ws1ActiveLetterObj = letterObj;
+      ws1ActiveStep = 1;
+      ws1ActiveStoryIndex = 0;
+      ws1AwaitingPostCompleteAction = false;
+
+      document.getElementById('ws1-letters-grid').classList.add('hidden');
+      document.getElementById('ws1-interactive-area').classList.remove('hidden');
+
+      executeAudioSpokenInstruction(letterObj.sound);
+      renderWS1ActiveStepState();
+    }
+
+    function renderWS1ActiveStepState() {
+      if (!ws1ActiveLetterObj) return;
+
+      if (ws1StepTimer) clearTimeout(ws1StepTimer);
+      document.getElementById('confetti-container').innerHTML = "";
+      document.getElementById('ws1-complete-check').classList.add('hidden');
+
+      document.getElementById('ws1-sound-letter').innerText = ws1ActiveLetterObj.letter;
+
+      const viewer = document.getElementById('ws1-gif-viewer');
+      const nextBtn = document.getElementById('btn-ws1-next');
+
+      const stories = ws1ActiveLetterObj.stories || [];
+      const totalStories = stories.length;
+
+      if (totalStories === 0) {
+        document.getElementById('ws1-sound-instruction').innerText = `No gif story uploaded yet for "${ws1ActiveLetterObj.letter}".`;
+        nextBtn.disabled = true;
+        return;
+      }
+
+      const currentStory = stories[ws1ActiveStoryIndex] || stories[0];
+      const storyLabel = totalStories > 1 ? ` — Story ${ws1ActiveStoryIndex + 1}/${totalStories}` : '';
+      document.getElementById('ws1-sound-instruction').innerText = `Phonics Sound Action: "${ws1ActiveLetterObj.sound}"${storyLabel}`;
+
+      // Sync active tracking indicator dots
+      document.getElementById('dot-step-1').className = `w-3 h-3 rounded-full transition-all ${ws1ActiveStep === 1 ? 'bg-amber-400 scale-125' : 'bg-slate-200'}`;
+      document.getElementById('dot-step-2').className = `w-3 h-3 rounded-full transition-all ${ws1ActiveStep === 2 ? 'bg-amber-400 scale-125' : 'bg-slate-200'}`;
+      document.getElementById('dot-step-3').className = `w-3 h-3 rounded-full transition-all ${ws1ActiveStep === 3 ? 'bg-amber-400 scale-125' : 'bg-slate-200'}`;
+
+      if (ws1ActiveStep === 1) {
+        safelyAssignImageSource(viewer, currentStory.gif1, ws1ActiveLetterObj.emoji, ws1ActiveLetterObj.letter);
+        nextBtn.innerHTML = `<span>Next Step (2/3)</span> ➡️`;
+        nextBtn.disabled = false;
+        nextBtn.className = "px-6 py-2.5 bg-amber-400 hover:bg-amber-500 text-white rounded-xl font-extrabold border-b-4 border-amber-600 shadow-md transition-all text-sm flex items-center gap-1 cursor-pointer";
+      } 
+      else if (ws1ActiveStep === 2) {
+        safelyAssignImageSource(viewer, currentStory.gif2, ws1ActiveLetterObj.emoji, ws1ActiveLetterObj.letter);
+        nextBtn.innerHTML = `<span>Activate Sound (3/3)</span> ➡️`;
+        nextBtn.disabled = false;
+        nextBtn.className = "px-6 py-2.5 bg-amber-400 hover:bg-amber-500 text-white rounded-xl font-extrabold border-b-4 border-amber-600 shadow-md transition-all text-sm flex items-center gap-1 cursor-pointer";
+      } 
+      else if (ws1ActiveStep === 3) {
+        // Step 3 now loops just like steps 1 & 2 — no auto-timer.
+        // Completion only happens when the teacher/student explicitly
+        // taps "Mark Complete".
+        safelyAssignImageSource(viewer, currentStory.gif3, ws1ActiveLetterObj.emoji, ws1ActiveLetterObj.letter);
+        nextBtn.innerHTML = `<span>Mark Complete</span> ✅`;
+        nextBtn.disabled = false;
+        nextBtn.className = "px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-extrabold border-b-4 border-emerald-700 shadow-md transition-all text-sm flex items-center gap-1 cursor-pointer";
+      }
+    }
+
+    function showWS1CompletionStarBurst() {
+      document.getElementById('ws1-complete-check').classList.remove('hidden');
+      const nextBtn = document.getElementById('btn-ws1-next');
+      ws1AwaitingPostCompleteAction = true;
+
+      const stories = ws1ActiveLetterObj.stories || [];
+      const hasNextStory = (ws1ActiveStoryIndex + 1) < stories.length;
+
+      nextBtn.innerHTML = hasNextStory ? `<span>Next Story</span> ➡️` : `<span>Restart Steps</span> 🔄`;
+      nextBtn.disabled = false;
+      nextBtn.className = "px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-extrabold border-b-4 border-emerald-700 shadow-md transition-all text-sm flex items-center gap-1 cursor-pointer";
+
+      // CSS Particle Confetti Generator
+      const space = document.getElementById('confetti-container');
+      space.innerHTML = "";
+      const palette = ["#fbbf24", "#34d399", "#60a5fa", "#f472b6", "#a78bfa"];
+      for (let i = 0; i < 40; i++) {
+        const particle = document.createElement('div');
+        particle.className = "confetti";
+        particle.style.backgroundColor = palette[Math.floor(Math.random() * palette.length)];
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.animationDelay = `${Math.random() * 1.5}s`;
+        particle.style.transform = `scale(${Math.random() * 0.8 + 0.4})`;
+        space.appendChild(particle);
+      }
+    }
+
+
+    // --- WORKSHEET 2 CONTROLS (PICTURE GALLERY BROWSER) ---
+
+    function selectWS2Letter(letterObj) {
+      document.getElementById('ws2-index-container').classList.add('hidden');
+      
+      const targetLabel = document.getElementById('ws2-active-letter');
+      targetLabel.innerText = letterObj.letter;
+
+      const grid = document.getElementById('ws2-gallery-grid');
+      grid.innerHTML = "";
+
+      letterObj.images.forEach((item, idx) => {
+        const block = document.createElement('div');
+        block.className = "bg-slate-50 border-2 border-slate-100 rounded-3xl p-4 flex flex-col items-center justify-center gap-3 shadow-inner relative overflow-hidden";
+        
+        // Add ID to child nodes to preserve LiveTutor selection logic if tapped
+        block.id = `gallery-block-${letterObj.letter}-${idx}`;
+
+        block.innerHTML = `
+          <div class="w-28 h-28 flex items-center justify-center bg-white rounded-2xl shadow-sm border border-slate-100 p-2 relative">
+            <img class="w-full h-full object-contain" src="${item.image}" alt="${item.word}">
+            <span class="text-4xl absolute hidden" id="emoji-${letterObj.letter}-${idx}">${item.emoji || '🖼️'}</span>
+          </div>
+          <span class="text-lg font-extrabold text-slate-700">${item.word}</span>
+        `;
+
+        const imageElement = block.querySelector('img');
+        const fallbackSpan = block.querySelector('span');
+
+        // Robust onerror execution specific to Worksheet 2 browser card
+        imageElement.onerror = function() {
+          imageElement.classList.add('hidden');
+          fallbackSpan.classList.remove('hidden');
+        };
+
+        grid.appendChild(block);
+      });
+
+      document.getElementById('ws2-gallery-area').classList.remove('hidden');
+    }
+
+
+    // --- TOP LEVEL NAV EVENTS ---
+
+    document.getElementById('btn-mode-ws1').onclick = function() {
+      showScreen('screen-ws1');
+      // Always reset back to selection list grid view
+      document.getElementById('ws1-letters-grid').classList.remove('hidden');
+      document.getElementById('ws1-interactive-area').classList.add('hidden');
+    };
+
+    document.getElementById('btn-mode-ws2').onclick = function() {
+      showScreen('screen-ws2');
+      // Always reset back to selection index view
+      document.getElementById('ws2-index-container').classList.remove('hidden');
+      document.getElementById('ws2-gallery-area').classList.add('hidden');
+    };
+
+    document.getElementById('btn-back-menu').onclick = function() {
+      if (ws1StepTimer) clearTimeout(ws1StepTimer);
+      showScreen('menu');
+    };
+
+    document.getElementById('btn-ws1-back').onclick = function() {
+      if (ws1StepTimer) clearTimeout(ws1StepTimer);
+      document.getElementById('ws1-letters-grid').classList.remove('hidden');
+      document.getElementById('ws1-interactive-area').classList.add('hidden');
+    };
+
+    document.getElementById('btn-ws2-return').onclick = function() {
+      document.getElementById('ws2-index-container').classList.remove('hidden');
+      document.getElementById('ws2-gallery-area').classList.add('hidden');
+    };
+
+    document.getElementById('btn-ws1-next').onclick = function() {
+      if (ws1AwaitingPostCompleteAction) {
+        ws1AwaitingPostCompleteAction = false;
+        const stories = ws1ActiveLetterObj.stories || [];
+        if ((ws1ActiveStoryIndex + 1) < stories.length) {
+          ws1ActiveStoryIndex++;
+        }
+        ws1ActiveStep = 1;
+        renderWS1ActiveStepState();
+        return;
+      }
+
+      if (ws1ActiveStep === 1) {
+        ws1ActiveStep = 2;
+        renderWS1ActiveStepState();
+      } else if (ws1ActiveStep === 2) {
+        ws1ActiveStep = 3;
+        renderWS1ActiveStepState();
+      } else if (ws1ActiveStep === 3) {
+        // Manual completion — no auto-timer anymore.
+        showWS1CompletionStarBurst();
+      }
+    };
+
+
+    // --- ON COMPONENT BOOTSTRAP ---
+    window.onload = function() {
+      // Dynamic fallback updates if hash changes during live browser usage
+      window.onhashchange = function() {
+        setupWorkspaceUI();
+      };
+      loadManifest();
+    };
+  </script>
+</body>
+</html>

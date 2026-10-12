@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🔢 Number Blast!</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<!-- ============================================================
+     PART 1 — RELATIVE WRAPPER SYNC BRIDGE (PERFECTED)
+     ============================================================ -->
+<script>
+    window.isSimulating = false;
+    const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#', '?'));
+    const roomId = urlParams.get('room') || '54321';
+    
+    let localSeed = 0;
+    // 🔥 CRITICAL: Explicit Seed Setter function
+    window.setSeed = function(str) {
+        let t = 0;
+        for (let i = 0; i < str.length; i++) {
+            t = str.charCodeAt(i) + ((t << 5) - t);
+        }
+        localSeed = Math.abs(t);
+    };
+    window.setSeed(roomId);
+
+    // 🔥 CRITICAL: Only game logic uses this. Stars/Confetti use normal Math.random
+    window.seededRandom = function() {
+        let x = Math.sin(localSeed++) * 10000;
+        return x - Math.floor(x);
+    };
+
+    function getUniqueSelector(el) {
+        if (!el) return null;
+        if (el.id) return '#' + el.id;
+        if (el === document.body) return 'body';
+        let path = [];
+        while (el && el.nodeType === Node.ELEMENT_NODE) {
+            let selector = el.nodeName.toLowerCase();
+            if (el.id) {
+                selector = '#' + el.id;
+                path.unshift(selector);
+                break;
+            } else {
+                if (el.className) {
+                    const classes = Array.from(el.classList)
+                        .filter(c => !c.includes(':') && !c.includes('[') && !c.includes(']') && !c.includes('/'))
+                        .join('.');
+                    if (classes) selector += '.' + classes;
+                }
+                let sibling = el;
+                let nth = 1;
+                while (sibling = sibling.previousElementSibling) {
+                    if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) { nth++; }
+                }
+                selector += ':nth-of-type(' + nth + ')';
+                path.unshift(selector);
+            }
+            el = el.parentNode;
+        }
+        return path.join(' > ');
+    }
+
+    let actionIdCounter = 0;
+    document.addEventListener('click', (e) => {
+        if (e.isTrusted === false || window.isSimulating) return;
+        const selector = getUniqueSelector(e.target);
+        if (!selector) return;
+
+        actionIdCounter++;
+        window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: {
+                type: 'UNIVERSAL_CLICK',
+                selector: selector,
+                seed: localSeed,
+                actionId: 'click_' + actionIdCounter + '_' + Date.now()
+            }
+        }, '*');
+    }, true);
+
+    // 🔥 THE MAGIC FIX: TRACK MOUSE RELATIVE TO THE APP WRAPPER
+    let lastCursorTime = 0;
+    document.addEventListener('mousemove', (e) => {
+        const now = Date.now();
+        if (now - lastCursorTime < 40) return;
+        lastCursorTime = now;
+        
+        const wrapper = document.getElementById('app-wrapper');
+        if(wrapper) {
+            const rect = wrapper.getBoundingClientRect();
+            let pctX = ((e.clientX - rect.left) / rect.width) * 100;
+            let pctY = ((e.clientY - rect.top) / rect.height) * 100;
+            
+            window.parent.postMessage({
+              type: 'IFRAME_ACTION_TRIGGERED',
+              payload: { type: 'UNIVERSAL_CURSOR', pctX: pctX, pctY: pctY }
+            }, '*');
+        }
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+            const now = Date.now();
+            if (now - lastCursorTime < 40) return;
+            lastCursorTime = now;
+            
+            const wrapper = document.getElementById('app-wrapper');
+            if(wrapper) {
+                const rect = wrapper.getBoundingClientRect();
+                let pctX = ((e.touches[0].clientX - rect.left) / rect.width) * 100;
+                let pctY = ((e.touches[0].clientY - rect.top) / rect.height) * 100;
+                
+                window.parent.postMessage({
+                  type: 'IFRAME_ACTION_TRIGGERED',
+                  payload: { type: 'UNIVERSAL_CURSOR', pctX: pctX, pctY: pctY }
+                }, '*');
+            }
+        }
+    }, { passive: true });
+
+    // 🔥 GENTLE DIMENSION MANAGEMENT (NO ZOOM BUG)
+    function applyScale() {
+        document.body.style.transform = 'none';
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+    }
+    window.addEventListener('resize', applyScale);
+    window.addEventListener('load', applyScale);
+
+    let lastProcessedActionId = null;
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+            const action = event.data.action;
+            
+            if (action.type === 'UNIVERSAL_CURSOR') {
+                const c = document.getElementById('remote-cursor');
+                if (c) {
+                    // Coordinates are now percentages of the wrapper!
+                    c.style.left = action.pctX + '%';
+                    c.style.top = action.pctY + '%';
+                    c.style.display = 'block';
+                }
+                return;
+            }
+
+            const currentActionId = action.actionId || action.timestamp;
+            if (currentActionId && currentActionId === lastProcessedActionId) return;
+            lastProcessedActionId = currentActionId;
+
+            window.isSimulating = true;
+            if (action.seed !== undefined) {
+                localSeed = action.seed;
+            }
+
+            if (action.type === 'UNIVERSAL_CLICK') {
+                const element = document.querySelector(action.selector);
+                if (element) {
+                    element.click();
+                }
+            }
+            setTimeout(() => { window.isSimulating = false; }, 50);
+        }
+    });
+</script>
+
+<!-- ============================================================
+     PART 2 — STYLES (GOLDEN TEMPLATE)
+     ============================================================ -->
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+/* Pointer Events Protection */
+button *, .card-wrapper *, .pair-btn * { pointer-events: none; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  width: 100%;
+  min-height: 100vh;
+  overflow-y: auto; overflow-x: hidden;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  color: #fff;
+  display: flex; /* Centers the wrapper naturally */
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.star-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.star { position: absolute; border-radius: 50%; background: white; animation: twinkle linear infinite; }
+@keyframes twinkle {
+  0%, 100% { opacity: 0.1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.4); }
+}
+
+/* 🔥 THE CONTAINER FOR PERFECT SYNC AND SCALING */
+#app-wrapper {
+    position: relative;
+    width: 95%; 
+    max-width: 900px;
+    height: 90vh; /* Takes most of the screen safely */
+    max-height: 650px;
+    background: rgba(255,255,255,0.03); 
+    border-radius: 1.5rem;
+    box-shadow: 0 12px 50px rgba(0,0,0,0.3);
+    border: 2px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Keeps screens inside the wrapper */
+    z-index: 1;
+}
+
+/* 🔥 RED DOT RELATIVE TO WRAPPER */
+#remote-cursor {
+    position: absolute; width: 18px; height: 18px;
+    background: red; border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 10px rgba(255,0,0,.6);
+    pointer-events: none; z-index: 99999;
+    transform: translate(-50%,-50%); display: none;
+}
+
+/* Screens are flow-based inside the wrapper */
+.screen { 
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    width: 100%; flex: 1; padding: 20px; z-index: 10; 
+}
+.screen.active { display: flex; animation: fadeIn 0.3s ease-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.game-title {
+  font-size: clamp(2.2rem, 6vw, 3.5rem); font-weight: 900; text-align: center; line-height: 1.1;
+  background: linear-gradient(135deg, #f9ca24, #f0932b, #eb4d4b, #c77dff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); margin-bottom: 5px;
+}
+.game-sub { font-size: clamp(0.8rem, 2vw, 1rem); font-weight: 800; color: rgba(255,255,255,0.6);
+  letter-spacing: 3px; text-transform: uppercase; margin-bottom: 25px; }
+
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 450px; }
+.menu-btn {
+  border: none; border-radius: 15px; padding: 15px 10px;
+  font-family: 'Nunito', sans-serif; font-weight: 900; font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+  color: white; cursor: pointer;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.3), 0 8px 15px rgba(0,0,0,0.3);
+  transition: transform 0.1s, box-shadow 0.1s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.menu-btn:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(0,0,0,0.3); }
+.menu-btn .icon { font-size: 2rem; }
+.btn-b1 { background: linear-gradient(135deg, #f72585, #b5179e); }
+.btn-b2 { background: linear-gradient(135deg, #4361ee, #4cc9f0); }
+.btn-b3 { background: linear-gradient(135deg, #06d6a0, #118ab2); }
+.btn-b4 { background: linear-gradient(135deg, #f9ca24, #f0932b); }
+.btn-b5 { background: linear-gradient(135deg, #7209b7, #3a0ca3); grid-column: 1/-1; flex-direction: row; justify-content: center; padding: 12px; }
+
+.section-label { font-size: 0.9rem; font-weight: 900; color: rgba(255,255,255,0.5); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+.pair-row { display: flex; gap: 10px; margin-bottom: 25px; justify-content: center; flex-wrap: wrap;}
+.pair-btn {
+  background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+  color: white; border-radius: 12px; padding: 10px 18px; font-family: 'Nunito', sans-serif;
+  font-weight: 900; font-size: 1.1rem; cursor: pointer; transition: all 0.1s;
+}
+.pair-btn.active { background: #f9ca24; border-color: #f9ca24; color: #333; transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
+
+.btn-back {
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  position: absolute; top: 15px; left: 15px; z-index: 50;
+  transition: background 0.2s;
+}
+.btn-back:hover { background: rgba(255,255,255,0.3); }
+
+/* 🔥 FLUID & CONTROLLED GAME BOARD */
+.game-container {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; height: 100%; flex: 1; padding-top: 30px;
+}
+.game-bar {
+  display: inline-flex; align-items: center; gap: 10px; margin-bottom: 15px;
+  background: rgba(255,255,255,0.1); border-radius: 50px;
+  padding: 8px 20px; font-weight: 900; font-size: 1rem; color: rgba(255,255,255,0.9);
+}
+
+#board {
+  display: grid; gap: 12px; padding: 15px;
+  background: rgba(255,255,255,0.06); border-radius: 20px;
+  border: 3px solid rgba(255,255,255,0.1);
+  width: 100%; max-width: 600px; /* Restricts overall board width */
+  justify-content: center; align-content: center;
+}
+
+/* 🔥 NORMAL SIZE CARDS (NO GIANT SIZES) */
+.card-wrapper { 
+    aspect-ratio: 1; 
+    width: 100%; 
+    max-width: 110px; /* Restricts individual card size */
+    max-height: 110px;
+    perspective: 700px; cursor: pointer; 
+}
+
+.card-inner {
+  position: absolute; inset: 0; transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.card-wrapper.flipped .card-inner, .card-wrapper.matched .card-inner { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; inset: 0; border-radius: 12px;
+  backface-visibility: hidden; display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.card-back {
+  background: linear-gradient(135deg, #4361ee, #3a0ca3); border: 3px solid rgba(255,255,255,0.3);
+  font-size: clamp(1.5rem, 4vw, 2.5rem); box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+}
+.card-front { transform: rotateY(180deg); background: white; border: 3px solid rgba(0,0,0,0.1); }
+.card-front img { width: 90%; height: 90%; object-fit: contain; }
+.card-wrapper.matched .card-front { border-color: #06d6a0; box-shadow: 0 0 15px rgba(6,214,160,0.5); }
+
+#overlay { display: none; position: absolute; inset: 0; z-index: 400; background: rgba(0,0,0,0.6); border-radius: 1.5rem; }
+#overlay.active { display: block; }
+#reveal-banner {
+  display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #f72585, #7209b7); border-radius: 20px; padding: 15px 30px;
+  font-size: 1.5rem; font-weight: 900; color: white; text-align: center; border: 4px solid rgba(255,255,255,0.4);
+  z-index: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.5); white-space: nowrap;
+}
+
+.win-emoji { font-size: 5rem; animation: bounce 0.5s ease infinite alternate; }
+@keyframes bounce { from { transform: scale(1); } to { transform: scale(1.1); } }
+.win-title { font-size: 3rem; font-weight: 900; background: linear-gradient(135deg, #f9ca24, #06d6a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0; }
+.win-sub { font-size: 1.1rem; font-weight: 800; color: rgba(255,255,255,0.7); margin-bottom: 25px; }
+.win-btn { border: none; border-radius: 12px; padding: 15px 25px; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 1.1rem; color: white; cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,0.25); transition: transform 0.1s, box-shadow 0.1s;}
+.win-btn:active { transform: translateY(6px); box-shadow: 0 0 0 transparent; }
+</style>
+</head>
+<body>
+
+<div class="star-bg" id="star-bg"></div>
+
+<!-- 🔥 EVERYTHING GOES INSIDE THIS APP-WRAPPER -->
+<div id="app-wrapper">
+
+    <!-- RED DOT (Now absolute to the wrapper) -->
+    <div id="remote-cursor"></div>
+
+    <!-- ── SCREEN 1: MENU ── -->
+    <div class="screen active" id="scr-menu">
+      <div class="game-title">🔢 Number<br>Blast!</div>
+      <div class="game-sub">Memory Match Game</div>
+      <div class="menu-grid">
+        <button id="btn-r1" class="menu-btn btn-b1" onclick="openRange(1,5)"><span class="icon">🌱</span> 1 to 5</button>
+        <button id="btn-r2" class="menu-btn btn-b2" onclick="openRange(6,10)"><span class="icon">🚀</span> 6 to 10</button>
+        <button id="btn-r3" class="menu-btn btn-b3" onclick="openRange(11,20)"><span class="icon">🌟</span> 11 to 20</button>
+        <button id="btn-r4" class="menu-btn btn-b4" onclick="openRange(1,20)"><span class="icon">🔥</span> 1 to 20</button>
+        <button id="btn-custom" class="menu-btn btn-b5" onclick="openCustomScreen()"><span class="icon">🎯</span> Custom Range</button>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 2: SETUP (RANGE) ── -->
+    <div class="screen" id="scr-range">
+      <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+          <button class="btn-back" id="back-1" onclick="show('scr-menu')">◀</button>
+          <div style="font-size:1.8rem; font-weight:900; margin-bottom:20px;" id="range-title"></div>
+          <div class="section-label">Pairs to match:</div>
+          <div class="pair-row" id="range-pairs"></div>
+          <button id="btn-play" class="menu-btn btn-b1" style="width:250px; flex-direction:row; padding:15px; margin-top: 10px;" onclick="startGameParams()">
+            <span style="font-size:1.4rem;">▶</span> Play
+          </button>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 3: SETUP (CUSTOM) ── -->
+    <div class="screen" id="scr-custom">
+      <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+          <button class="btn-back" id="back-custom" onclick="show('scr-menu')">◀</button>
+          <div style="font-size:1.8rem; font-weight:900; margin-bottom:20px;">Custom Range</div>
+          
+          <div class="section-label">Pairs to match:</div>
+          <div class="pair-row" id="custom-pairs"></div>
+
+          <div style="display:flex; gap:20px; margin-bottom:30px; align-items:center; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px;">
+            <div style="display:flex; flex-direction:column; align-items:center;">
+              <span style="font-size:0.9rem; font-weight:800; opacity:0.6; margin-bottom: 5px;">FROM</span>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <button id="from-min-btn" class="pair-btn" onclick="adjustFrom(-1)">−</button>
+                <span id="from-val" style="font-size:1.8rem; font-weight:900; min-width:40px; text-align:center;">1</span>
+                <button id="from-pls-btn" class="pair-btn" onclick="adjustFrom(1)">+</button>
+              </div>
+            </div>
+            <span style="font-size:2rem; opacity:0.4;">→</span>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+              <span style="font-size:0.9rem; font-weight:800; opacity:0.6; margin-bottom: 5px;">TO</span>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <button id="to-min-btn" class="pair-btn" onclick="adjustTo(-1)">−</button>
+                <span id="to-val" style="font-size:1.8rem; font-weight:900; min-width:40px; text-align:center;">10</span>
+                <button id="to-pls-btn" class="pair-btn" onclick="adjustTo(1)">+</button>
+              </div>
+            </div>
+          </div>
+
+          <button id="btn-play-custom" class="menu-btn btn-b3" style="width:250px; flex-direction:row; padding:15px;" onclick="startCustomGame()">
+            <span style="font-size:1.4rem;">▶</span> Play
+          </button>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 4: GAME ── -->
+    <div class="screen" id="scr-game" style="padding: 20px 10px;">
+      <button class="btn-back" id="back-2" onclick="show('scr-menu')" style="position: absolute; top: 15px; left: 15px;">◀</button>
+      <div class="game-container">
+        <div class="game-bar" id="game-info">Loading...</div>
+        <div id="board"></div>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 5: WIN ── -->
+    <div class="screen" id="scr-win">
+      <div class="win-emoji">🎉</div>
+      <div class="win-title">PERFECT!</div>
+      <div class="win-sub">You matched them all!</div>
+      <div style="display:flex; gap:15px; margin-top: 10px;">
+        <button id="btn-again" class="win-btn" style="background:#06d6a0;" onclick="replay()">🔄 Again</button>
+        <button id="btn-home" class="win-btn" style="background:#4361ee;" onclick="show('scr-menu')">🏠 Menu</button>
+      </div>
+    </div>
+
+    <!-- Absolute to the Wrapper -->
+    <div id="overlay"></div>
+    <div id="reveal-banner"></div>
+
+</div> <!-- End of app-wrapper -->
+
+<!-- ============================================================
+     PART 3 — GAME LOGIC
+     ============================================================ -->
+<script>
+// 🔥 Use NORMAL Math.random for visual background so it doesn't ruin the seed
+const bg = document.getElementById('star-bg');
+for (let i = 0; i < 40; i++) {
+  const s = document.createElement('div'); s.className = 'star';
+  const size = 1 + Math.random() * 2; 
+  s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${2+Math.random()*4}s;animation-delay:${-Math.random()*4}s;`;
+  bg.appendChild(s);
+}
+
+// Data Utils - Uses the LiveTutor Seed strictly
+function shuf(arr) {
+  let a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(window.seededRandom() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const IMG_CACHE = {};
+function getImg(num) {
+  if (IMG_CACHE[num]) return IMG_CACHE[num];
+  const cv = document.createElement('canvas'); cv.width = 160; cv.height = 160;
+  const ctx = cv.getContext('2d');
+  const cols = [['#ff9a9e','#fecfef'], ['#a18cd1','#fbc2eb'], ['#84fab0','#8fd3f4'], ['#fccb90','#d57eeb']];
+  const c = cols[num % cols.length];
+  const grd = ctx.createLinearGradient(0,0,160,160); grd.addColorStop(0,c[0]); grd.addColorStop(1,c[1]);
+  ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(80,80,75,0,Math.PI*2); ctx.fill();
+  ctx.font = `900 ${num>9?60:80}px 'Nunito', sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillText(num, 83, 83);
+  ctx.fillStyle = 'white'; ctx.fillText(num, 80, 80);
+  IMG_CACHE[num] = cv.toDataURL('image/png'); return IMG_CACHE[num];
+}
+
+// Flow
+function show(id) { 
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+    document.getElementById(id).classList.add('active'); 
+}
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+let rFrom = 1, rTo = 5, rPairs = 2;
+let customFrom = 1, customTo = 10, customPairs = 2;
+let lastPlayFunction = null;
+let gameRound = 0; // 🔥 Ensure unique deterministic seed every round
+
+// Range Logic
+function openRange(f, t) {
+  rFrom = f; rTo = t; rPairs = 2;
+  document.getElementById('range-title').textContent = `${f} to ${t}`;
+  const cont = document.getElementById('range-pairs'); cont.innerHTML = '';
+  const max = Math.min(t - f + 1, 6);
+  for(let i=2; i<=max; i++){
+    const b = document.createElement('button');
+    b.className = 'pair-btn' + (i===2?' active':''); b.id=`pb-range-${i}`; b.innerText = i;
+    b.onclick = () => { document.querySelectorAll('#range-pairs .pair-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); rPairs=i; sfxHit(); };
+    cont.appendChild(b);
+  }
+  show('scr-range');
+}
+
+function startGameParams() {
+  lastPlayFunction = startGameParams;
+  
+  // 🔥 CRITICAL: Re-seed before generating the game to ensure BOTH screens generate identical pools
+  gameRound++;
+  window.setSeed(roomId + "_game_" + gameRound); 
+  
+  const pool = []; for (let i = rFrom; i <= rTo; i++) pool.push(i);
+  const chosen = shuf(pool).slice(0, rPairs);
+  renderGame(chosen, `${rFrom}-${rTo} • ${rPairs} Pairs`);
+}
+
+// Custom Logic
+function openCustomScreen() {
+  customFrom = 1; customTo = 10; customPairs = 2;
+  const cont = document.getElementById('custom-pairs'); cont.innerHTML = '';
+  for(let i=2; i<=6; i++){
+    const b = document.createElement('button');
+    b.className = 'pair-btn' + (i===2?' active':''); b.id=`pb-custom-${i}`; b.innerText = i;
+    b.onclick = () => { document.querySelectorAll('#custom-pairs .pair-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); customPairs=i; sfxHit(); };
+    cont.appendChild(b);
+  }
+  updateCustomDisplay();
+  show('scr-custom');
+}
+
+function updateCustomDisplay() {
+  document.getElementById('from-val').textContent = customFrom;
+  document.getElementById('to-val').textContent = customTo;
+}
+
+function adjustFrom(d) {
+  customFrom = Math.max(1, Math.min(customTo - 1, customFrom + d));
+  updateCustomDisplay(); sfxHit();
+}
+function adjustTo(d) {
+  customTo = Math.max(customFrom + 1, Math.min(100, customTo + d));
+  updateCustomDisplay(); sfxHit();
+}
+
+function startCustomGame() {
+  lastPlayFunction = startCustomGame;
+  
+  // 🔥 CRITICAL: Re-seed before generating the game
+  gameRound++;
+  window.setSeed(roomId + "_customgame_" + gameRound); 
+
+  const available = customTo - customFrom + 1;
+  const pairs = Math.min(customPairs, available);
+  const pool = []; for (let i = customFrom; i <= customTo; i++) pool.push(i);
+  const chosen = shuf(pool).slice(0, pairs);
+  renderGame(chosen, `Custom ${customFrom}-${customTo} • ${pairs} Pairs`);
+}
+
+function replay() { 
+    if(lastPlayFunction) lastPlayFunction(); 
+}
+
+// Game Core
+let flipped = [], matched = [], locked = false;
+
+async function renderGame(pool, info) {
+  flipped = []; matched = []; 
+  locked = true; // 🔥 CRITICAL: Lock IMMEDIATELY so no clicks happen during setup
+  
+  document.getElementById('game-info').textContent = info;
+  const board = document.getElementById('board');
+  
+  while (board.firstChild) board.removeChild(board.firstChild);
+
+  const total = pool.length * 2;
+  let cols = total <= 4 ? 2 : (total <= 6 ? 3 : 4);
+  
+  board.style.gridTemplateColumns = `repeat(${cols}, minmax(60px, 1fr))`;
+  
+  const deck = shuf([...pool, ...pool]);
+  deck.forEach((n, idx) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'card-wrapper'; wrap.id = `card-${idx}`; wrap.dataset.num = n;
+    wrap.innerHTML = `<div class="card-inner"><div class="card-face card-back">❓</div><div class="card-face card-front"><img src="${getImg(n)}"></div></div>`;
+    wrap.onclick = () => handleCard(wrap);
+    board.appendChild(wrap);
+  });
+
+  show('scr-game');
+  
+  const ban = document.getElementById('reveal-banner');
+  const overlay = document.getElementById('overlay');
+  
+  ban.innerText = "Memorize!"; 
+  ban.style.display = "block";
+  overlay.classList.add('active'); // Use overlay to block ALL clicks
+
+  document.querySelectorAll('.card-wrapper').forEach(c => c.classList.add('flipped'));
+  
+  // Strict timeout
+  await wait(2000); 
+  
+  document.querySelectorAll('.card-wrapper').forEach(c => c.classList.remove('flipped'));
+  ban.style.display = "none";
+  overlay.classList.remove('active');
+  locked = false; // Unlock only after cards flip back
+}
+
+function handleCard(c) {
+  if (locked || c.classList.contains('flipped') || c.classList.contains('matched')) return;
+  sfxHit(); c.classList.add('flipped'); flipped.push(c);
+  if (flipped.length === 2) { locked = true; check(); }
+}
+
+function check() {
+  const [a, b] = flipped;
+  if (a.dataset.num === b.dataset.num) {
+    setTimeout(() => {
+      a.classList.add('matched'); b.classList.add('matched');
+      matched.push(a, b); sfxMatch(); flipped = []; locked = false;
+      if (matched.length === document.querySelectorAll('.card-wrapper').length) setTimeout(()=> { sfxWin(); show('scr-win'); confetti(); }, 500);
+    }, 400);
+  } else {
+    setTimeout(() => { a.classList.remove('flipped'); b.classList.remove('flipped'); flipped = []; locked = false; }, 800);
+  }
+}
+
+// Audio
+let AC=null; const gAC=()=>{if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC;};
+document.addEventListener('click',gAC,{once:true});
+function pT(f,t,v,s,d){try{const c=gAC(),o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g);g.connect(c.destination);o.start(s);o.stop(s+d+.1);}catch(e){}}
+function sfxHit(){const t=gAC().currentTime; pT(600,'sine',.1,t,.05);}
+function sfxMatch(){const t=gAC().currentTime; [523,659,784].forEach((f,i)=>pT(f,'triangle',.1,t+i*.1,.2));}
+function sfxWin(){const t=gAC().currentTime; [[523,0],[659,.1],[784,.2],[1047,.3]].forEach(([f,d])=>pT(f,'triangle',.2,t+d,.3));}
+</script>
+
+</body>
+</html>
