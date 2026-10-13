@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiveTutor Phonics Sounds & Test</title>
+  
+  <!-- Font Setup: Fredoka for headings, Nunito for UI body -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Icons Support -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tailwind CSS Framework CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0f172a; /* Slate-900 background outside scaled view */
+      font-family: 'Nunito', sans-serif;
+      user-select: none;
+    }
+    
+    .font-fredoka {
+      font-family: 'Fredoka', sans-serif;
+    }
+
+    /* Isolated scrollbars to prevent full viewport breaking */
+    .scroll-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    .scroll-container::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 9999px;
+    }
+    .scroll-container::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 9999px;
+    }
+    .scroll-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    /* Interactive active tap visual feedback */
+    .active-pop {
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .active-pop:active {
+      transform: scale(0.95);
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MASTER WORKSPACE SCALING CONTAINER -->
+  <div id="app" class="relative bg-white shadow-2xl rounded-none md:rounded-2xl overflow-hidden flex flex-col border-0 md:border-4 border-slate-800 transition-all duration-300">
+    
+    <!-- 1. HEADER BAR (Always visible, 52px height) -->
+    <header class="h-[52px] bg-slate-900 px-4 flex items-center justify-between text-white border-b border-slate-800 shrink-0 z-50 select-none">
+      <!-- Title Area -->
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-graduation-cap text-purple-400 text-xl animate-bounce"></i>
+        <span class="font-fredoka text-lg font-bold tracking-wide">LiveTutor Phonics - Learn Phonics Sounds</span>
+        
+        <!-- Live status green dot pulse -->
+        <div class="flex items-center space-x-1 bg-emerald-500/15 text-emerald-400 text-[10px] uppercase font-black px-2 py-0.5 rounded-full tracking-widest border border-emerald-500/20">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>Live</span>
+        </div>
+      </div>
+
+      <!-- Sync Status Badge -->
+      <div class="flex items-center space-x-1.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-fredoka px-3 py-1 rounded-full text-xs font-bold shadow-inner">
+        <i class="fa-solid fa-satellite-dish animate-pulse"></i>
+        <span>Sync Active</span>
+      </div>
+    </header>
+
+    <!-- 2. TOAST ALERTS SYSTEM WRAPPER -->
+    <div id="toast-container" class="absolute top-16 right-4 z-[99999] flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- 3. MAIN CONTENTS VIEWSPACE -->
+    <div id="content-area" class="flex-1 overflow-hidden relative bg-slate-50">
+      
+      <!-- SCREEN 1: Phonics Cards Grid -->
+      <div id="screen-phonics" class="absolute inset-0 flex flex-col p-4 overflow-y-auto scroll-container hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 select-none shrink-0 border-b border-slate-100 pb-3">
+          <div>
+            <h1 class="font-fredoka text-2xl font-bold text-slate-800">Phonics Sound Board</h1>
+            <p class="text-sm text-slate-500 font-medium">Tap on the cards to hear individual sounds. Use the options above to change worksheets or start the quiz.</p>
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <!-- Dynamic Worksheet Toggle Buttons -->
+            <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 border border-slate-200">
+              <button id="ws-btn-1" onclick="bcast('SET_WORKSHEET', { ws: 1 }); apply('SET_WORKSHEET', { ws: 1 });" class="px-3 py-1.5 rounded-lg text-xs font-fredoka font-bold transition-all duration-200">
+                Worksheet 1 (Letters)
+              </button>
+              <button id="ws-btn-2" onclick="bcast('SET_WORKSHEET', { ws: 2 }); apply('SET_WORKSHEET', { ws: 2 });" class="px-3 py-1.5 rounded-lg text-xs font-fredoka font-bold transition-all duration-200">
+                Worksheet 2 (Words)
+              </button>
+            </div>
+
+            <button onclick="bcast('NAV', { s: 'test' }); apply('NAV', { s: 'test' });" class="px-4 py-2.5 bg-gradient-to-tr from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-fredoka font-bold rounded-xl shadow-md transform active-pop flex items-center space-x-2">
+              <i class="fa-solid fa-file-signature text-sm"></i>
+              <span>Start Quiz 📝</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 26 Letters Deck Grid -->
+        <div id="phonics-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-3 pb-6">
+          <!-- Dynamic cards injected here -->
+        </div>
+      </div>
+
+      <!-- SCREEN 2: Phonics Test Arena -->
+      <div id="screen-test" class="absolute inset-0 flex flex-col p-4 overflow-y-auto scroll-container hidden">
+        
+        <!-- SUB-SCREEN A: Range Selection Menu -->
+        <div id="test-ranges" class="flex-1 flex flex-col items-center justify-center py-6 hidden select-none">
+          <div class="text-center max-w-lg mb-6">
+            <div class="inline-block px-4 py-1.5 bg-purple-100 text-purple-700 rounded-full text-xs font-black tracking-widest uppercase mb-2">Assessments</div>
+            <h1 class="font-fredoka text-3xl font-extrabold text-slate-800">Phonics Assessment Deck</h1>
+            <p class="text-slate-500 font-medium mt-1">Select a targeting character spectrum range below to initialize interactive student tests.</p>
+          </div>
+
+          <!-- Dynamic 2x4 Ranges Grid -->
+          <div id="ranges-grid" class="grid grid-cols-2 gap-4 max-w-2xl w-full">
+            <!-- Dynamically populated buttons -->
+          </div>
+
+          <button onclick="bcast('NAV', { s: 'phonics' }); apply('NAV', { s: 'phonics' });" class="mt-8 px-6 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-fredoka font-bold rounded-xl active-pop flex items-center space-x-2">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Back to Sound Board</span>
+          </button>
+        </div>
+
+        <!-- SUB-SCREEN B: Dynamic Multi-choice Test Interface -->
+        <div id="test-arena" class="flex-1 flex flex-col hidden">
+          <!-- Live interactive test elements loaded instantly by state controller -->
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 4. REMOTE HANDLER PERSISTENT OVERLAYS -->
+    <!-- Percentage relative visual synchronized remote pointer -->
+    <div id="remote-cursor" style="position: absolute; width: 22px; height: 22px; background: rgba(239, 68, 68, 0.9); border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); pointer-events: none; z-index: 99999; transform: translate(-50%, -50%); display: none; transition: left 100ms ease-out, top 100ms ease-out;">
+      <div style="position: absolute; top: 100%; left: 100%; transform: translate(-2px, -2px); color: #ef4444; font-size: 14px; text-shadow: 1px 1px 2px black;">
+        <i class="fa-solid fa-arrow-pointer"></i>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FRAMEWORK LOGIC SCRIPTS -->
+  <script>
+    // --- 1. FONTS, BACKGROUND COLORS, AND WORKSHEET METADATA ---
+    const letterColors = [
+      '#e84393', '#4361ee', '#f97316', '#06d6a0', '#a855f7',
+      '#ef4444', '#0ea5e9', '#22c55e', '#f59e0b', '#ec4899',
+      '#14b8a6', '#8b5cf6', '#f43f5e', '#3b82f6', '#10b981',
+      '#d946ef', '#0891b2', '#84cc16', '#fb923c', '#6366f1',
+      '#e11d48', '#2563eb', '#16a34a', '#7c3aed', '#0284c7',
+      '#dc2626'
+    ];
+
+    const letterLabels = [
+      "aaa", "buh", "kuh", "duh", "ehh", "fff", "guh", "hhh", "iii", "juh", 
+      "kuh", "lll", "mmm", "nnn", "ohh", "puh", "kwuh", "rrr", "sss", "tuh", 
+      "uhh", "vvv", "www", "ks", "yyy", "zzz"
+    ];
+
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+    const ranges = [
+      { l: 'A–D', s: 'A', e: 'D', color: '#3b82f6' },
+      { l: 'E–H', s: 'E', e: 'H', color: '#10b981' },
+      { l: 'I–L', s: 'I', e: 'L', color: '#f59e0b' },
+      { l: 'M–P', s: 'M', e: 'P', color: '#ec4899' },
+      { l: 'Q–T', s: 'Q', e: 'T', color: '#8b5cf6' },
+      { l: 'U–X', s: 'U', e: 'X', color: '#f43f5e' },
+      { l: 'Y–Z', s: 'Y', e: 'Z', color: '#06d6a0' },
+      { l: 'A–Z', s: 'A', e: 'Z', color: '#a855f7' }
+    ];
+
+    // Master Worksheet 2 Metadata (Vocab + Emojis mapping from Apple to Zoo)
+    const wsData = {
+      2: {
+        A: { word: "Apple", emoji: "🍎" },
+        B: { word: "Ball", emoji: "⚽" },
+        C: { word: "Cat", emoji: "🐱" },
+        D: { word: "Dog", emoji: "🐶" },
+        E: { word: "Elephant", emoji: "🐘" },
+        F: { word: "Fish", emoji: "🐟" },
+        G: { word: "Girl", emoji: "👧" },
+        H: { word: "Hat", emoji: "🎩" },
+        I: { word: "Igloo", emoji: "🛖" },
+        J: { word: "Juice", emoji: "🧃" },
+        K: { word: "Kangaroo", emoji: "🦘" },
+        L: { word: "Lion", emoji: "🦁" },
+        M: { word: "Monkey", emoji: "🐒" },
+        N: { word: "Nose", emoji: "👃" },
+        O: { word: "Octopus", emoji: "🐙" },
+        P: { word: "Pig", emoji: "🐷" },
+        Q: { word: "Queen", emoji: "👸" },
+        R: { word: "Ring", emoji: "💍" },
+        S: { word: "Sun", emoji: "☀️" },
+        T: { word: "Train", emoji: "🚆" },
+        U: { word: "Umbrella", emoji: "☔" },
+        V: { word: "Van", emoji: "🚐" },
+        W: { word: "Watch", emoji: "⌚" },
+        X: { word: "Box", emoji: "📦" },
+        Y: { word: "Yo-Yo", emoji: "🪀" },
+        Z: { word: "Zoo", emoji: "🦓" }
+      }
+    };
+
+    // --- 2. MULTI-USER CO-ORDINATION ENGINE (RESPONSIVE SCALING) ---
+    function applyScale() {
+      const shell = document.getElementById('app');
+      if (!shell) return;
+      const DW = 800;
+      const s = Math.min(window.innerWidth / DW, 1);
+      
+      shell.style.width = DW + 'px';
+      shell.style.height = (window.innerHeight / s) + 'px';
+      shell.style.transform = `scale(${s})`;
+      shell.style.transformOrigin = 'top left';
+      shell.style.marginLeft = ((window.innerWidth - DW * s) / 2) + 'px';
+    }
+    window.addEventListener('resize', applyScale);
+
+    // --- 3. HIGH-FIDELITY AUDIO SYSTEM (STATIC ASSET PATH ARCHITECTURE) ---
+    const Aud = (() => {
+      let actx;
+      function ctx2() {
+        if (!actx) {
+          actx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (actx.state === 'suspended') {
+          actx.resume();
+        }
+        return actx;
+      }
+      
+      function play(letter, forcePhonics = false) {
+        ctx2();
+        const L = letter.toLowerCase();
+        
+        // High-fidelity target configuration matching assets folder standard:
+        // Worksheet 1 raw sound: assets/audio/a.mp3
+        // Worksheet 2 word sound: assets/audio/a sound.mp3 (restored space format to match "A sound.mp3" on disk)
+        let audioPath = "";
+        if (forcePhonics || ST.worksheet === 1) {
+          audioPath = `assets/audio/${L}.mp3`;
+        } else {
+          audioPath = `assets/audio/${L} sound.mp3`;
+        }
+
+        try {
+          const audio = new Audio(audioPath);
+          const playPromise = audio.play();
+          
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.warn(`Local sound file missing at "${audioPath}". Triggering dynamic synth fallback.`);
+              beep();
+            });
+          }
+        } catch(e) {
+          beep();
+        }
+      }
+
+      function beep() {
+        const ctx = ctx2();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      }
+
+      function chime() {
+        const ctx = ctx2();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.40);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.40);
+      }
+
+      function buzz() {
+        const ctx = ctx2();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.30);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.30);
+      }
+
+      return { play, chime, buzz };
+    })();
+
+    // --- 4. UNIFIED SHARED STATE SYSTEM ---
+    const ST = {
+      screen: 'phonics',       // 'phonics' | 'test'
+      testPhase: 'ranges',     // 'ranges' | 'active'
+      testRange: null,
+      testPool: [],
+      testIdx: 0,
+      testScore: { c: 0, t: 0 },
+      testOpts: [],
+      testSel: null,
+      testSubmitted: false,
+      testDone: false,
+      testSeed: 12345,
+      worksheet: 1             // Active selection tracker (1 or 2)
+    };
+
+    // Seeded random shuffle algorithm for perfect multi-user parity
+    function seededShuffle(arr, seed) {
+      let m = arr.length, t, i;
+      let x = seed;
+      const rand = () => {
+        x = Math.sin(x) * 10000;
+        return x - Math.floor(x);
+      };
+      while (m) {
+        i = Math.floor(rand() * m--);
+        t = arr[m];
+        arr[m] = arr[i];
+        arr[i] = t;
+      }
+      return arr;
+    }
+
+    // Creates identical randomized options on both clients
+    function getQuestionOptions(letter, seed, idx) {
+      const allLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+      const wrong = allLetters.filter(l => l !== letter);
+      seededShuffle(wrong, seed + idx);
+      const choices = [letter, wrong[0], wrong[1], wrong[2]];
+      seededShuffle(choices, seed + idx + 99);
+      return choices;
+    }
+
+    // --- 5. STATE TRANSITION ENGINE (APPLY ACTIONS SIMULTANEOUSLY) ---
+    function apply(type, payload) {
+      console.log("EXEC STATE TRANSITION:", type, payload);
+      
+      switch(type) {
+        case 'NAV':
+          ST.screen = payload.s;
+          if (payload.s === 'phonics') {
+            ST.testPhase = 'ranges';
+          }
+          break;
+
+        case 'PLAY_AUDIO':
+          // Accepts custom forcePhonics flag to route Worksheet 1 audios dynamically
+          Aud.play(payload.letter, payload.forcePhonics);
+          break;
+
+        case 'SET_WORKSHEET':
+          ST.worksheet = payload.ws;
+          break;
+
+        case 'TEST_GO':
+          ST.screen = 'test';
+          ST.testPhase = 'active';
+          ST.testRange = payload.r;
+          ST.testIdx = 0;
+          ST.testScore = { c: 0, t: 0 };
+          ST.testDone = false;
+          ST.testSel = null;
+          ST.testSubmitted = false;
+          ST.testSeed = payload.seed;
+
+          const sCode = payload.r.s.charCodeAt(0);
+          const eCode = payload.r.e.charCodeAt(0);
+          const lettersRange = [];
+          for (let i = sCode; i <= eCode; i++) {
+            lettersRange.push(String.fromCharCode(i));
+          }
+
+          ST.testPool = seededShuffle([...lettersRange], payload.seed);
+          if (ST.testPool.length > 0) {
+            ST.testOpts = getQuestionOptions(ST.testPool[0], payload.seed, 0);
+          }
+
+          // Trigger automated raw phonics sound (worksheet 1 style) for quiz questions
+          setTimeout(() => {
+            if (ST.screen === 'test' && ST.testPhase === 'active' && !ST.testDone) {
+              Aud.play(ST.testPool[ST.testIdx], true);
+            }
+          }, 300);
+          break;
+
+        case 'TEST_SEL':
+          if (!ST.testSubmitted) {
+            ST.testSel = payload.o;
+          }
+          break;
+
+        case 'TEST_SUB':
+          if (ST.testSel && !ST.testSubmitted) {
+            ST.testSubmitted = true;
+            const correctLetter = ST.testPool[ST.testIdx];
+            const isCorrect = (ST.testSel === correctLetter);
+            
+            ST.testScore.t += 1;
+            if (isCorrect) {
+              ST.testScore.c += 1;
+              Aud.chime();
+            } else {
+              Aud.buzz();
+            }
+          }
+          break;
+
+        case 'TEST_NEXT':
+          if (ST.testSubmitted) {
+            ST.testIdx += 1;
+            ST.testSel = null;
+            ST.testSubmitted = false;
+
+            if (ST.testIdx >= ST.testPool.length) {
+              ST.testDone = true;
+            } else {
+              ST.testOpts = getQuestionOptions(ST.testPool[ST.testIdx], ST.testSeed, ST.testIdx);
+              setTimeout(() => {
+                if (ST.screen === 'test' && ST.testPhase === 'active' && !ST.testDone) {
+                  Aud.play(ST.testPool[ST.testIdx], true);
+                }
+              }, 300);
+            }
+          }
+          break;
+
+        case 'TEST_EXIT':
+          ST.testPhase = 'ranges';
+          ST.screen = 'phonics';
+          ST.testRange = null;
+          ST.testPool = [];
+          ST.testIdx = 0;
+          ST.testOpts = [];
+          ST.testSel = null;
+          ST.testDone = false;
+          ST.testSubmitted = false;
+          break;
+      }
+
+      render();
+    }
+
+    // --- 6. SHARING BROADCAST INTEGRATION ---
+    let muted = false;
+    
+    function bcast(type, payload={}) {
+      window.parent.postMessage({
+        type: 'IFRAME_ACTION_TRIGGERED',
+        payload: { type, ...payload }
+      }, '*');
+    }
+
+    window.addEventListener('message', e => {
+      if (e.data?.type === 'EXECUTE_UNIVERSAL_ACTION') {
+        muted = true;
+        try {
+          apply(e.data.action.type, e.data.action);
+        } finally {
+          muted = false;
+        }
+      }
+      else if (e.data?.type === 'IFRAME_MOUSE_TRACK') {
+        const cursor = document.getElementById('remote-cursor');
+        if (cursor) {
+          const x = e.data.payload.x;
+          const y = e.data.payload.y;
+          if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
+            cursor.style.display = 'block';
+            cursor.style.left = x + '%';
+            cursor.style.top = y + '%';
+          } else {
+            cursor.style.display = 'none';
+          }
+        }
+      }
+    });
+
+    // Pointer position update (high-frequency tracking dispatch)
+    let lastMove = 0;
+    
+    function sendPointer(cx, cy) {
+      const now = Date.now();
+      if (now - lastMove < 50) return;
+      lastMove = now;
+
+      const shell = document.getElementById('app');
+      if (!shell) return;
+      const rect = shell.getBoundingClientRect();
+      const pctX = ((cx - rect.left) / rect.width) * 100;
+      const pctY = ((cy - rect.top) / rect.height) * 100;
+
+      window.parent.postMessage({
+        type: 'IFRAME_MOUSE_TRACK',
+        payload: { x: pctX, y: pctY }
+      }, '*');
+    }
+
+    document.addEventListener('mousemove', e => sendPointer(e.clientX, e.clientY));
+    document.addEventListener('touchmove', e => {
+      if (e.touches.length > 0) {
+        sendPointer(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    });
+
+    // Elegant Screen Toasts
+    function showToast(message, isError = false) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-3 rounded-xl shadow-lg font-fredoka font-semibold text-white pointer-events-auto transition-all duration-300 transform translate-x-10 opacity-0 flex items-center space-x-2 ${
+        isError ? 'bg-rose-500 border border-rose-600' : 'bg-slate-800 border border-slate-700'
+      }`;
+      toast.innerHTML = `
+        <i class="${isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'}"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-x-10', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('translate-x-10', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // --- 7. MASTER RENDER LAYER (COMPLETELY ENGLISH LOCALIZED) ---
+    function render() {
+      const pScreen = document.getElementById('screen-phonics');
+      const tScreen = document.getElementById('screen-test');
+
+      const wsBtn1 = document.getElementById('ws-btn-1');
+      const wsBtn2 = document.getElementById('ws-btn-2');
+      if (ST.worksheet === 1) {
+        wsBtn1.className = "px-3 py-1.5 rounded-lg text-xs font-fredoka font-bold transition-all duration-200 bg-slate-900 text-white shadow-sm";
+        wsBtn2.className = "px-3 py-1.5 rounded-lg text-xs font-fredoka font-bold transition-all duration-200 text-slate-600 hover:bg-slate-200";
+      } else {
+        wsBtn2.className = "px-3 py-1.5 rounded-lg text-xs font-fredoka font-bold transition-all duration-200 bg-slate-900 text-white shadow-sm";
+        wsBtn1.className = "px-3 py-1.5 rounded-lg text-xs font-fredoka font-bold transition-all duration-200 text-slate-600 hover:bg-slate-200";
+      }
+
+      if (ST.screen === 'phonics') {
+        pScreen.classList.remove('hidden');
+        tScreen.classList.add('hidden');
+        renderPhonicsGrid();
+      } else if (ST.screen === 'test') {
+        pScreen.classList.add('hidden');
+        tScreen.classList.remove('hidden');
+
+        const rangesDiv = document.getElementById('test-ranges');
+        const arenaDiv = document.getElementById('test-arena');
+
+        if (ST.testPhase === 'ranges') {
+          rangesDiv.classList.remove('hidden');
+          arenaDiv.classList.add('hidden');
+          renderRanges();
+        } else if (ST.testPhase === 'active') {
+          rangesDiv.classList.add('hidden');
+          arenaDiv.classList.remove('hidden');
+          renderTestArena();
+        }
+      }
+    }
+
+    // Screen 1: Sound Cards Grid Loader
+    function renderPhonicsGrid() {
+      const grid = document.getElementById('phonics-grid');
+      grid.innerHTML = '';
+
+      letters.forEach((l, idx) => {
+        const card = document.createElement('div');
+        
+        // Worksheet 1: Letters Only (Only displays uppercase letters)
+        if (ST.worksheet === 1) {
+          card.className = "relative rounded-2xl shadow-sm p-4 flex flex-col items-center justify-center text-white font-fredoka transition-all transform hover:scale-102 cursor-pointer h-[132px] select-none active-pop border-b-4 border-black/15";
+          card.style.backgroundColor = letterColors[idx];
+          card.innerHTML = `
+            <div class="absolute top-2.5 right-2.5 text-xs text-white/50 hover:text-white transition">
+              <i class="fa-solid fa-volume-high"></i>
+            </div>
+            <div class="text-6xl font-black tracking-wide drop-shadow-sm select-none mb-1">${l}</div>
+            <div class="text-xs font-semibold lowercase tracking-wide text-white/85 select-none">${letterLabels[idx]}</div>
+          `;
+        } 
+        // Worksheet 2: Emojis + Words Layout
+        else {
+          const itemData = wsData[2][l];
+          card.className = "relative rounded-2xl shadow-sm p-3 flex flex-col justify-between text-white font-fredoka transition-all transform hover:scale-102 cursor-pointer h-[132px] select-none active-pop border-b-4 border-black/15";
+          card.style.backgroundColor = letterColors[idx];
+
+          // Top Header: Letter + Volume icon
+          const topRow = document.createElement('div');
+          topRow.className = "flex items-center justify-between w-full";
+          topRow.innerHTML = `
+            <div class="text-3xl font-black tracking-wide drop-shadow-sm select-none">${l}</div>
+            <div class="text-xs text-white/50 hover:text-white transition">
+              <i class="fa-solid fa-volume-high"></i>
+            </div>
+          `;
+          card.appendChild(topRow);
+
+          // Center Graphic: Image with emoji fallback
+          const midVisual = document.createElement('div');
+          midVisual.className = "flex items-center justify-center my-1 relative h-12 w-full";
+          
+          const imgPath = `assets/images/worksheet2/${l.toLowerCase()}.png`;
+          midVisual.innerHTML = `
+            <img src="${imgPath}" class="max-h-12 max-w-[48px] object-contain drop-shadow" onerror="this.style.display='none';">
+            <span class="text-2xl drop-shadow-sm select-none leading-none">${itemData.emoji}</span>
+          `;
+          card.appendChild(midVisual);
+
+          // Footer Row: Word text and Phonics label
+          const btmRow = document.createElement('div');
+          btmRow.className = "flex items-center justify-between w-full text-[11px] font-semibold border-t border-white/10 pt-1 mt-auto";
+          btmRow.innerHTML = `
+            <span class="truncate max-w-[55px] font-bold text-white">${itemData.word}</span>
+            <span class="lowercase text-white/80 select-none">${letterLabels[idx]}</span>
+          `;
+          card.appendChild(btmRow);
+        }
+
+        // Action Trigger: Play Audio on card tap & broadcast the state instantly
+        card.addEventListener('click', () => {
+          const forcePhonicsMode = (ST.worksheet === 1);
+          bcast('PLAY_AUDIO', { letter: l, forcePhonics: forcePhonicsMode });
+          apply('PLAY_AUDIO', { letter: l, forcePhonics: forcePhonicsMode });
+          card.classList.add('ring-4', 'ring-white/40');
+          setTimeout(() => card.classList.remove('ring-4', 'ring-white/40'), 150);
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    // Screen 2A: Interactive Quiz Range Buttons
+    function renderRanges() {
+      const grid = document.getElementById('ranges-grid');
+      grid.innerHTML = '';
+
+      ranges.forEach(r => {
+        const btn = document.createElement('button');
+        btn.className = "rounded-3xl p-6 text-white font-fredoka text-3xl font-extrabold shadow-md transform transition duration-150 active-pop hover:scale-102 flex flex-col items-center justify-center space-y-2 border-b-4 border-black/15";
+        btn.style.backgroundColor = r.color;
+        
+        const count = r.e.charCodeAt(0) - r.s.charCodeAt(0) + 1;
+        btn.innerHTML = `
+          <span>${r.l}</span>
+          <span class="text-xs font-black uppercase tracking-widest text-white/80 bg-black/15 px-3 py-1 rounded-full">${count} Letters</span>
+        `;
+
+        btn.addEventListener('click', () => {
+          const randSeed = Math.floor(Math.random() * 100000);
+          bcast('TEST_GO', { r, seed: randSeed });
+          apply('TEST_GO', { r, seed: randSeed });
+        });
+
+        grid.appendChild(btn);
+      });
+    }
+
+    // Screen 2B: Question Builder and Option Selectors
+    function renderTestArena() {
+      const arena = document.getElementById('test-arena');
+      arena.innerHTML = '';
+
+      if (ST.testDone) {
+        const pct = Math.round((ST.testScore.c / ST.testScore.t) * 100) || 0;
+        let badge = "Phonics Beginner 🥉";
+        let icon = "🎒";
+        
+        if (pct >= 90) {
+          badge = "Phonics King! 🏆";
+          icon = "🎉";
+        } else if (pct >= 70) {
+          badge = "Phonics Expert 🥈";
+          icon = "🌟";
+        }
+
+        arena.innerHTML = `
+          <div class="flex-1 flex flex-col items-center justify-center py-8 px-4 text-center font-fredoka">
+            <div class="text-7xl mb-4 animate-bounce">${icon}</div>
+            <h2 class="text-3xl font-black text-slate-800">Quiz Completed!</h2>
+            <p class="text-slate-500 font-medium max-w-sm mt-1">Great job! Keep practicing to become a phonics champ.</p>
+
+            <div class="my-6 bg-white rounded-3xl shadow-lg border border-slate-100 p-8 w-full max-w-sm flex flex-col items-center space-y-3">
+              <span class="text-xs text-slate-400 font-black tracking-widest uppercase">Your Score Summary</span>
+              <div class="text-6xl font-black text-purple-600">${ST.testScore.c} / ${ST.testScore.t}</div>
+              <div class="text-xl font-bold text-slate-700">${pct}% Correct Answers</div>
+              
+              <span class="px-4 py-1.5 bg-purple-100 text-purple-700 text-xs font-black uppercase rounded-full tracking-wider mt-4">
+                ${badge}
+              </span>
+            </div>
+
+            <button onclick="bcast('TEST_EXIT'); apply('TEST_EXIT');" class="px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-fredoka font-bold rounded-2xl shadow-md active-pop">
+              Back to Sound Board
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      const correctLetter = ST.testPool[ST.testIdx];
+      const isSubmitted = ST.testSubmitted;
+
+      // Header Block (Quit Button + Score Tracker)
+      const hdr = document.createElement('div');
+      hdr.className = "flex items-center justify-between font-fredoka pb-4 border-b border-slate-100 shrink-0";
+      hdr.innerHTML = `
+        <button onclick="bcast('TEST_EXIT'); apply('TEST_EXIT');" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition flex items-center space-x-2 text-sm active-pop">
+          <i class="fa-solid fa-circle-xmark"></i> <span>Exit Quiz</span>
+        </button>
+        <div class="px-4 py-2 bg-purple-100 text-purple-700 rounded-xl font-black text-sm shadow-inner tracking-wider uppercase">
+          Score: ${ST.testScore.c} / ${ST.testScore.t}
+        </div>
+      `;
+      arena.appendChild(hdr);
+
+      // Question Number Marker
+      const banner = document.createElement('div');
+      banner.className = "text-center text-[10px] text-slate-400 font-black tracking-widest uppercase mt-4";
+      banner.innerText = `Question ${ST.testIdx + 1} / ${ST.testPool.length}`;
+      arena.appendChild(banner);
+
+      // Main Audio Controller Interface
+      const centralCue = document.createElement('div');
+      centralCue.className = "flex flex-col items-center justify-center py-6 space-y-4 shrink-0";
+      
+      const audioBtn = document.createElement('button');
+      audioBtn.className = "w-20 h-20 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-xl hover:scale-105 active-pop transition focus:outline-none relative ring-4 ring-purple-100";
+      audioBtn.innerHTML = `<i class="fa-solid fa-volume-high text-3xl animate-pulse"></i>`;
+      audioBtn.addEventListener('click', () => {
+        bcast('PLAY_AUDIO', { letter: correctLetter, forcePhonics: true });
+        apply('PLAY_AUDIO', { letter: correctLetter, forcePhonics: true });
+      });
+      centralCue.appendChild(audioBtn);
+
+      const labelHint = document.createElement('div');
+      labelHint.className = "text-center text-xs text-slate-400 font-semibold";
+      labelHint.innerHTML = `🔊 Listen · ⭕ Select correct letter · Confirm your answer!`;
+      centralCue.appendChild(labelHint);
+      
+      arena.appendChild(centralCue);
+
+      // Options Selection Panel
+      const optionsBox = document.createElement('div');
+      optionsBox.className = "flex-1 flex flex-col justify-center space-y-3 max-w-md mx-auto w-full py-2";
+
+      ST.testOpts.forEach(opt => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between border-2 rounded-2xl p-4 transition-all duration-150 cursor-pointer select-none relative";
+
+        const isSelected = (ST.testSel === opt);
+        const isCorrectOpt = (opt === correctLetter);
+
+        let borderStyle = "border-slate-200 bg-white hover:border-slate-300";
+        let textStyle = "text-slate-700";
+        let rightRadio = `<div class="w-6 h-6 rounded-full border-2 border-slate-300"></div>`;
+
+        if (isSubmitted) {
+          if (isCorrectOpt) {
+            borderStyle = "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-100";
+            textStyle = "text-emerald-800 font-bold";
+            rightRadio = `<div class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-check"></i></div>`;
+          } else if (isSelected) {
+            borderStyle = "border-rose-500 bg-rose-50/70 ring-2 ring-rose-100";
+            textStyle = "text-rose-800 font-bold";
+            rightRadio = `<div class="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-xmark"></i></div>`;
+          } else {
+            borderStyle = "border-slate-100 bg-white opacity-40 pointer-events-none";
+            textStyle = "text-slate-400";
+          }
+        } else if (isSelected) {
+          borderStyle = "border-purple-500 bg-purple-50 ring-2 ring-purple-100";
+          textStyle = "text-purple-900 font-bold";
+          rightRadio = `<div class="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs shadow-md"><div class="w-2.5 h-2.5 bg-white rounded-full"></div></div>`;
+        }
+
+        row.className += ` ${borderStyle} ${textStyle}`;
+
+        // Dynamic individual option audio speaker triggers
+        const spk = document.createElement('button');
+        spk.className = "w-10 h-10 rounded-full flex items-center justify-center text-white text-xs shadow-sm transform active-pop hover:brightness-105 shrink-0";
+        const codeIdx = letters.indexOf(opt);
+        spk.style.backgroundColor = letterColors[codeIdx] || '#6366f1';
+        spk.innerHTML = `<i class="fa-solid fa-volume-low"></i>`;
+        spk.addEventListener('click', (e) => {
+          e.stopPropagation();
+          bcast('PLAY_AUDIO', { letter: opt, forcePhonics: true });
+          apply('PLAY_AUDIO', { letter: opt, forcePhonics: true });
+        });
+
+        // Setup layouts based on the active worksheet rules
+        const word = document.createElement('div');
+        word.className = "flex-1 ml-4 text-left flex items-center justify-between";
+
+        if (ST.worksheet === 1) {
+          // Worksheet 1: Plain Letter with no image hints
+          word.innerHTML = `
+            <span class="font-fredoka text-lg text-slate-700">
+              Letter <span class="font-extrabold text-2xl">${opt}</span>
+            </span>
+          `;
+        } else {
+          // Worksheet 2: Complete Word representation
+          const visualItem = wsData[2][opt];
+          const imgPath = `assets/images/worksheet2/${opt.toLowerCase()}.png`;
+          word.innerHTML = `
+            <span class="font-fredoka text-lg text-slate-700">
+              Letter <span class="font-extrabold text-2xl">${opt}</span> <span class="text-sm text-slate-400">(${visualItem.word})</span>
+            </span>
+            <div class="w-8 h-8 flex items-center justify-center relative mr-3">
+              <img src="${imgPath}" class="absolute inset-0 w-full h-full object-contain" onerror="this.style.display='none';">
+              <span class="text-xl">${visualItem.emoji}</span>
+            </div>
+          `;
+        }
+
+        const rad = document.createElement('div');
+        rad.innerHTML = rightRadio;
+
+        row.appendChild(spk);
+        row.appendChild(word);
+        row.appendChild(rad);
+
+        row.addEventListener('click', () => {
+          if (!isSubmitted) {
+            bcast('TEST_SEL', { o: opt });
+            apply('TEST_SEL', { o: opt });
+          }
+        });
+
+        optionsBox.appendChild(row);
+      });
+
+      arena.appendChild(optionsBox);
+
+      // Quiz Stage Advancement Buttons
+      const foot = document.createElement('div');
+      foot.className = "pt-4 pb-2 text-center font-fredoka shrink-0 mt-auto";
+
+      const btn = document.createElement('button');
+      if (!isSubmitted) {
+        btn.disabled = !ST.testSel;
+        btn.className = `w-full max-w-xs py-3 px-8 rounded-2xl font-bold text-lg shadow-md transition transform ${
+          ST.testSel
+            ? 'bg-purple-600 text-white hover:bg-purple-700 hover:-translate-y-0.5 active-pop cursor-pointer border-b-4 border-purple-800'
+            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+        }`;
+        btn.innerText = "Confirm Answer ✔";
+        btn.addEventListener('click', () => {
+          bcast('TEST_SUB');
+          apply('TEST_SUB');
+        });
+      } else {
+        btn.className = "w-full max-w-xs py-3 px-8 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg shadow-md transition transform hover:-translate-y-0.5 active-pop cursor-pointer border-b-4 border-slate-950";
+        const isEnd = (ST.testIdx === ST.testPool.length - 1);
+        btn.innerText = isEnd ? "Finish Quiz 🏁" : "Next Question ▶";
+        btn.addEventListener('click', () => {
+          bcast('TEST_NEXT');
+          apply('TEST_NEXT');
+        });
+      }
+
+      foot.appendChild(btn);
+      arena.appendChild(foot);
+    }
+
+    // --- 8. INITIALIZATION ---
+    window.onload = () => {
+      applyScale();
+      render();
+    };
+  </script>
+</body>
+</html>
