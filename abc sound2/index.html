@@ -260,33 +260,42 @@
         return actx;
       }
       
+      function tryPlayPath(paths, onAllFailed) {
+        if (!paths || paths.length === 0) {
+          if (onAllFailed) onAllFailed();
+          return;
+        }
+        const currentPath = paths[0];
+        const audio = new Audio(encodeURI(currentPath));
+        
+        audio.play().catch(() => {
+          tryPlayPath(paths.slice(1), onAllFailed);
+        });
+      }
+
       function play(letter, forcePhonics = false) {
         ctx2();
+        const U = letter.toUpperCase();
         const L = letter.toLowerCase();
         
-        // High-fidelity target configuration matching assets folder standard:
-        // Worksheet 1 raw sound: assets/audio/a.mp3
-        // Worksheet 2 word sound: assets/audio/a sound.mp3 (restored space format to match "A sound.mp3" on disk)
-        let audioPath = "";
+        let pathCandidates = [];
         if (forcePhonics || ST.worksheet === 1) {
-          audioPath = `assets/audio/${L}.mp3`;
+          pathCandidates = [
+            `assets/audio/${U}.mp3`,
+            `assets/audio/${L}.mp3`
+          ];
         } else {
-          audioPath = `assets/audio/${L} sound.mp3`;
+          pathCandidates = [
+            `assets/audio/${U} sound.mp3`,
+            `assets/audio/${L} sound.mp3`,
+            `assets/audio/${U} Sound.mp3`
+          ];
         }
 
-        try {
-          const audio = new Audio(audioPath);
-          const playPromise = audio.play();
-          
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              console.warn(`Local sound file missing at "${audioPath}". Triggering dynamic synth fallback.`);
-              beep();
-            });
-          }
-        } catch(e) {
+        tryPlayPath(pathCandidates, () => {
+          console.warn(`Local sound file missing for "${letter}". Triggering dynamic synth fallback.`);
           beep();
-        }
+        });
       }
 
       function beep() {
