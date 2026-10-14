@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LiveTutor Dual-Master Console</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --theme-bg: linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%);
+    --glass-bg: rgba(15, 23, 42, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-glow: rgba(99, 102, 241, 0.2);
+    --accent-glow: #6366f1;
+    --text-accent: #38bdf8;
+  }
+
+  body[data-theme="neon"] {
+    --theme-bg: linear-gradient(135deg, #0c071e 0%, #170d36 50%, #2e0854 100%);
+    --glass-bg: rgba(23, 13, 54, 0.78);
+    --glass-border: rgba(192, 132, 252, 0.22);
+    --glass-glow: rgba(217, 70, 239, 0.25);
+    --accent-glow: #c026d3;
+    --text-accent: #f472b6;
+  }
+
+  body[data-theme="emerald"] {
+    --theme-bg: linear-gradient(135deg, #021a15 0%, #062e24 50%, #0d3830 100%);
+    --glass-bg: rgba(6, 46, 36, 0.75);
+    --glass-border: rgba(52, 211, 153, 0.22);
+    --glass-glow: rgba(16, 185, 129, 0.25);
+    --accent-glow: #059669;
+    --text-accent: #34d399;
+  }
+
+  body[data-theme="velvet"] {
+    --theme-bg: linear-gradient(135deg, #180911 0%, #290d1e 50%, #3e122b 100%);
+    --glass-bg: rgba(41, 13, 30, 0.78);
+    --glass-border: rgba(251, 113, 133, 0.22);
+    --glass-glow: rgba(244, 63, 94, 0.25);
+    --accent-glow: #e11d48;
+    --text-accent: #fb7185;
+  }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--theme-bg);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.4s ease;
+  }
+
+  .font-fredoka { font-family: 'Fredoka One', cursive; }
+
+  /* Premium Glassmorphic Styles */
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.65), 0 0 20px -5px var(--glass-glow);
+  }
+
+  .workspace-container { display: flex; align-items: center; justify-content: center; width: 100%; flex: 1; padding: 12px; }
+  .game-canvas { 
+    position: relative; 
+    background: #fff; 
+    border-radius: 24px; 
+    box-shadow: 0 30px 70px -15px rgba(0,0,0,.9); 
+    border: 3px solid var(--glass-border); 
+    width: 100%; 
+    height: calc(100vh - 80px); 
+    overflow: hidden; 
+  }
+  @media (min-width: 768px) { 
+    .workspace-container { padding: 16px; } 
+    .game-canvas { height: auto; max-width: 1220px; aspect-ratio: 16/9; } 
+  }
+  .live-pointer { pointer-events: none; transition: all .2s linear; z-index: 9999; }
+  .clock-danger { animation: pulseClock 1s ease-in-out infinite; color: #fb7185 !important; }
+  @keyframes pulseClock { 0%,100%{opacity:1} 50%{opacity:.45} }
+  @keyframes smilePop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
+  .smile-pop { animation: smilePop .45s ease-out; }
+  .file-card { 
+    border: 1px solid var(--glass-border); 
+    background: var(--glass-bg);
+    backdrop-filter: blur(14px);
+    transition: all 0.25s ease;
+  }
+  .file-card:hover {
+    border-color: var(--text-accent);
+    transform: translateY(-2px);
+  }
+  .file-card.active { border-color: #fbbf24; background: rgba(251,191,36,.14); }
+  .student-full { height: 100vh !important; max-width: none !important; aspect-ratio: auto !important; border-radius: 0 !important; border: 0 !important; }
+  .name-chip { min-height: 88px; }
+  .name-chip.active { border-color: #fbbf24; background: rgba(251,191,36,.18); color: #fde68a; }
+</style>
+</head>
+<body class="text-slate-100 flex flex-col h-screen select-none" data-theme="dark">
+
+<!-- Setup Screen -->
+<div id="setup-screen" class="fixed inset-0 flex items-center justify-center p-4 z-50 bg-slate-950/90 backdrop-blur-md">
+  <div class="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 glass-panel p-8 rounded-3xl">
+    <div class="bg-slate-950/70 border border-slate-800 rounded-3xl p-6 md:p-8 flex flex-col items-center text-center shadow-xl">
+      <h2 class="text-2xl font-fredoka mb-1 text-white tracking-wide">Teacher Portal</h2>
+      <p class="text-xs text-slate-400 font-bold mb-4">Host and broadcast live classes</p>
+      <div class="w-full mb-6 flex gap-2">
+        <input type="text" id="teacher-room-id" placeholder="Type or Generate" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl py-3 px-4 text-xl font-mono text-center text-amber-400 font-bold tracking-widest focus:outline-none focus:border-amber-400">
+        <button onclick="generateRoomCode()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 rounded-2xl transition"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+      </div>
+      <button onclick="launchSession('teacher')" class="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:opacity-95 text-white py-4 rounded-2xl text-sm font-bold shadow-lg transition">Open Dashboard</button>
+    </div>
+    <div class="bg-slate-950/70 border border-slate-800 rounded-3xl p-6 md:p-8 flex flex-col items-center text-center shadow-xl">
+      <h2 class="text-2xl font-fredoka mb-1 text-white tracking-wide">Student Room</h2>
+      <p class="text-xs text-slate-400 font-bold mb-4">Join active classroom canvas</p>
+      <input type="text" id="student-room-id" placeholder="Enter Code" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl py-3 px-4 mb-6 text-xl font-mono text-center text-emerald-400 font-bold tracking-widest focus:outline-none focus:border-emerald-400">
+      <button onclick="launchSession('student')" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 text-white py-4 rounded-2xl text-sm font-bold shadow-lg transition">Connect Canvas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Student Select Screen (Teacher only) -->
+<div id="student-select-screen" class="hidden flex-col h-screen">
+  <header class="glass-panel px-6 py-5 border-b border-white/10 shrink-0 flex justify-between items-center">
+    <div>
+      <p class="font-fredoka text-xs uppercase tracking-widest text-amber-400">Teacher</p>
+      <h1 class="font-fredoka text-3xl md:text-4xl text-white mt-1">Who is in class?</h1>
+      <p class="text-slate-300 font-bold mt-1 text-sm">Pick student and class minutes. Timer starts when you press Start class.</p>
+    </div>
+    <!-- Teacher Theme Switcher -->
+    <div class="hidden md:flex items-center gap-2 glass-panel px-3 py-1.5 rounded-2xl">
+      <span class="text-xs font-bold text-slate-300 font-fredoka flex items-center gap-1"><i data-lucide="palette" class="w-3.5 h-3.5"></i> Theme:</span>
+      <select onchange="applyConsoleTheme(this.value)" id="theme-selector-pre" class="bg-slate-900/90 border border-slate-700 rounded-xl px-2 py-1 text-xs font-bold text-white focus:outline-none">
+        <option value="dark">Deep Obsidian</option>
+        <option value="neon">Frosted Neon</option>
+        <option value="emerald">Emerald Frost</option>
+        <option value="velvet">Midnight Velvet</option>
+      </select>
+    </div>
+  </header>
+  <div class="flex-1 overflow-y-auto px-4 py-6">
+    <div id="entry-name-grid" class="mx-auto max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+    <div class="mx-auto max-w-2xl mt-6 rounded-3xl glass-panel p-5 border border-amber-400/30">
+      <p class="font-fredoka text-xs uppercase tracking-widest text-amber-400">Class timer (teacher only)</p>
+      <p class="font-fredoka text-2xl text-white mt-1">Minutes: <span id="minutes-label">30</span></p>
+      <input id="class-minutes" type="number" min="1" max="30" value="30" oninput="setPlannedMinutes(this.value)" class="mt-3 w-full bg-slate-950/80 border border-slate-700 rounded-2xl py-3 px-4 text-3xl font-mono font-black text-amber-300 text-center focus:outline-none">
+      <div id="minute-chips" class="mt-3 grid grid-cols-6 gap-2"></div>
+    </div>
+    <div class="mx-auto max-w-2xl mt-5 flex gap-2">
+      <input id="entry-custom-student" type="text" placeholder="Add another name" class="flex-1 glass-panel border border-slate-700 rounded-2xl px-4 py-3 font-bold text-white placeholder:text-slate-500">
+      <button onclick="addEntryStudent()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 rounded-2xl font-bold transition">Add</button>
+    </div>
+    <div class="mx-auto max-w-2xl mt-6">
+      <button onclick="confirmStudentAndContinue()" class="w-full min-h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white rounded-2xl font-fredoka text-xl shadow-lg transition">Start class</button>
+    </div>
+  </div>
+</div>
+
+<!-- Library Screen (Teacher only) -->
+<div id="library-screen" class="hidden flex-col h-screen">
+  <header class="glass-panel flex flex-wrap justify-between items-center gap-3 border-b border-white/10 px-6 py-4 shrink-0">
+    <div>
+      <p class="font-fredoka text-xs uppercase tracking-widest text-amber-400">Teacher</p>
+      <h1 class="font-fredoka text-2xl md:text-3xl text-white">Class files</h1>
+      <p class="text-sm font-bold text-slate-300">Room <span id="lib-room"></span> · <span id="lib-student" class="text-amber-300"></span> · <span id="lib-count">0</span> files</p>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <!-- Upper Header Clock -->
+      <div class="rounded-2xl border border-amber-400/40 bg-slate-950/80 backdrop-blur-md px-4 py-1.5 text-center shadow-md">
+        <p class="font-fredoka text-[9px] uppercase tracking-wider text-amber-400">Class Timer</p>
+        <p id="lib-clock" class="font-mono text-2xl font-black leading-none text-amber-300 tracking-wider">--:--</p>
+      </div>
+
+      <!-- Theme Switcher dropdown -->
+      <div class="glass-panel px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+        <i data-lucide="palette" class="w-4 h-4 text-amber-400"></i>
+        <select onchange="applyConsoleTheme(this.value)" id="theme-selector" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
+          <option value="dark" class="bg-slate-900">Obsidian Glass</option>
+          <option value="neon" class="bg-slate-900">Neon Frosted</option>
+          <option value="emerald" class="bg-slate-900">Emerald Frost</option>
+          <option value="velvet" class="bg-slate-900">Velvet Rose</option>
+        </select>
+      </div>
+
+      <button onclick="openAttendanceReview()" class="glass-panel text-white hover:bg-white/10 px-3 py-2 rounded-xl font-bold text-sm transition">Attendance</button>
+      <button onclick="openStudentSelect()" class="glass-panel text-white hover:bg-white/10 px-3 py-2 rounded-xl font-bold text-sm transition">Student</button>
+      <button onclick="teacherLogout()" class="bg-rose-600/90 hover:bg-rose-600 text-white px-3 py-2 rounded-xl font-bold text-sm transition shadow-md">Logout</button>
+    </div>
+  </header>
+  <div class="glass-panel border-b border-white/5 px-6 py-3 flex flex-col md:flex-row gap-3">
+    <input id="file-search" type="text" placeholder="Search files..." oninput="renderFileList()" class="flex-1 bg-slate-950/60 border border-slate-700 rounded-2xl py-2.5 px-4 text-base font-bold text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500">
+    <div class="flex gap-2">
+      <input id="folder-input" type="text" placeholder="Save new file path" class="bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none">
+      <button onclick="saveCurrentFolderToDatabase()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 rounded-xl font-bold text-sm transition">Save</button>
+    </div>
+  </div>
+  <div class="flex-1 overflow-y-auto px-6 py-4">
+    <ul id="file-list" class="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-4 pb-24"></ul>
+  </div>
+</div>
+
+<!-- Attendance Screen -->
+<div id="attendance-screen" class="hidden flex-col h-screen">
+  <header class="glass-panel flex flex-wrap justify-between items-center gap-3 border-b border-white/10 px-6 py-4">
+    <div>
+      <p class="font-fredoka text-xs uppercase tracking-widest text-amber-400">JSON file</p>
+      <h1 class="font-fredoka text-3xl text-white">Attendance</h1>
+      <p class="text-xs font-bold text-slate-400 mt-1">All class data lives in attendance.json — not inside the console.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <label class="glass-panel text-white hover:bg-white/10 px-3 py-2 rounded-xl font-bold text-sm cursor-pointer transition">Import JSON<input id="import-json" type="file" accept="application/json,.json" class="hidden" onchange="importAttendanceJson(event)"></label>
+      <button onclick="downloadAttendanceJson()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl font-bold text-sm transition">Download JSON</button>
+      <button onclick="eraseAllAttendance()" class="bg-rose-800/80 hover:bg-rose-800 text-white px-3 py-2 rounded-xl font-bold text-sm transition">Erase JSON</button>
+      <button onclick="openLibrary()" class="glass-panel text-white hover:bg-white/10 px-3 py-2 rounded-xl font-bold text-sm transition">Files</button>
+    </div>
+  </header>
+  <div class="flex-1 overflow-y-auto px-6 py-4">
+    <div id="attendance-review" class="mx-auto max-w-3xl space-y-4 pb-24"></div>
+  </div>
+</div>
+
+<!-- Preview Screen -->
+<div id="preview-screen" class="hidden fixed inset-0 z-50 flex-col bg-slate-950/95 backdrop-blur-md">
+  <div class="glass-panel flex items-center justify-between gap-3 border-b border-white/10 px-6 py-3">
+    <button onclick="closePreview()" class="glass-panel text-white px-3 py-2 rounded-xl font-bold hover:bg-white/10 transition">Back</button>
+    <h3 id="preview-title" class="font-fredoka text-xl text-white truncate min-w-0"></h3>
+    <button onclick="teachFromPreview()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold transition shadow-md">Teach</button>
+  </div>
+  <iframe id="preview-frame" class="flex-1 w-full border-0 bg-white"></iframe>
+</div>
+
+<!-- Main Workspace Screen -->
+<div id="main-workspace" class="hidden flex-col h-screen">
+  <header id="app-header" class="glass-panel border-b border-white/10 px-4 md:px-6 py-2.5 flex flex-wrap justify-between items-center gap-3 shrink-0">
+    <div class="flex items-center gap-2 md:gap-3 min-w-0">
+      <button id="back-files-btn" onclick="openLibrary()" class="hidden glass-panel hover:bg-white/10 text-white px-3 py-1.5 rounded-xl font-bold text-xs transition">Files</button>
+      <span id="role-badge" class="px-2.5 py-1 rounded-xl text-[10px] font-bold font-fredoka uppercase text-white shadow-sm"></span>
+      <span class="text-[11px] md:text-xs text-slate-300 font-fredoka">Room: <strong id="header-room-id" class="text-white text-sm ml-1 font-mono"></strong></span>
+      <span id="active-file-name" class="font-fredoka text-white text-xs md:text-sm truncate max-w-[140px] md:max-w-xs"></span>
+      <span id="active-student-name" class="font-fredoka text-amber-300 text-xs md:text-sm truncate"></span>
+    </div>
+
+    <!-- UPPER HEADER LOCATION FOR TIME (SAFE & NON-INTRUSIVE) -->
+    <div class="flex items-center gap-3">
+      <div id="header-clock-container" class="flex items-center gap-2 rounded-2xl border border-amber-400/40 bg-slate-950/80 px-3.5 py-1 backdrop-blur-md shadow-inner">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <div>
+          <p class="font-fredoka text-[8px] uppercase tracking-wider text-amber-400 leading-none">Class Timer</p>
+          <p id="header-clock" class="font-mono text-xl md:text-2xl font-black leading-tight tracking-wider text-amber-300">--:--</p>
+        </div>
+      </div>
+
+      <!-- Teacher Quick Theme Switcher in Workspace Header -->
+      <div id="header-theme-box" class="hidden md:flex items-center glass-panel px-2.5 py-1 rounded-xl">
+        <select onchange="applyConsoleTheme(this.value)" id="theme-selector-ws" class="bg-transparent text-[11px] font-bold text-slate-200 focus:outline-none cursor-pointer">
+          <option value="dark" class="bg-slate-900">Obsidian Glass</option>
+          <option value="neon" class="bg-slate-900">Frosted Neon</option>
+          <option value="emerald" class="bg-slate-900">Emerald Frost</option>
+          <option value="velvet" class="bg-slate-900">Midnight Velvet</option>
+        </select>
+      </div>
+
+      <button id="logout-btn" onclick="teacherLogout()" class="bg-rose-800/80 hover:bg-rose-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">Logout</button>
+    </div>
+  </header>
+
+  <main class="workspace-container" id="workspace-main">
+    <div class="game-canvas" id="shared-box">
+      <div class="h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 absolute top-0 left-0 z-10" id="canvas-bar"></div>
+      
+      <!-- IFRAME HAS ZERO OBSTRUCTION NOW -->
+      <iframe id="game-frame" class="w-full h-full border-0 absolute inset-0 bg-white" src="about:blank"></iframe>
+
+      <!-- Overlays -->
+      <div id="waiting-overlay" class="absolute inset-0 bg-slate-950 flex-col items-center justify-center z-10 text-center" style="display:none">
+        <div class="w-16 h-16 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin mb-4"></div>
+        <p class="font-fredoka text-3xl text-white">Waiting for class</p>
+        <p class="mt-2 font-bold text-slate-400">Teacher will start the worksheet</p>
+      </div>
+
+      <div id="attend-overlay" class="absolute inset-0 bg-slate-950 flex-col items-center justify-center z-20 text-center px-6" style="display:none">
+        <p id="attend-name" class="font-fredoka text-5xl text-amber-300"></p>
+        <p id="attend-date" class="mt-4 font-fredoka text-3xl text-white"></p>
+        <p id="attend-time" class="mt-1 font-mono text-5xl font-black text-amber-300"></p>
+        <button onclick="markAttend()" class="mt-8 min-h-16 w-full max-w-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-fredoka text-3xl shadow-xl transition">Attend</button>
+      </div>
+
+      <div id="loading-overlay" class="absolute inset-0 bg-slate-950/90 flex-col items-center justify-center z-[25]" style="display:none">
+        <div style="width:50px;height:50px;border:4px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;"></div>
+        <p class="text-slate-300 text-sm font-bold mt-4 font-fredoka">Loading Game...</p>
+        <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+      </div>
+
+      <div id="smile-overlay" class="absolute inset-0 bg-slate-950/95 flex-col items-center justify-center z-30 text-center" style="display:none">
+        <div class="smile-pop text-center px-6">
+          <div class="text-7xl mb-3">😊</div>
+          <p class="font-fredoka text-3xl md:text-5xl text-white">Class over</p>
+          <p id="over-student" class="mt-2 font-fredoka text-4xl md:text-6xl text-amber-300"></p>
+          <p class="mt-3 text-lg md:text-2xl font-extrabold text-amber-300">Next class waiting .....</p>
+          <p id="smile-sub" class="text-slate-400 text-sm font-bold mt-2"></p>
+        </div>
+        <div id="extra-time-controls" class="absolute right-4 bottom-4 flex-col gap-2 rounded-2xl glass-panel p-4" style="display:none">
+          <p class="font-fredoka text-xs text-amber-400">Teacher extend</p>
+          <button onclick="addExtraMinutes(3)" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-4 py-2 rounded-xl transition shadow">+ 3 min</button>
+          <button onclick="addExtraMinutes(5)" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-4 py-2 rounded-xl transition shadow">+ 5 min</button>
+          <button onclick="teacherLogout()" class="bg-rose-600 hover:bg-rose-500 text-white font-black px-4 py-2 rounded-xl transition shadow">Logout</button>
+        </div>
+      </div>
+
+      <div id="remote-pointer" class="live-pointer absolute top-0 left-0 w-6 h-6 md:w-8 md:h-8 hidden">
+        <svg class="w-full h-full" viewBox="0 0 24 24" fill="none"><path d="M4.5 3V17L9 12.5L14 21.5L17.5 19.5L12.5 10.5L18.5 10.5L4.5 3Z" fill="#3b82f6" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      </div>
+      <div id="touch-ripple" style="position:absolute;width:38px;height:38px;border-radius:50%;pointer-events:none;z-index:9998;display:none;transform:translate(-50%,-50%);background:rgba(59,130,246,.2);border:3px solid #3b82f6;"></div>
+      <style>
+        @keyframes rippleOut { 0%{box-shadow:0 0 0 0 rgba(59,130,246,.55);opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{box-shadow:0 0 0 28px rgba(59,130,246,0);opacity:0;transform:translate(-50%,-50%) scale(1.4)} }
+        .ripple-active { animation: rippleOut .75s ease forwards !important; }
+      </style>
+    </div>
+  </main>
+</div>
+
+<!-- Student subtle top timer -->
+<div id="student-floating-clock" class="hidden pointer-events-none fixed top-2 right-4 z-40 rounded-xl border border-amber-400/30 bg-slate-950/80 backdrop-blur-md px-3 py-1 shadow-lg">
+  <p class="font-mono text-sm md:text-base font-black text-amber-300" id="student-clock-text">--:--</p>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="fixed bottom-5 right-5 glass-panel text-white px-5 py-3 rounded-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50 text-xs font-bold max-w-[80vw] shadow-2xl flex items-center gap-2">
+  <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+  <span id="toast-text">Message</span>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const DEFAULT_DURATION_MS = 30 * 60 * 1000;
+const DEFAULT_STUDENTS = ['VIHANA', 'MANU', 'MAHA', 'RUDVAN'];
+const firebaseConfig = {
+  apiKey: "AIzaSyD640Y5hyvq7TAcGQnepO9K02G86VBeTUc",
+  authDomain: "livetutor-be614.firebaseapp.com",
+  databaseURL: "https://livetutor-be614-default-rtdb.firebaseio.com",
+  projectId: "livetutor-be614",
+  storageBucket: "livetutor-be614.firebasestorage.app",
+  messagingSenderId: "415272685714",
+  appId: "1:415272685714:web:f1840924806a2a6b8d164b"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let myRole = '', roomId = '', dbRef = null, globalPresetsRef = null, studentsRef = null, attendanceRef = null;
+let lastLoadedUrl = '', globalPresets = [], studentNames = DEFAULT_STUDENTS.slice();
+let lastProcessedOuterActionId = null, sessionStart = null, extraMs = 0, extraAdded = false;
+let durationMs = DEFAULT_DURATION_MS, plannedMinutes = 30;
+let smileShown = false, waitingForExtend = false, clockInterval = null, liveClockInterval = null;
+let lastFirebaseCursorUpdate = 0, activeFile = '', previewFile = '', selectedStudent = '', studentName = '';
+let loggingOut = false, studentAttendedToday = false, studentSawLiveTimer = false;
+let attendanceData = emptyJson();
+
+lucide.createIcons();
+
+// --- Theme Management (Teacher Dashboard only) ---
+window.applyConsoleTheme = function(themeName) {
+  if (myRole !== 'teacher' && myRole !== '') return;
+  document.body.setAttribute('data-theme', themeName);
+  localStorage.setItem('livetutor_theme', themeName);
+  ['theme-selector', 'theme-selector-pre', 'theme-selector-ws'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = themeName;
+  });
+};
+
+const savedTheme = localStorage.getItem('livetutor_theme') || 'dark';
+applyConsoleTheme(savedTheme);
+
+function emptyJson() { return { students: DEFAULT_STUDENTS.slice(), days: {} }; }
+function prettyName(path) {
+  return String(path || '').replace(/\/index\.html$/i, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase());
+}
+function formatTime(ms) {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
+}
+function pad(n) { return String(n).padStart(2, '0'); }
+function todayKey() { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function nowTime() { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+function niceDate() { return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }); }
+function buildWorksheetUrl(path) {
+  let rawUrl = String(path || '').trim();
+  if (!rawUrl.toLowerCase().endsWith('.html')) rawUrl += '/index.html';
+  return rawUrl.split('/').map(p => encodeURIComponent(p)).join('/') + '#room=' + roomId;
+}
+function remainingMs() { return sessionStart ? durationMs + extraMs - (Date.now() - sessionStart) : null; }
+function extraMinutes() { return extraAdded ? Math.round(extraMs / 60000) : 0; }
+function classMinutes() { return (Math.round(durationMs / 60000)) + extraMinutes(); }
+function clampMinutes(n) {
+  n = parseInt(n, 10);
+  if (!n || n < 1) n = 1;
+  if (n > 30) n = 30;
+  return n;
+}
+
+window.setPlannedMinutes = function(n) {
+  plannedMinutes = clampMinutes(n);
+  const input = document.getElementById('class-minutes');
+  if (input && String(input.value) !== String(plannedMinutes)) input.value = plannedMinutes;
+  document.getElementById('minutes-label').innerText = plannedMinutes;
+  document.querySelectorAll('.min-chip').forEach(btn => {
+    btn.classList.toggle('bg-amber-400', Number(btn.dataset.min) === plannedMinutes);
+    btn.classList.toggle('text-slate-900', Number(btn.dataset.min) === plannedMinutes);
+  });
+};
+
+function renderMinuteChips() {
+  const box = document.getElementById('minute-chips');
+  if (!box) return;
+  box.innerHTML = [5,10,15,20,25,30].map(m =>
+    `<button data-min="${m}" onclick="setPlannedMinutes(${m})" class="min-chip min-h-11 rounded-xl glass-panel hover:border-amber-400 font-black transition">${m}</button>`
+  ).join('');
+  setPlannedMinutes(plannedMinutes);
+}
+
+function hideAllMain() {
+  ['library-screen','student-select-screen','attendance-screen','main-workspace','preview-screen'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.add('hidden'); el.classList.remove('flex');
+  });
+}
+function jsonRecordPath(date, name) { return 'attendance_log/days/' + date + '/' + name; }
+async function saveJson() {
+  if (!attendanceRef) return;
+  attendanceData.students = studentNames.slice();
+  await set(attendanceRef, attendanceData);
+}
+
+window.generateRoomCode = function() {
+  document.getElementById('teacher-room-id').value = Math.floor(1000 + Math.random() * 9000);
+};
+
+window.launchSession = function(role) {
+  myRole = role;
+  roomId = document.getElementById(role === 'teacher' ? 'teacher-room-id' : 'student-room-id').value.trim();
+  if (!roomId) { showToast('Code required!'); return; }
+  document.getElementById('setup-screen').classList.add('hidden');
+  document.getElementById('header-room-id').innerText = roomId;
+  document.getElementById('lib-room').innerText = roomId;
+  
+  if (myRole === 'teacher') {
+    document.getElementById('role-badge').innerText = 'Teacher';
+    document.getElementById('role-badge').className = 'px-2.5 py-1 rounded-xl text-[10px] font-bold font-fredoka uppercase text-white bg-blue-600 shadow';
+    document.getElementById('back-files-btn').classList.remove('hidden');
+    document.getElementById('header-theme-box').classList.remove('hidden');
+    openStudentSelect();
+  } else {
+    document.getElementById('role-badge').innerText = 'Student';
+    document.getElementById('role-badge').className = 'px-2.5 py-1 rounded-xl text-[10px] font-bold font-fredoka uppercase text-white bg-emerald-600 shadow';
+    document.getElementById('header-theme-box').classList.add('hidden');
+    showStudentCanvas();
+    startLiveClock();
+  }
+  connectFirebaseEngine();
+};
+
+window.openStudentSelect = function() {
+  hideAllMain();
+  document.getElementById('student-select-screen').classList.remove('hidden');
+  document.getElementById('student-select-screen').classList.add('flex');
+  renderEntryNames();
+  renderMinuteChips();
+};
+
+function renderEntryNames() {
+  const grid = document.getElementById('entry-name-grid');
+  grid.innerHTML = studentNames.map(name => {
+    const active = name === selectedStudent ? 'active' : '';
+    const safe = esc(name);
+    return `<div class="relative">
+      <button onclick="pickStudent('${safe}')" class="name-chip ${active} w-full rounded-3xl border-2 border-slate-700 glass-panel px-4 font-fredoka text-3xl text-white transition">${name}</button>
+      <button onclick="deleteStudentName('${safe}')" class="absolute top-3 right-3 h-8 w-8 rounded-full bg-rose-700 hover:bg-rose-600 font-black shadow transition">✕</button>
+    </div>`;
+  }).join('') || '<p class="text-slate-400 font-bold">No students. Add a name.</p>';
+}
+
+function esc(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+window.pickStudent = function(name) { selectedStudent = name; renderEntryNames(); };
+
+window.addEntryStudent = function() {
+  const name = document.getElementById('entry-custom-student').value.trim().toUpperCase();
+  if (!name) return;
+  if (!studentNames.includes(name)) studentNames.push(name);
+  selectedStudent = name;
+  document.getElementById('entry-custom-student').value = '';
+  saveJson();
+  if (studentsRef) set(studentsRef, studentNames);
+  renderEntryNames();
+};
+
+window.deleteStudentName = function(name) {
+  if (!confirm('Delete student ' + name + ' from the list?')) return;
+  studentNames = studentNames.filter(n => n !== name);
+  if (selectedStudent === name) selectedStudent = '';
+  if (studentName === name) studentName = '';
+  if (studentsRef) set(studentsRef, studentNames);
+  saveJson();
+  renderEntryNames();
+  showToast(name + ' removed');
+};
+
+window.confirmStudentAndContinue = function() {
+  if (!selectedStudent) return showToast('Choose student name!');
+  if (!dbRef) return showToast('Room not connected');
+  studentName = selectedStudent;
+  plannedMinutes = clampMinutes(document.getElementById('class-minutes').value);
+  durationMs = plannedMinutes * 60 * 1000;
+  extraMs = 0;
+  extraAdded = false;
+  waitingForExtend = false;
+  smileShown = false;
+  hideSmile();
+  sessionStart = Date.now();
+  update(dbRef, {
+    student_name: studentName,
+    duration_ms: durationMs,
+    session_start: sessionStart,
+    extra_ms: 0,
+    last_action: null
+  });
+  document.getElementById('lib-student').innerText = studentName;
+  document.getElementById('active-student-name').innerText = '· ' + studentName;
+  startLocalClock();
+  openLibrary();
+  showToast('Timer started: ' + plannedMinutes + ' min for ' + studentName);
+};
+
+window.openLibrary = function() {
+  hideAllMain();
+  document.getElementById('library-screen').classList.remove('hidden');
+  document.getElementById('library-screen').classList.add('flex');
+  document.getElementById('lib-student').innerText = studentName || selectedStudent || '';
+  renderFileList();
+};
+
+window.openAttendanceReview = function() {
+  hideAllMain();
+  document.getElementById('attendance-screen').classList.remove('hidden');
+  document.getElementById('attendance-screen').classList.add('flex');
+  renderAttendanceReview();
+};
+
+function showTeacherCanvas() {
+  hideAllMain();
+  document.getElementById('main-workspace').classList.remove('hidden');
+  document.getElementById('main-workspace').classList.add('flex');
+  document.getElementById('app-header').classList.remove('hidden');
+  document.getElementById('header-clock-container').classList.remove('hidden');
+  document.getElementById('active-file-name').innerText = prettyName(activeFile);
+  document.getElementById('active-student-name').innerText = studentName ? '· ' + studentName : '';
+}
+
+function showStudentCanvas() {
+  hideAllMain();
+  document.getElementById('main-workspace').classList.remove('hidden');
+  document.getElementById('main-workspace').classList.add('flex');
+  document.getElementById('app-header').classList.add('hidden');
+  document.getElementById('canvas-bar').classList.add('hidden');
+  document.getElementById('workspace-main').classList.remove('workspace-container');
+  document.getElementById('shared-box').classList.add('student-full');
+  document.getElementById('student-floating-clock').classList.remove('hidden');
+  if (!activeFile) showOverlay('waiting-overlay');
+  else hideOverlay('waiting-overlay');
+  applyStudentScreens();
+}
+
+window.renderFileList = function() {
+  const q = (document.getElementById('file-search').value || '').trim().toLowerCase();
+  const list = document.getElementById('file-list');
+  const rows = globalPresets.filter(p => !q || prettyName(p).toLowerCase().includes(q) || String(p).toLowerCase().includes(q));
+  document.getElementById('lib-count').innerText = globalPresets.length;
+  if (!rows.length) { list.innerHTML = '<li class="md:col-span-2 py-16 text-center text-lg font-bold text-slate-400">No saved files yet</li>'; return; }
+  list.innerHTML = rows.map(file => {
+    const sel = file === activeFile ? 'active' : '';
+    const name = prettyName(file).replace(/</g, '');
+    const letter = (name[0] || 'F').toUpperCase();
+    const safe = esc(file);
+    return `<li class="file-card ${sel} rounded-3xl p-5 flex flex-col min-h-[170px] shadow-lg">
+      <div class="flex items-start gap-4">
+        <div class="h-16 w-16 shrink-0 rounded-2xl bg-indigo-600/80 font-fredoka text-3xl text-white flex items-center justify-center shadow-md">${letter}</div>
+        <h2 class="font-fredoka text-2xl md:text-3xl text-white leading-tight">${name}</h2>
+      </div>
+      <div class="mt-auto pt-4 grid grid-cols-3 gap-2">
+        <button onclick="openPreview('${safe}')" class="min-h-12 rounded-2xl glass-panel hover:bg-white/10 font-bold transition">Preview</button>
+        <button onclick="teachFile('${safe}')" class="min-h-12 rounded-2xl bg-blue-600 hover:bg-blue-500 font-bold shadow transition">Teach</button>
+        <button onclick="deleteFile('${safe}')" class="min-h-12 rounded-2xl bg-rose-900/80 hover:bg-rose-800 font-bold transition">Delete</button>
+      </div>
+    </li>`;
+  }).join('');
+};
+
+window.openPreview = function(file) {
+  previewFile = file;
+  document.getElementById('preview-title').innerText = prettyName(file);
+  document.getElementById('preview-frame').src = buildWorksheetUrl(file);
+  document.getElementById('preview-screen').classList.remove('hidden');
+  document.getElementById('preview-screen').classList.add('flex');
+};
+
+window.closePreview = function() {
+  document.getElementById('preview-screen').classList.add('hidden');
+  document.getElementById('preview-screen').classList.remove('flex');
+  document.getElementById('preview-frame').src = 'about:blank';
+};
+
+window.teachFromPreview = function() { if (previewFile) teachFile(previewFile); };
+
+window.teachFile = function(path) {
+  if (!dbRef || !path) return;
+  if (!studentName) return openStudentSelect();
+  activeFile = path;
+  const runId = Date.now();
+  lastLoadedUrl = runId;
+  const payload = { current_url: path, run_id: runId, last_action: null, student_name: studentName };
+  update(dbRef, payload);
+  closePreview();
+  showTeacherCanvas();
+  loadWorksheetFast(path);
+  showToast('Teaching ' + prettyName(path));
+};
+
+window.deleteFile = function(path) {
+  if (!globalPresetsRef) return;
+  globalPresets = globalPresets.filter(p => p !== path);
+  set(globalPresetsRef, globalPresets);
+  if (activeFile === path) activeFile = '';
+  renderFileList();
+  showToast('Deleted from Cloud!');
+};
+
+window.saveCurrentFolderToDatabase = function() {
+  const val = document.getElementById('folder-input').value.trim();
+  if (!val) return showToast('Type a file name first!');
+  if (!globalPresets.includes(val)) {
+    globalPresets.push(val);
+    set(globalPresetsRef, globalPresets);
+    document.getElementById('folder-input').value = '';
+    renderFileList();
+    showToast('Saved to Cloud!');
+  }
+};
+
+function showOverlay(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'flex';
+}
+function hideOverlay(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'none';
+}
+function hideAttend() { hideOverlay('attend-overlay'); }
+function showAttend() {
+  if (myRole !== 'student') return;
+  if (smileShown) { hideAttend(); return; }
+  if (studentAttendedToday || !studentName) { hideAttend(); return; }
+  startLiveClock();
+  showOverlay('attend-overlay');
+}
+
+function applyStudentScreens() {
+  if (myRole !== 'student') return;
+  const live = !!(sessionStart && remainingMs() > 0);
+  if (!live && smileShown) {
+    hideAttend();
+    showOverlay('smile-overlay');
+    return;
+  }
+  smileShown = false;
+  waitingForExtend = false;
+  hideOverlay('smile-overlay');
+  hideOverlay('extra-time-controls');
+  showAttend();
+}
+
+function startLiveClock() {
+  if (liveClockInterval) return;
+  const tick = () => {
+    document.getElementById('attend-date').innerText = niceDate();
+    document.getElementById('attend-time').innerText = nowTime();
+    document.getElementById('attend-name').innerText = studentName || 'Student';
+  };
+  tick();
+  liveClockInterval = setInterval(tick, 250);
+}
+
+function maybeShowAttend() {
+  applyStudentScreens();
+}
+
+window.markAttend = function() {
+  if (!studentName) return showToast('Wait for teacher to choose student');
+  const date = todayKey();
+  const prev = attendanceData.days?.[date]?.[studentName] || {};
+  const record = Object.assign({}, prev, {
+    name: studentName,
+    attended: true,
+    date,
+    attendTime: nowTime(),
+    endTime: prev.endTime || '',
+    baseMinutes: 30,
+    extraMinutes: extraMinutes(),
+    totalMinutes: classMinutes(),
+    review: prev.review || ''
+  });
+  studentAttendedToday = true;
+  if (!attendanceData.days) attendanceData.days = {};
+  if (!attendanceData.days[date]) attendanceData.days[date] = {};
+  attendanceData.days[date][studentName] = record;
+  saveJson();
+  hideAttend();
+  showToast(studentName + ' attended');
+};
+
+function updateAttendanceDuration() {
+  if (!studentName) return;
+  const date = todayKey();
+  const rec = attendanceData.days?.[date]?.[studentName];
+  if (!rec || !rec.attended) return;
+  rec.extraMinutes = extraMinutes();
+  rec.totalMinutes = classMinutes();
+  rec.endTime = nowTime();
+  saveJson();
+}
+
+window.deleteDayEntry = function(date, name) {
+  if (!confirm('Erase ' + name + ' on ' + date + ' from JSON?')) return;
+  if (attendanceData.days?.[date]) {
+    delete attendanceData.days[date][name];
+    if (!Object.keys(attendanceData.days[date]).length) delete attendanceData.days[date];
+  }
+  if (attendanceRef) remove(ref(db, jsonRecordPath(date, name))).catch(() => {});
+  saveJson();
+  renderAttendanceReview();
+  showToast('JSON entry deleted');
+};
+
+window.deleteWholeDay = function(date) {
+  if (!confirm('Erase all students for ' + date + '?')) return;
+  if (attendanceData.days) delete attendanceData.days[date];
+  if (attendanceRef) remove(ref(db, 'attendance_log/days/' + date)).catch(() => {});
+  saveJson();
+  renderAttendanceReview();
+};
+
+window.saveReview = function(date, name, value) {
+  if (!attendanceData.days) attendanceData.days = {};
+  if (!attendanceData.days[date]) attendanceData.days[date] = {};
+  if (!attendanceData.days[date][name]) attendanceData.days[date][name] = { name, date, attended: false, review: '' };
+  attendanceData.days[date][name].review = value;
+  saveJson();
+};
+
+window.eraseAllAttendance = function() {
+  if (!confirm('Erase the whole attendance JSON? This cannot be undone unless you have a downloaded copy.')) return;
+  attendanceData = { students: studentNames.slice(), days: {} };
+  saveJson();
+  renderAttendanceReview();
+  showToast('JSON erased');
+};
+
+window.importAttendanceJson = function(event) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || typeof parsed !== 'object') throw new Error('bad');
+      attendanceData = {
+        students: Array.isArray(parsed.students) ? parsed.students : studentNames.slice(),
+        days: parsed.days && typeof parsed.days === 'object' ? parsed.days : {}
+      };
+      if (attendanceData.students.length) {
+        studentNames = attendanceData.students.map(n => String(n).toUpperCase());
+        if (studentsRef) set(studentsRef, studentNames);
+      }
+      saveJson();
+      renderAttendanceReview();
+      showToast('JSON imported. Previous live JSON replaced.');
+    } catch (e) {
+      showToast('Invalid JSON file');
+    }
+  };
+  reader.readAsText(file);
+};
+
+window.downloadAttendanceJson = function() {
+  attendanceData.students = studentNames.slice();
+  const blob = new Blob([JSON.stringify(attendanceData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'attendance.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Downloaded attendance.json — replace old file in your folder');
+};
+
+function renderAttendanceReview() {
+  const box = document.getElementById('attendance-review');
+  const days = Object.keys(attendanceData.days || {}).sort().reverse();
+  if (!days.length) {
+    box.innerHTML = '<p class="py-16 text-center font-bold text-slate-400">JSON is empty. Student must press Attend.</p>';
+    return;
+  }
+  box.innerHTML = days.map(date => {
+    const row = attendanceData.days[date] || {};
+    const names = Array.from(new Set([...(studentNames || []), ...Object.keys(row)]));
+    const cards = names.map(name => {
+      const rec = row[name] || {};
+      const safeDate = esc(date);
+      const safeName = esc(name);
+      const review = (rec.review || '').replace(/</g, '');
+      if (!rec.attended) {
+        return `<div class="rounded-2xl glass-panel p-4">
+          <div class="flex justify-between"><p class="font-fredoka text-2xl">${name}</p>
+          <button onclick="deleteDayEntry('${safeDate}','${safeName}')" class="text-xs bg-rose-900 px-2 py-1 rounded-lg font-bold">Delete</button></div>
+          <p class="text-slate-400 font-bold">Not attended</p>
+          <textarea onchange="saveReview('${safeDate}','${safeName}', this.value)" placeholder="Review of ${name}" class="mt-2 w-full bg-slate-950/80 border border-slate-700 rounded-xl p-2 text-sm text-white focus:outline-none">${review}</textarea>
+        </div>`;
+      }
+      return `<div class="rounded-2xl border border-emerald-500/30 glass-panel p-4">
+        <div class="flex justify-between items-start gap-2">
+          <p class="font-fredoka text-2xl text-white">${name}</p>
+          <button onclick="deleteDayEntry('${safeDate}','${safeName}')" class="text-xs bg-rose-700 px-2 py-1 rounded-lg font-bold">Delete entry</button>
+        </div>
+        <p class="text-emerald-400 font-bold">Attended ${rec.attendTime || ''}</p>
+        <p class="text-amber-300 font-black text-xl mt-1">${rec.totalMinutes || 30} min</p>
+        <p class="text-xs text-slate-300 font-bold">30 min class${rec.extraMinutes ? ' + ' + rec.extraMinutes + ' extra' : ''}</p>
+        <textarea onchange="saveReview('${safeDate}','${safeName}', this.value)" placeholder="Review of ${name}" class="mt-2 w-full bg-slate-950/80 border border-slate-700 rounded-xl p-2 text-sm text-white focus:outline-none">${review}</textarea>
+      </div>`;
+    }).join('');
+    return `<section class="rounded-3xl border border-white/10 glass-panel p-5">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="font-fredoka text-2xl text-amber-300">${date}</h2>
+        <button onclick="deleteWholeDay('${esc(date)}')" class="text-xs bg-rose-900 hover:bg-rose-800 px-3 py-1 rounded-lg font-bold">Delete day</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${cards}</div>
+    </section>`;
+  }).join('');
+}
+
+function connectFirebaseEngine() {
+  dbRef = ref(db, 'global_rooms/' + roomId);
+  globalPresetsRef = ref(db, 'shared_presets/list');
+  studentsRef = ref(db, 'shared_presets/students');
+  attendanceRef = ref(db, 'attendance_log');
+
+  onValue(globalPresetsRef, snap => {
+    globalPresets = snap.val() || [];
+    if (myRole === 'teacher') renderFileList();
+  });
+  onValue(studentsRef, snap => {
+    const list = snap.val();
+    studentNames = Array.isArray(list) && list.length ? list : DEFAULT_STUDENTS.slice();
+    if (!document.getElementById('student-select-screen').classList.contains('hidden')) renderEntryNames();
+  });
+  onValue(attendanceRef, snap => {
+    const val = snap.val();
+    attendanceData = val && typeof val === 'object' ? val : emptyJson();
+    if (!attendanceData.days) attendanceData.days = {};
+    if (Array.isArray(attendanceData.students) && attendanceData.students.length) {
+      studentNames = attendanceData.students;
+    }
+    const rec = attendanceData.days[todayKey()]?.[studentName];
+    studentAttendedToday = !!(rec && rec.attended);
+    if (myRole === 'student') maybeShowAttend();
+    if (!document.getElementById('attendance-screen').classList.contains('hidden')) renderAttendanceReview();
+  });
+
+  onValue(dbRef, snapshot => {
+    const data = snapshot.val();
+    if (data) {
+      studentName = data.student_name || studentName;
+      selectedStudent = selectedStudent || studentName;
+      document.getElementById('over-student').innerText = studentName;
+      document.getElementById('active-student-name').innerText = studentName ? '· ' + studentName : '';
+      document.getElementById('lib-student').innerText = studentName || '';
+      const rec = attendanceData.days?.[todayKey()]?.[studentName];
+      studentAttendedToday = !!(rec && rec.attended);
+
+      if (data.duration_ms) durationMs = Number(data.duration_ms) || DEFAULT_DURATION_MS;
+      if (data.session_start) {
+        sessionStart = data.session_start;
+        extraMs = data.extra_ms || 0;
+        extraAdded = extraMs > 0;
+        const left = durationMs + extraMs - (Date.now() - sessionStart);
+        if (left > 0) {
+          studentSawLiveTimer = true;
+          hideSmile();
+          startLocalClock();
+        } else if (studentSawLiveTimer) {
+          startLocalClock();
+        } else {
+          sessionStart = null;
+          extraMs = 0;
+          extraAdded = false;
+          hideSmile();
+          resetClocks();
+          if (myRole === 'teacher') update(dbRef, { session_start: null, extra_ms: 0 });
+        }
+      } else {
+        sessionStart = null; extraMs = 0; extraAdded = false; waitingForExtend = false; studentSawLiveTimer = false;
+        hideSmile();
+        resetClocks();
+      }
+      if (myRole === 'student') applyStudentScreens();
+      if (data.current_url) {
+        activeFile = data.current_url;
+        hideOverlay('waiting-overlay');
+      }
+      const runId = data.run_id || data.current_url || '';
+      if (data.current_url && runId !== lastLoadedUrl) {
+        lastLoadedUrl = runId;
+        loadWorksheetFast(data.current_url);
+      }
+      if (data.last_action && data.last_action.initiator !== myRole) {
+        if (data.last_action.actionId && data.last_action.actionId !== lastProcessedOuterActionId) {
+          lastProcessedOuterActionId = data.last_action.actionId;
+          const frame = document.getElementById('game-frame');
+          if (frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'EXECUTE_UNIVERSAL_ACTION', action: data.last_action }, '*');
+          const rpl = document.getElementById('touch-ripple');
+          if (rpl && data.pointer) {
+            rpl.style.left = data.pointer.x + '%'; rpl.style.top = data.pointer.y + '%';
+            rpl.style.display = 'block'; rpl.classList.remove('ripple-active'); void rpl.offsetWidth; rpl.classList.add('ripple-active');
+            clearTimeout(window.hideRpl);
+            window.hideRpl = setTimeout(() => { rpl.style.display = 'none'; rpl.classList.remove('ripple-active'); }, 1000);
+          }
+        }
+      }
+      if (data.pointer && data.pointer.initiator !== myRole) {
+        const ptr = document.getElementById('remote-pointer');
+        ptr.style.left = data.pointer.x + '%'; ptr.style.top = data.pointer.y + '%';
+        ptr.classList.remove('hidden');
+        clearTimeout(window.hidePtr);
+        window.hidePtr = setTimeout(() => ptr.classList.add('hidden'), 2500);
+      }
+    } else if (myRole === 'teacher') {
+      set(dbRef, { current_url: '', last_action: null, extra_ms: 0, student_name: '', session_start: null, duration_ms: null });
+    }
+  });
+}
+
+function resetClocks() {
+  ['header-clock', 'lib-clock', 'student-clock-text'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '--:--';
+  });
+}
+
+function startLocalClock() {
+  if (clockInterval) return;
+  tickClock();
+  clockInterval = setInterval(tickClock, 250);
+}
+
+function paintClock(el, remaining) {
+  if (!el) return;
+  el.textContent = formatTime(remaining);
+  el.classList.remove('clock-danger');
+  if (remaining <= 60000) el.classList.add('clock-danger');
+}
+
+function tickClock() {
+  if (!sessionStart) return;
+  const left = remainingMs();
+  const elapsed = Date.now() - sessionStart;
+  const clocks = [
+    document.getElementById('header-clock'),
+    document.getElementById('lib-clock'),
+    document.getElementById('student-clock-text')
+  ];
+
+  if (!extraAdded && elapsed >= durationMs) {
+    clocks.forEach(c => paintClock(c, 0));
+    updateAttendanceDuration();
+    if (myRole === 'student' && !studentSawLiveTimer) {
+      hideSmile();
+      showAttend();
+      return;
+    }
+    if (!waitingForExtend) showSmile(false);
+    return;
+  }
+  if (left > 0) studentSawLiveTimer = true;
+  clocks.forEach(c => paintClock(c, left));
+  if (extraAdded && smileShown && left > 0) hideSmile();
+  if (extraAdded && left <= 0) {
+    clocks.forEach(c => paintClock(c, 0));
+    updateAttendanceDuration();
+    showSmile(true);
+    setTimeout(teacherLogout, 1500);
+  }
+}
+
+function showSmile(finalEnd) {
+  smileShown = true;
+  waitingForExtend = !finalEnd;
+  hideAttend();
+  if (myRole === 'teacher') showTeacherCanvas();
+  document.getElementById('over-student').innerText = studentName;
+  showOverlay('smile-overlay');
+  const sub = document.getElementById('smile-sub');
+  if (finalEnd || myRole !== 'teacher') {
+    hideOverlay('extra-time-controls');
+    sub.innerText = finalEnd ? (extraAdded ? 'Extra time finished. Logging out...' : 'Session completed. Logging out...') : '';
+    return;
+  }
+  showOverlay('extra-time-controls');
+  sub.innerText = '';
+}
+
+function hideSmile() {
+  smileShown = false;
+  waitingForExtend = false;
+  hideOverlay('smile-overlay');
+  hideOverlay('extra-time-controls');
+}
+
+window.addExtraMinutes = function(mins) {
+  if (myRole !== 'teacher' || !dbRef || !sessionStart) return;
+  extraAdded = true; extraMs = mins * 60 * 1000; waitingForExtend = false;
+  update(dbRef, { extra_ms: extraMs });
+  updateAttendanceDuration();
+  hideSmile();
+  showToast('Extra +' + mins + ' minutes');
+};
+
+window.teacherLogout = function() {
+  if (loggingOut) return;
+  loggingOut = true;
+  updateAttendanceDuration();
+  if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+  showToast('Session ended. Logging out...');
+  const finish = () => setTimeout(() => location.reload(), 700);
+  if (dbRef) set(dbRef, { current_url: '', last_action: null, extra_ms: 0, student_name: '', session_start: null, duration_ms: null }).then(finish).catch(finish);
+  else finish();
+};
+
+window.addEventListener('message', (event) => {
+  if (!dbRef) return;
+  if (event.data?.type === 'IFRAME_ACTION_TRIGGERED') {
+    const payload = event.data.payload;
+    if (payload?.type === 'UNIVERSAL_CURSOR') {
+      const now = Date.now();
+      if (now - lastFirebaseCursorUpdate > 200) {
+        lastFirebaseCursorUpdate = now;
+        update(dbRef, { pointer: { x: payload.pctX, y: payload.pctY, initiator: myRole } });
+      }
+    } else {
+      const actionId = payload.actionId || ('click_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+      update(dbRef, { last_action: { ...payload, actionId, initiator: myRole, timestamp: Date.now() } });
+    }
+  }
+  if (event.data?.type === 'IFRAME_MOUSE_TRACK') {
+    const now = Date.now();
+    if (now - lastFirebaseCursorUpdate > 200) {
+      lastFirebaseCursorUpdate = now;
+      update(dbRef, { pointer: { x: event.data.pctX, y: event.data.pctY, initiator: myRole } });
+    }
+  }
+});
+
+function loadWorksheetFast(path) {
+  if (!path) return;
+  hideOverlay('waiting-overlay');
+  showLoadingOverlay();
+  const frame = document.getElementById('game-frame');
+  const url = buildWorksheetUrl(path);
+  frame.onload = () => { hideLoadingOverlay(); clearTimeout(window._loadFallback); };
+  clearTimeout(window._loadFallback);
+  window._loadFallback = setTimeout(() => hideLoadingOverlay(), 2000);
+  if (frame.src === url || frame.getAttribute('src') === url) {
+    hideLoadingOverlay();
+    return;
+  }
+  frame.src = url;
+}
+
+function showLoadingOverlay() { showOverlay('loading-overlay'); }
+function hideLoadingOverlay() { hideOverlay('loading-overlay'); }
+
+function showToast(msg) {
+  document.getElementById('toast-text').innerText = msg;
+  const toast = document.getElementById('toast');
+  toast.classList.remove('translate-y-24', 'opacity-0');
+  setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 2500);
+}
+</script>
+</body>
+</html>

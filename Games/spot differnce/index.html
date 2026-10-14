@@ -457,30 +457,47 @@
       };
     }
 
+    // =========================================================================
+    // ACCURATE DIFFERENCE DETECTION (FIXED OVERLAP & MULTI-SELECT BUG)
+    // =========================================================================
     window.processClickDirect = function(rx, ry, uiSide, diffSide, canvas) {
       if (!currentPuzzle) return;
-      let hit = false;
-      const pad = 0.08; // 8% tap leniency
+      
+      let candidateMatches = [];
+
+      // Step 1: Strict and tight margin inspection (0.015 = only 1.5% buffer for touch accuracy)
+      const pad = 0.015;
 
       currentPuzzle.diffs.forEach((d, idx) => {
         if (foundDifferences.has(idx)) return;
         const r = d.lr;
+        
+        // Check if click lands within the bounding box (with minimal edge buffer)
         if (rx >= r.x - pad && rx <= r.x + r.w + pad && ry >= r.y - pad && ry <= r.y + r.h + pad) {
-          foundDifferences.add(idx);
-          hit = true;
-          drawMarkers('left');
-          drawMarkers('right');
-          updateScore();
-          sfxOk();
-          spawnRipple(rx * canvas.width, ry * canvas.height, canvas.parentElement, 'rgba(52,211,153,0.7)');
-
-          if (foundDifferences.size === currentPuzzle.diffs.length) {
-            setTimeout(showWinOverlay, 500);
-          }
+          const centerX = r.x + r.w / 2;
+          const centerY = r.y + r.h / 2;
+          // Euclidean distance from click to target center
+          const distSq = Math.pow(rx - centerX, 2) + Math.pow(ry - centerY, 2);
+          candidateMatches.push({ idx: idx, diff: d, distSq: distSq });
         }
       });
 
-      if (!hit) {
+      // Step 2: If multiple targets are nearby, strictly pick ONLY the ONE closest to click point
+      if (candidateMatches.length > 0) {
+        candidateMatches.sort((a, b) => a.distSq - b.distSq);
+        const bestTargetIdx = candidateMatches[0].idx;
+
+        foundDifferences.add(bestTargetIdx);
+        drawMarkers('left');
+        drawMarkers('right');
+        updateScore();
+        sfxOk();
+        spawnRipple(rx * canvas.width, ry * canvas.height, canvas.parentElement, 'rgba(52,211,153,0.7)');
+
+        if (foundDifferences.size === currentPuzzle.diffs.length) {
+          setTimeout(showWinOverlay, 500);
+        }
+      } else {
         sfxNo();
         spawnRipple(rx * canvas.width, ry * canvas.height, canvas.parentElement, 'rgba(248,113,113,0.7)');
         const wrap = canvas.parentElement;
@@ -639,9 +656,9 @@
         let y = Math.min(startY, endY);
 
         if (w < 0.03 || h < 0.03) {
-          w = 0.12; h = 0.12;
-          x = Math.max(0, startX - 0.06);
-          y = Math.max(0, startY - 0.06);
+          w = 0.08; h = 0.08;
+          x = Math.max(0, startX - 0.04);
+          y = Math.max(0, startY - 0.04);
         }
 
         tempDiffs.push({

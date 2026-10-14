@@ -12,7 +12,7 @@
 <style>
   :root {
     --theme-bg: linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%);
-    --glass-bg: rgba(15, 23, 42, 0.75);
+    --glass-bg: rgba(15, 23, 42, 0.78);
     --glass-border: rgba(255, 255, 255, 0.12);
     --glass-glow: rgba(99, 102, 241, 0.2);
     --accent-glow: #6366f1;
@@ -21,7 +21,7 @@
 
   body[data-theme="neon"] {
     --theme-bg: linear-gradient(135deg, #0c071e 0%, #170d36 50%, #2e0854 100%);
-    --glass-bg: rgba(23, 13, 54, 0.78);
+    --glass-bg: rgba(23, 13, 54, 0.82);
     --glass-border: rgba(192, 132, 252, 0.22);
     --glass-glow: rgba(217, 70, 239, 0.25);
     --accent-glow: #c026d3;
@@ -30,7 +30,7 @@
 
   body[data-theme="emerald"] {
     --theme-bg: linear-gradient(135deg, #021a15 0%, #062e24 50%, #0d3830 100%);
-    --glass-bg: rgba(6, 46, 36, 0.75);
+    --glass-bg: rgba(6, 46, 36, 0.8);
     --glass-border: rgba(52, 211, 153, 0.22);
     --glass-glow: rgba(16, 185, 129, 0.25);
     --accent-glow: #059669;
@@ -39,7 +39,7 @@
 
   body[data-theme="velvet"] {
     --theme-bg: linear-gradient(135deg, #180911 0%, #290d1e 50%, #3e122b 100%);
-    --glass-bg: rgba(41, 13, 30, 0.78);
+    --glass-bg: rgba(41, 13, 30, 0.82);
     --glass-border: rgba(251, 113, 133, 0.22);
     --glass-glow: rgba(244, 63, 94, 0.25);
     --accent-glow: #e11d48;
@@ -56,7 +56,7 @@
 
   .font-fredoka { font-family: 'Fredoka One', cursive; }
 
-  /* Premium Glassmorphic Styles */
+  /* Glassmorphism Styles */
   .glass-panel {
     background: var(--glass-bg);
     backdrop-filter: blur(18px);
@@ -65,7 +65,14 @@
     box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.65), 0 0 20px -5px var(--glass-glow);
   }
 
-  .workspace-container { display: flex; align-items: center; justify-content: center; width: 100%; flex: 1; padding: 12px; }
+  /* Global Dynamic Zoom Container */
+  .app-scalable-view {
+    transform-origin: top center;
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .workspace-container { display: flex; align-items: center; justify-content: center; width: 100%; flex: 1; padding: 12px; overflow: hidden; }
+  
   .game-canvas { 
     position: relative; 
     background: #fff; 
@@ -74,28 +81,43 @@
     border: 3px solid var(--glass-border); 
     width: 100%; 
     height: calc(100vh - 80px); 
-    overflow: hidden; 
+    overflow: hidden;
   }
   @media (min-width: 768px) { 
     .workspace-container { padding: 16px; } 
     .game-canvas { height: auto; max-width: 1220px; aspect-ratio: 16/9; } 
   }
+
   .live-pointer { pointer-events: none; transition: all .2s linear; z-index: 9999; }
   .clock-danger { animation: pulseClock 1s ease-in-out infinite; color: #fb7185 !important; }
   @keyframes pulseClock { 0%,100%{opacity:1} 50%{opacity:.45} }
   @keyframes smilePop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
   .smile-pop { animation: smilePop .45s ease-out; }
+
   .file-card { 
-    border: 1px solid var(--glass-border); 
+    border: 1.5px solid var(--glass-border); 
     background: var(--glass-bg);
     backdrop-filter: blur(14px);
-    transition: all 0.25s ease;
+    transition: all 0.22s ease;
   }
   .file-card:hover {
     border-color: var(--text-accent);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
   }
   .file-card.active { border-color: #fbbf24; background: rgba(251,191,36,.14); }
+
+  .folder-card {
+    border: 1.5px solid rgba(251, 191, 36, 0.35);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(15, 23, 42, 0.82) 100%);
+    backdrop-filter: blur(14px);
+    transition: all 0.22s ease;
+  }
+  .folder-card:hover {
+    border-color: #fbbf24;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px -5px rgba(251, 191, 36, 0.25);
+  }
+
   .student-full { height: 100vh !important; max-width: none !important; aspect-ratio: auto !important; border-radius: 0 !important; border: 0 !important; }
   .name-chip { min-height: 88px; }
   .name-chip.active { border-color: #fbbf24; background: rgba(251,191,36,.18); color: #fde68a; }
@@ -126,24 +148,34 @@
 
 <!-- Student Select Screen (Teacher only) -->
 <div id="student-select-screen" class="hidden flex-col h-screen">
-  <header class="glass-panel px-6 py-5 border-b border-white/10 shrink-0 flex justify-between items-center">
+  <header class="glass-panel px-6 py-4 border-b border-white/10 shrink-0 flex justify-between items-center gap-3">
     <div>
       <p class="font-fredoka text-xs uppercase tracking-widest text-amber-400">Teacher</p>
-      <h1 class="font-fredoka text-3xl md:text-4xl text-white mt-1">Who is in class?</h1>
-      <p class="text-slate-300 font-bold mt-1 text-sm">Pick student and class minutes. Timer starts when you press Start class.</p>
+      <h1 class="font-fredoka text-2xl md:text-3xl text-white mt-0.5">Who is in class?</h1>
     </div>
-    <!-- Teacher Theme Switcher -->
-    <div class="hidden md:flex items-center gap-2 glass-panel px-3 py-1.5 rounded-2xl">
-      <span class="text-xs font-bold text-slate-300 font-fredoka flex items-center gap-1"><i data-lucide="palette" class="w-3.5 h-3.5"></i> Theme:</span>
-      <select onchange="applyConsoleTheme(this.value)" id="theme-selector-pre" class="bg-slate-900/90 border border-slate-700 rounded-xl px-2 py-1 text-xs font-bold text-white focus:outline-none">
-        <option value="dark">Deep Obsidian</option>
-        <option value="neon">Frosted Neon</option>
-        <option value="emerald">Emerald Frost</option>
-        <option value="velvet">Midnight Velvet</option>
-      </select>
+
+    <!-- Zoom + Theme Controls in Student Select -->
+    <div class="flex items-center gap-2 md:gap-3">
+      <!-- Universal Zoom Controls -->
+      <div class="flex items-center gap-1 glass-panel px-2 py-1 rounded-2xl border border-white/10 shadow-inner">
+        <button onclick="changeZoom(-0.08)" title="Zoom Out" class="w-6 h-6 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 flex items-center justify-center font-black text-sm active:scale-95 transition">－</button>
+        <span id="zoom-level-student" onclick="resetZoom()" title="Click to Reset Zoom" class="text-[10px] font-mono font-black text-amber-300 px-1.5 cursor-pointer">100%</span>
+        <button onclick="changeZoom(0.08)" title="Zoom In" class="w-6 h-6 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 flex items-center justify-center font-black text-sm active:scale-95 transition">＋</button>
+      </div>
+
+      <div class="hidden md:flex items-center gap-2 glass-panel px-3 py-1 rounded-2xl">
+        <span class="text-xs font-bold text-slate-300 font-fredoka flex items-center gap-1"><i data-lucide="palette" class="w-3.5 h-3.5"></i> Theme:</span>
+        <select onchange="applyConsoleTheme(this.value)" id="theme-selector-pre" class="bg-slate-900/90 border border-slate-700 rounded-xl px-2 py-1 text-xs font-bold text-white focus:outline-none">
+          <option value="dark">Deep Obsidian</option>
+          <option value="neon">Frosted Neon</option>
+          <option value="emerald">Emerald Frost</option>
+          <option value="velvet">Midnight Velvet</option>
+        </select>
+      </div>
     </div>
   </header>
-  <div class="flex-1 overflow-y-auto px-4 py-6">
+
+  <div class="flex-1 overflow-y-auto px-4 py-6 app-scalable-view" id="student-select-viewport">
     <div id="entry-name-grid" class="mx-auto max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
     <div class="mx-auto max-w-2xl mt-6 rounded-3xl glass-panel p-5 border border-amber-400/30">
       <p class="font-fredoka text-xs uppercase tracking-widest text-amber-400">Class timer (teacher only)</p>
@@ -163,22 +195,30 @@
 
 <!-- Library Screen (Teacher only) -->
 <div id="library-screen" class="hidden flex-col h-screen">
-  <header class="glass-panel flex flex-wrap justify-between items-center gap-3 border-b border-white/10 px-6 py-4 shrink-0">
+  <header class="glass-panel flex flex-wrap justify-between items-center gap-3 border-b border-white/10 px-6 py-3.5 shrink-0">
     <div>
       <p class="font-fredoka text-xs uppercase tracking-widest text-amber-400">Teacher</p>
       <h1 class="font-fredoka text-2xl md:text-3xl text-white">Class files</h1>
-      <p class="text-sm font-bold text-slate-300">Room <span id="lib-room"></span> · <span id="lib-student" class="text-amber-300"></span> · <span id="lib-count">0</span> files</p>
+      <p class="text-xs md:text-sm font-bold text-slate-300">Room <span id="lib-room"></span> · <span id="lib-student" class="text-amber-300"></span> · <span id="lib-count">0</span> items</p>
     </div>
-    <div class="flex items-center gap-3 flex-wrap">
+    
+    <div class="flex items-center gap-2.5 flex-wrap">
+      <!-- Universal Zoom Controls in Library -->
+      <div class="flex items-center gap-1 glass-panel px-2 py-1 rounded-2xl border border-white/10 shadow-inner">
+        <button onclick="changeZoom(-0.08)" title="Zoom Out" class="w-6 h-6 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 flex items-center justify-center font-black text-sm active:scale-95 transition">－</button>
+        <span id="zoom-level-lib" onclick="resetZoom()" title="Click to Reset Zoom" class="text-[10px] font-mono font-black text-amber-300 px-1.5 cursor-pointer">100%</span>
+        <button onclick="changeZoom(0.08)" title="Zoom In" class="w-6 h-6 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 flex items-center justify-center font-black text-sm active:scale-95 transition">＋</button>
+      </div>
+
       <!-- Upper Header Clock -->
-      <div class="rounded-2xl border border-amber-400/40 bg-slate-950/80 backdrop-blur-md px-4 py-1.5 text-center shadow-md">
+      <div class="rounded-2xl border border-amber-400/40 bg-slate-950/80 backdrop-blur-md px-3.5 py-1 text-center shadow-md">
         <p class="font-fredoka text-[9px] uppercase tracking-wider text-amber-400">Class Timer</p>
-        <p id="lib-clock" class="font-mono text-2xl font-black leading-none text-amber-300 tracking-wider">--:--</p>
+        <p id="lib-clock" class="font-mono text-xl font-black leading-none text-amber-300 tracking-wider">--:--</p>
       </div>
 
       <!-- Theme Switcher dropdown -->
       <div class="glass-panel px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-        <i data-lucide="palette" class="w-4 h-4 text-amber-400"></i>
+        <i data-lucide="palette" class="w-3.5 h-3.5 text-amber-400"></i>
         <select onchange="applyConsoleTheme(this.value)" id="theme-selector" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
           <option value="dark" class="bg-slate-900">Obsidian Glass</option>
           <option value="neon" class="bg-slate-900">Neon Frosted</option>
@@ -187,20 +227,41 @@
         </select>
       </div>
 
-      <button onclick="openAttendanceReview()" class="glass-panel text-white hover:bg-white/10 px-3 py-2 rounded-xl font-bold text-sm transition">Attendance</button>
-      <button onclick="openStudentSelect()" class="glass-panel text-white hover:bg-white/10 px-3 py-2 rounded-xl font-bold text-sm transition">Student</button>
-      <button onclick="teacherLogout()" class="bg-rose-600/90 hover:bg-rose-600 text-white px-3 py-2 rounded-xl font-bold text-sm transition shadow-md">Logout</button>
+      <button onclick="openAttendanceReview()" class="glass-panel text-white hover:bg-white/10 px-3 py-1.5 rounded-xl font-bold text-xs md:text-sm transition">Attendance</button>
+      <button onclick="openStudentSelect()" class="glass-panel text-white hover:bg-white/10 px-3 py-1.5 rounded-xl font-bold text-xs md:text-sm transition">Student</button>
+      <button onclick="teacherLogout()" class="bg-rose-600/90 hover:bg-rose-600 text-white px-3 py-1.5 rounded-xl font-bold text-xs md:text-sm transition shadow-md">Logout</button>
     </div>
   </header>
-  <div class="glass-panel border-b border-white/5 px-6 py-3 flex flex-col md:flex-row gap-3">
-    <input id="file-search" type="text" placeholder="Search files..." oninput="renderFileList()" class="flex-1 bg-slate-950/60 border border-slate-700 rounded-2xl py-2.5 px-4 text-base font-bold text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500">
-    <div class="flex gap-2">
-      <input id="folder-input" type="text" placeholder="Save new file path" class="bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none">
-      <button onclick="saveCurrentFolderToDatabase()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 rounded-xl font-bold text-sm transition">Save</button>
+
+  <!-- Clean Toolbar -->
+  <div class="glass-panel border-b border-white/5 px-6 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
+    <!-- Breadcrumb + Safe Folder Manage Button -->
+    <div class="flex items-center gap-2 w-full md:w-auto">
+      <div id="breadcrumb-bar" class="flex items-center gap-2 flex-wrap">
+        <button onclick="enterFolder('')" class="flex items-center gap-1.5 text-xs md:text-sm font-fredoka px-3.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-amber-300 shadow transition">
+          <i data-lucide="home" class="w-3.5 h-3.5"></i> All Worksheets
+        </button>
+        <span id="active-folder-crumb" class="hidden text-xs md:text-sm font-fredoka px-3.5 py-1.5 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/40"></span>
+        <button id="folder-safe-delete-btn" onclick="openSafeFolderMenu()" class="hidden text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-rose-950/80 text-rose-300 border border-rose-500/30 transition shadow">
+          ⚙ Folder Options
+        </button>
+      </div>
+    </div>
+
+    <!-- Search + Path Saver -->
+    <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-2xl justify-end">
+      <input id="file-search" type="text" placeholder="Search worksheets or folders..." oninput="renderFileList()" class="flex-1 bg-slate-950/60 border border-slate-700 rounded-2xl py-2 px-4 text-sm font-bold text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500">
+      
+      <div class="flex gap-1.5 shrink-0">
+        <input id="folder-input" type="text" placeholder="Folder/name or name" class="bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none w-44 md:w-56">
+        <button onclick="saveCurrentFolderToDatabase()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 rounded-xl font-bold text-xs transition">Add</button>
+      </div>
     </div>
   </div>
-  <div class="flex-1 overflow-y-auto px-6 py-4">
-    <ul id="file-list" class="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-4 pb-24"></ul>
+
+  <!-- Content List Grid (Direct Folder Cards + Worksheet Cards) -->
+  <div class="flex-1 overflow-y-auto px-6 py-5 app-scalable-view" id="library-viewport">
+    <div id="file-list" class="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-4 pb-24"></div>
   </div>
 </div>
 
@@ -245,8 +306,15 @@
       <span id="active-student-name" class="font-fredoka text-amber-300 text-xs md:text-sm truncate"></span>
     </div>
 
-    <!-- UPPER HEADER LOCATION FOR TIME (SAFE & NON-INTRUSIVE) -->
-    <div class="flex items-center gap-3">
+    <!-- UPPER HEADER CLOCK & TOTAL CANVAS ZOOM CONTROLS -->
+    <div class="flex items-center gap-2 md:gap-3">
+      <!-- Universal Workspace Zoom Controls -->
+      <div class="flex items-center gap-1 glass-panel px-2 py-1 rounded-2xl border border-white/10 shadow-inner">
+        <button onclick="changeZoom(-0.08)" title="Zoom Out" class="w-6 h-6 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 flex items-center justify-center font-black text-sm active:scale-95 transition">－</button>
+        <span id="zoom-level-ws" onclick="resetZoom()" title="Click to Reset Zoom" class="text-[10px] font-mono font-black text-amber-300 px-1.5 cursor-pointer">100%</span>
+        <button onclick="changeZoom(0.08)" title="Zoom In" class="w-6 h-6 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 flex items-center justify-center font-black text-sm active:scale-95 transition">＋</button>
+      </div>
+
       <div id="header-clock-container" class="flex items-center gap-2 rounded-2xl border border-amber-400/40 bg-slate-950/80 px-3.5 py-1 backdrop-blur-md shadow-inner">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <div>
@@ -255,7 +323,6 @@
         </div>
       </div>
 
-      <!-- Teacher Quick Theme Switcher in Workspace Header -->
       <div id="header-theme-box" class="hidden md:flex items-center glass-panel px-2.5 py-1 rounded-xl">
         <select onchange="applyConsoleTheme(this.value)" id="theme-selector-ws" class="bg-transparent text-[11px] font-bold text-slate-200 focus:outline-none cursor-pointer">
           <option value="dark" class="bg-slate-900">Obsidian Glass</option>
@@ -273,7 +340,6 @@
     <div class="game-canvas" id="shared-box">
       <div class="h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 absolute top-0 left-0 z-10" id="canvas-bar"></div>
       
-      <!-- IFRAME HAS ZERO OBSTRUCTION NOW -->
       <iframe id="game-frame" class="w-full h-full border-0 absolute inset-0 bg-white" src="about:blank"></iframe>
 
       <!-- Overlays -->
@@ -324,7 +390,7 @@
   </main>
 </div>
 
-<!-- Student subtle top timer -->
+<!-- Student floating clock -->
 <div id="student-floating-clock" class="hidden pointer-events-none fixed top-2 right-4 z-40 rounded-xl border border-amber-400/30 bg-slate-950/80 backdrop-blur-md px-3 py-1 shadow-lg">
   <p class="font-mono text-sm md:text-base font-black text-amber-300" id="student-clock-text">--:--</p>
 </div>
@@ -362,9 +428,151 @@ let lastFirebaseCursorUpdate = 0, activeFile = '', previewFile = '', selectedStu
 let loggingOut = false, studentAttendedToday = false, studentSawLiveTimer = false;
 let attendanceData = emptyJson();
 
+// Active Folder Navigation
+let currentFolderView = '';
+
+// Universal Zoom Level Tracking (Default: 1.0)
+let currentZoom = 1.0;
+
 lucide.createIcons();
 
-// --- Theme Management (Teacher Dashboard only) ---
+// --- UNIVERSAL ZOOM CONTROLLER (WORKS ON ALL SCREENS) ---
+window.changeZoom = function(delta) {
+  currentZoom = Math.min(Math.max(0.70, currentZoom + delta), 1.45);
+  currentZoom = Math.round(currentZoom * 100) / 100;
+  applyUniversalZoom();
+};
+
+window.resetZoom = function() {
+  currentZoom = 1.0;
+  applyUniversalZoom();
+};
+
+function applyUniversalZoom() {
+  const zoomTargets = [
+    document.getElementById('student-select-viewport'),
+    document.getElementById('library-viewport'),
+    document.getElementById('shared-box')
+  ];
+
+  zoomTargets.forEach(el => {
+    if (el) el.style.transform = `scale(${currentZoom})`;
+  });
+
+  const zoomLabels = [
+    document.getElementById('zoom-level-student'),
+    document.getElementById('zoom-level-lib'),
+    document.getElementById('zoom-level-ws')
+  ];
+
+  const pct = `${Math.round(currentZoom * 100)}%`;
+  zoomLabels.forEach(lbl => {
+    if (lbl) lbl.innerText = pct;
+  });
+}
+
+// --- Path & Folder Parser ---
+function parsePathInfo(path) {
+  const clean = String(path || '').trim().replace(/^\/+|\/+$/g, '').replace(/\/index\.html$/i, '');
+  const parts = clean.split('/');
+  if (parts.length > 1) {
+    return {
+      isInsideFolder: true,
+      folder: parts[0].trim(),
+      worksheetName: parts.slice(1).join('/').trim(),
+      fullPath: clean
+    };
+  }
+  return {
+    isInsideFolder: false,
+    folder: '',
+    worksheetName: clean,
+    fullPath: clean
+  };
+}
+
+window.enterFolder = function(folderName) {
+  currentFolderView = folderName || '';
+  const crumb = document.getElementById('active-folder-crumb');
+  const safeBtn = document.getElementById('folder-safe-delete-btn');
+  
+  if (crumb && safeBtn) {
+    if (currentFolderView) {
+      crumb.innerHTML = `📁 ${currentFolderView}`;
+      crumb.classList.remove('hidden');
+      safeBtn.classList.remove('hidden');
+    } else {
+      crumb.classList.add('hidden');
+      safeBtn.classList.add('hidden');
+    }
+  }
+  renderFileList();
+};
+
+// SAFE FOLDER DELETE MENU (Triggered from Folder Options button inside breadcrumb or Right Click)
+window.openSafeFolderMenu = function(targetFolder = currentFolderView) {
+  if (!targetFolder) return;
+
+  const action = prompt(
+    `Manage Folder: "${targetFolder}"\n\nType one of the numbers below:\n1: Delete Folder AND its worksheets completely\n2: Delete Folder but KEEP worksheets (Move to General List)\n0: Cancel`,
+    "0"
+  );
+
+  if (action === "1") {
+    const doubleCheck = confirm(`Are you sure you want to PERMANENTLY delete folder "${targetFolder}" and ALL worksheets inside it?`);
+    if (!doubleCheck) return;
+    globalPresets = globalPresets.filter(p => parsePathInfo(p).folder.toLowerCase() !== targetFolder.toLowerCase());
+    if (globalPresetsRef) set(globalPresetsRef, globalPresets);
+    enterFolder('');
+    showToast(`Folder "${targetFolder}" and its contents deleted!`);
+  } else if (action === "2") {
+    globalPresets = globalPresets.map(p => {
+      const info = parsePathInfo(p);
+      if (info.folder.toLowerCase() === targetFolder.toLowerCase()) {
+        return info.worksheetName;
+      }
+      return p;
+    });
+    if (globalPresetsRef) set(globalPresetsRef, globalPresets);
+    enterFolder('');
+    showToast(`Folder removed. Worksheets moved to General List!`);
+  }
+};
+
+window.moveWorksheetFolder = function(oldPath) {
+  const info = parsePathInfo(oldPath);
+  const targetFolder = prompt(
+    `Move "${info.worksheetName}" to which folder?\n\n• Type Folder name (e.g. Animals, Alphabet, Phonics)\n• Leave EMPTY to keep in root General list:`,
+    info.folder
+  );
+
+  if (targetFolder === null) return;
+
+  const cleanFolder = targetFolder.trim().replace(/^\/+|\/+$/g, '');
+  let newPath = '';
+  
+  if (!cleanFolder || cleanFolder.toLowerCase() === 'general') {
+    newPath = info.worksheetName;
+  } else {
+    newPath = `${cleanFolder}/${info.worksheetName}`;
+  }
+
+  if (newPath === oldPath) return;
+
+  const idx = globalPresets.indexOf(oldPath);
+  if (idx !== -1) {
+    globalPresets[idx] = newPath;
+  } else {
+    globalPresets.push(newPath);
+  }
+
+  if (globalPresetsRef) set(globalPresetsRef, globalPresets);
+  if (activeFile === oldPath) activeFile = newPath;
+  renderFileList();
+  showToast(`Moved to ${cleanFolder ? 'folder ' + cleanFolder : 'General list'}!`);
+};
+
+// --- Theme Management ---
 window.applyConsoleTheme = function(themeName) {
   if (myRole !== 'teacher' && myRole !== '') return;
   document.body.setAttribute('data-theme', themeName);
@@ -379,8 +587,8 @@ const savedTheme = localStorage.getItem('livetutor_theme') || 'dark';
 applyConsoleTheme(savedTheme);
 
 function emptyJson() { return { students: DEFAULT_STUDENTS.slice(), days: {} }; }
-function prettyName(path) {
-  return String(path || '').replace(/\/index\.html$/i, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase());
+function prettyName(str) {
+  return String(str || '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase());
 }
 function formatTime(ms) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -390,6 +598,7 @@ function pad(n) { return String(n).padStart(2, '0'); }
 function todayKey() { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
 function nowTime() { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
 function niceDate() { return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }); }
+
 function buildWorksheetUrl(path) {
   let rawUrl = String(path || '').trim();
   if (!rawUrl.toLowerCase().endsWith('.html')) rawUrl += '/index.html';
@@ -472,6 +681,7 @@ window.openStudentSelect = function() {
   document.getElementById('student-select-screen').classList.add('flex');
   renderEntryNames();
   renderMinuteChips();
+  applyUniversalZoom();
 };
 
 function renderEntryNames() {
@@ -543,6 +753,7 @@ window.openLibrary = function() {
   document.getElementById('library-screen').classList.add('flex');
   document.getElementById('lib-student').innerText = studentName || selectedStudent || '';
   renderFileList();
+  applyUniversalZoom();
 };
 
 window.openAttendanceReview = function() {
@@ -558,8 +769,9 @@ function showTeacherCanvas() {
   document.getElementById('main-workspace').classList.add('flex');
   document.getElementById('app-header').classList.remove('hidden');
   document.getElementById('header-clock-container').classList.remove('hidden');
-  document.getElementById('active-file-name').innerText = prettyName(activeFile);
+  document.getElementById('active-file-name').innerText = prettyName(parsePathInfo(activeFile).worksheetName);
   document.getElementById('active-student-name').innerText = studentName ? '· ' + studentName : '';
+  applyUniversalZoom();
 }
 
 function showStudentCanvas() {
@@ -571,39 +783,122 @@ function showStudentCanvas() {
   document.getElementById('workspace-main').classList.remove('workspace-container');
   document.getElementById('shared-box').classList.add('student-full');
   document.getElementById('student-floating-clock').classList.remove('hidden');
+  applyUniversalZoom();
   if (!activeFile) showOverlay('waiting-overlay');
   else hideOverlay('waiting-overlay');
   applyStudentScreens();
 }
 
+// --- DIRECT IN-LIST FOLDER & WORKSHEET RENDERING ---
 window.renderFileList = function() {
-  const q = (document.getElementById('file-search').value || '').trim().toLowerCase();
+  const q = (document.getElementById('file-search')?.value || '').trim().toLowerCase();
   const list = document.getElementById('file-list');
-  const rows = globalPresets.filter(p => !q || prettyName(p).toLowerCase().includes(q) || String(p).toLowerCase().includes(q));
-  document.getElementById('lib-count').innerText = globalPresets.length;
-  if (!rows.length) { list.innerHTML = '<li class="md:col-span-2 py-16 text-center text-lg font-bold text-slate-400">No saved files yet</li>'; return; }
-  list.innerHTML = rows.map(file => {
-    const sel = file === activeFile ? 'active' : '';
-    const name = prettyName(file).replace(/</g, '');
-    const letter = (name[0] || 'F').toUpperCase();
-    const safe = esc(file);
-    return `<li class="file-card ${sel} rounded-3xl p-5 flex flex-col min-h-[170px] shadow-lg">
-      <div class="flex items-start gap-4">
-        <div class="h-16 w-16 shrink-0 rounded-2xl bg-indigo-600/80 font-fredoka text-3xl text-white flex items-center justify-center shadow-md">${letter}</div>
-        <h2 class="font-fredoka text-2xl md:text-3xl text-white leading-tight">${name}</h2>
+  if (!list) return;
+
+  const parsedItems = globalPresets.map(p => parsePathInfo(p));
+
+  // 1. If currently inside a specific Folder View
+  if (currentFolderView) {
+    const insideWorksheets = parsedItems.filter(item => 
+      item.folder.toLowerCase() === currentFolderView.toLowerCase() &&
+      (!q || item.worksheetName.toLowerCase().includes(q) || item.fullPath.toLowerCase().includes(q))
+    );
+
+    document.getElementById('lib-count').innerText = insideWorksheets.length;
+
+    if (!insideWorksheets.length) {
+      list.innerHTML = `<div class="md:col-span-2 py-16 text-center">
+        <p class="text-slate-400 font-bold text-lg">No worksheets inside "${currentFolderView}"</p>
+        <button onclick="enterFolder('')" class="mt-3 px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold shadow">← Back to All Worksheets</button>
+      </div>`;
+      return;
+    }
+
+    list.innerHTML = insideWorksheets.map(item => renderWorksheetCard(item.fullPath, item.worksheetName, item.folder)).join('');
+    return;
+  }
+
+  // 2. ROOT VIEW: Gather All Folders & General Root Files directly
+  const folderMap = new Map();
+  const rootGeneralFiles = [];
+
+  parsedItems.forEach(item => {
+    if (item.isInsideFolder) {
+      const folderName = item.folder;
+      folderMap.set(folderName, (folderMap.get(folderName) || 0) + 1);
+    } else {
+      rootGeneralFiles.push(item);
+    }
+  });
+
+  const matchingFolders = Array.from(folderMap.entries()).filter(([name]) => !q || name.toLowerCase().includes(q));
+  const matchingGeneral = rootGeneralFiles.filter(item => !q || item.worksheetName.toLowerCase().includes(q) || item.fullPath.toLowerCase().includes(q));
+
+  document.getElementById('lib-count').innerText = matchingFolders.length + matchingGeneral.length;
+
+  if (!matchingFolders.length && !matchingGeneral.length) {
+    list.innerHTML = '<div class="md:col-span-2 py-16 text-center text-lg font-bold text-slate-400">No folders or worksheets found</div>';
+    return;
+  }
+
+  // Render Folders at the top with Context Menu Protection (No direct accidental delete click)
+  const folderCards = matchingFolders.map(([fName, count]) => {
+    const safeName = esc(fName);
+    return `<div onclick="enterFolder('${safeName}')" oncontextmenu="event.preventDefault(); openSafeFolderMenu('${safeName}');" class="folder-card rounded-3xl p-5 flex items-center justify-between cursor-pointer shadow-lg group">
+      <div class="flex items-center gap-4 min-w-0">
+        <div class="h-16 w-16 shrink-0 rounded-2xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-fredoka text-3xl flex items-center justify-center group-hover:scale-105 transition">
+          📁
+        </div>
+        <div class="min-w-0">
+          <span class="inline-block bg-amber-400/20 text-amber-300 text-[10px] uppercase font-black px-2 py-0.5 rounded-full tracking-wider mb-1">FOLDER</span>
+          <h2 class="font-fredoka text-2xl text-white group-hover:text-amber-300 transition truncate">${prettyName(fName)}</h2>
+          <p class="text-xs font-bold text-slate-400">${count} worksheet${count > 1 ? 's' : ''} (Right-click to manage)</p>
+        </div>
       </div>
-      <div class="mt-auto pt-4 grid grid-cols-3 gap-2">
-        <button onclick="openPreview('${safe}')" class="min-h-12 rounded-2xl glass-panel hover:bg-white/10 font-bold transition">Preview</button>
-        <button onclick="teachFile('${safe}')" class="min-h-12 rounded-2xl bg-blue-600 hover:bg-blue-500 font-bold shadow transition">Teach</button>
-        <button onclick="deleteFile('${safe}')" class="min-h-12 rounded-2xl bg-rose-900/80 hover:bg-rose-800 font-bold transition">Delete</button>
+      <div class="flex items-center gap-2">
+        <div class="text-amber-300/70 group-hover:text-amber-300 group-hover:translate-x-1 transition text-2xl font-black pr-2">➔</div>
       </div>
-    </li>`;
+    </div>`;
   }).join('');
+
+  // Render Root General Worksheets next
+  const fileCards = matchingGeneral.map(item => renderWorksheetCard(item.fullPath, item.worksheetName, '')).join('');
+
+  list.innerHTML = folderCards + fileCards;
 };
+
+function renderWorksheetCard(fullPath, nameStr, folderStr) {
+  const sel = fullPath === activeFile ? 'active' : '';
+  const cleanName = prettyName(nameStr);
+  const letter = (cleanName[0] || 'W').toUpperCase();
+  const safe = esc(fullPath);
+  const isInside = Boolean(folderStr);
+
+  return `<div class="file-card ${sel} rounded-3xl p-5 flex flex-col min-h-[185px] shadow-lg">
+    <div class="flex items-start gap-4">
+      <div class="h-16 w-16 shrink-0 rounded-2xl bg-indigo-600/90 border-2 border-indigo-400/40 font-fredoka text-3xl text-white flex items-center justify-center shadow-md">
+        ${letter}
+      </div>
+      <div class="min-w-0 flex-1">
+        <span class="inline-block ${isInside ? 'bg-amber-400/20 text-amber-300 border-amber-400/30' : 'bg-slate-700/80 text-slate-300 border-slate-600'} border text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full tracking-wider mb-1">
+          ${isInside ? '📁 ' + folderStr : '📄 GENERAL LIST'}
+        </span>
+        <h2 class="font-fredoka text-2xl text-white leading-tight truncate">${cleanName}</h2>
+        <p class="text-[11px] font-mono text-slate-400 truncate mt-0.5">${fullPath}</p>
+      </div>
+    </div>
+    <div class="mt-auto pt-4 grid grid-cols-4 gap-2">
+      <button onclick="openPreview('${safe}')" class="min-h-11 rounded-2xl glass-panel hover:bg-white/10 font-bold text-xs transition">Preview</button>
+      <button onclick="teachFile('${safe}')" class="min-h-11 rounded-2xl bg-blue-600 hover:bg-blue-500 font-bold text-xs shadow transition">Teach</button>
+      <button onclick="moveWorksheetFolder('${safe}')" class="min-h-11 rounded-2xl bg-amber-600/80 hover:bg-amber-600 font-bold text-xs text-white transition">Move</button>
+      <button onclick="deleteFile('${safe}')" class="min-h-11 rounded-2xl bg-rose-900/80 hover:bg-rose-800 font-bold text-xs transition">Delete</button>
+    </div>
+  </div>`;
+}
 
 window.openPreview = function(file) {
   previewFile = file;
-  document.getElementById('preview-title').innerText = prettyName(file);
+  document.getElementById('preview-title').innerText = prettyName(parsePathInfo(file).worksheetName);
   document.getElementById('preview-frame').src = buildWorksheetUrl(file);
   document.getElementById('preview-screen').classList.remove('hidden');
   document.getElementById('preview-screen').classList.add('flex');
@@ -628,27 +923,28 @@ window.teachFile = function(path) {
   closePreview();
   showTeacherCanvas();
   loadWorksheetFast(path);
-  showToast('Teaching ' + prettyName(path));
+  showToast('Teaching ' + prettyName(parsePathInfo(path).worksheetName));
 };
 
 window.deleteFile = function(path) {
   if (!globalPresetsRef) return;
+  if (!confirm(`Delete "${path}" from list?`)) return;
   globalPresets = globalPresets.filter(p => p !== path);
   set(globalPresetsRef, globalPresets);
   if (activeFile === path) activeFile = '';
   renderFileList();
-  showToast('Deleted from Cloud!');
+  showToast('Removed from Console!');
 };
 
 window.saveCurrentFolderToDatabase = function() {
   const val = document.getElementById('folder-input').value.trim();
-  if (!val) return showToast('Type a file name first!');
+  if (!val) return showToast('Type a file path first!');
   if (!globalPresets.includes(val)) {
     globalPresets.push(val);
     set(globalPresetsRef, globalPresets);
     document.getElementById('folder-input').value = '';
     renderFileList();
-    showToast('Saved to Cloud!');
+    showToast('Saved to Console!');
   }
 };
 

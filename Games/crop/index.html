@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cut & Join — Studio & Player</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<!-- LIVETUTOR SYNC BRIDGE -->
+<script>
+    window.isSimulating = false;
+    const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#', '?'));
+    const roomId = urlParams.get('room') || '54321';
+    let localSeed = 0;
+    
+    window.setSeed = function(str) {
+        let tempSeed = 0;
+        for (let i = 0; i < str.length; i++) { tempSeed = str.charCodeAt(i) + ((tempSeed << 5) - tempSeed); }
+        localSeed = Math.abs(tempSeed);
+    };
+    window.setSeed(roomId);
+    
+    window.seededRandom = function() {
+        let x = Math.sin(localSeed++) * 10000;
+        return x - Math.floor(x);
+    };
+
+    function getUniqueSelector(el) {
+        if (!el) return null;
+        if (el.id) return '#' + el.id;
+        if (el === document.body) return 'body';
+        let path = [];
+        while (el && el.nodeType === Node.ELEMENT_NODE) {
+            let selector = el.nodeName.toLowerCase();
+            if (el.id) { selector = '#' + el.id; path.unshift(selector); break; } 
+            else {
+                if (el.className && typeof el.className === 'string') {
+                    const classes = Array.from(el.classList).filter(c => !c.includes(':') && !c.includes('[') && !c.includes('/')).join('.');
+                    if (classes) selector += '.' + classes;
+                }
+                let sibling = el, nth = 1;
+                while (sibling = sibling.previousElementSibling) { if (sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()) nth++; }
+                selector += ':nth-of-type(' + nth + ')';
+                path.unshift(selector);
+            }
+            el = el.parentNode;
+        }
+        return path.join(' > ');
+    }
+
+    let actionIdCounter = 0;
+    document.addEventListener('click', (e) => {
+        if (e.isTrusted === false || window.isSimulating) return;
+        const selector = getUniqueSelector(e.target); if (!selector) return;
+        actionIdCounter++;
+        window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: { type: 'UNIVERSAL_CLICK', selector: selector, seed: localSeed, actionId: 'click_' + actionIdCounter + '_' + Date.now() }
+        }, '*');
+    }, true);
+
+    let lastCursorTime = 0;
+    document.addEventListener('mousemove', (e) => {
+        const now = Date.now(); if (now - lastCursorTime < 40) return; lastCursorTime = now;
+        window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload: { type: 'UNIVERSAL_CURSOR', pctX: (e.clientX / window.innerWidth) * 100, pctY: (e.clientY / window.innerHeight) * 100 } }, '*');
+    });
+
+    let lastProcessedActionId = null;
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+            const action = event.data.action;
+            if (action.type === 'UNIVERSAL_CURSOR') {
+                const c = document.getElementById('remote-cursor');
+                if (c) {
+                    c.style.left = (action.pctX / 100 * window.innerWidth) + 'px';
+                    c.style.top = (action.pctY / 100 * window.innerHeight) + 'px';
+                    c.style.display = 'block';
+                }
+                return;
+            }
+            const currentActionId = action.actionId || action.timestamp;
+            if (currentActionId && currentActionId === lastProcessedActionId) return;
+            lastProcessedActionId = currentActionId;
+
+            window.isSimulating = true;
+            if (action.seed !== undefined) localSeed = action.seed;
+            
+            if (action.type === 'UNIVERSAL_CLICK') {
+                const element = document.querySelector(action.selector);
+                if (element) element.click();
+            }
+            setTimeout(() => { window.isSimulating = false; }, 50);
+        }
+    });
+</script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; user-select: none; }
+body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+.font-fredoka { font-family: 'Fredoka One', cursive; }
+
+.glass-nav {
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px);
+}
+
+.canvas-viewport {
+    position: relative;
+    max-width: 100%;
+    max-height: calc(100vh - 215px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+    border-radius: 16px;
+}
+
+#main-play-img, #creator-base-img {
+    max-width: 100%;
+    max-height: calc(100vh - 215px);
+    object-fit: contain;
+    border-radius: 16px;
+    display: block;
+}
+
+#grid-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    z-index: 10;
+}
+.grid-cell {
+    border: 1px dashed rgba(255,255,255,0.45);
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.grid-cell:hover { background: rgba(56, 189, 248, 0.35); }
+
+/* Hole Box */
+.hole-box {
+    position: absolute;
+    background: rgba(8, 12, 24, 0.95);
+    border: 2px dashed rgba(255, 255, 255, 0.85);
+    z-index: 12;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+}
+.hole-box:hover {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.25);
+}
+
+/* Green & Red Expanding Animations */
+@keyframes expandGreenGlow {
+    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.9); border-color: #22c55e; }
+    100% { box-shadow: 0 0 0 25px rgba(34, 197, 94, 0); border-color: #22c55e; }
+}
+@keyframes expandRedGlow {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9); border-color: #ef4444; }
+    100% { box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); border-color: #ef4444; }
+}
+.success-expand {
+    animation: expandGreenGlow 0.7s ease-out forwards;
+}
+.error-expand {
+    animation: expandRedGlow 0.6s ease-out forwards;
+}
+
+.placed-box {
+    position: absolute;
+    z-index: 15;
+    overflow: hidden;
+    border-radius: 4px;
+}
+.placed-box img { position: absolute; max-width: none; }
+
+/* Uniform Bottom Horizontal Tray */
+#bottom-tray {
+    height: 110px;
+    background: rgba(15, 23, 42, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    overflow-x: auto;
+    z-index: 20;
+}
+#bottom-tray::-webkit-scrollbar { height: 6px; }
+#bottom-tray::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+.tray-card {
+    width: 82px;
+    height: 82px;
+    border-radius: 14px;
+    border: 2.5px solid #334155;
+    background: #020617;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: transform 0.15s, border-color 0.15s;
+}
+.tray-card:hover { transform: translateY(-3px); border-color: #38bdf8; }
+.tray-card.selected {
+    border-color: #fbbf24 !important;
+    transform: scale(1.08) translateY(-4px);
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.6);
+}
+.tray-card.used { display: none !important; }
+.tray-card img {
+    position: absolute;
+    max-width: none;
+    pointer-events: none;
+}
+
+#remote-cursor {
+    position: absolute;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.9);
+    border: 2px solid white;
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+    transform: translate(-50%, -50%);
+}
+</style>
+</head>
+<body>
+
+<div id="remote-cursor"></div>
+
+<!-- Top Navigation -->
+<header class="glass-nav px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shrink-0 z-30">
+    <div class="flex items-center gap-3">
+        <h1 class="font-fredoka text-amber-400 text-lg md:text-xl tracking-wide">🧩 Cut & Join Studio</h1>
+        <span id="active-title-label" class="bg-indigo-950 text-indigo-300 border border-indigo-800 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full truncate max-w-[150px]">
+            Library
+        </span>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="flex items-center gap-2">
+        <button id="nav-btn-library" onclick="showScreen('library')" class="bg-amber-500 text-slate-950 font-fredoka text-xs px-3.5 py-1.5 rounded-xl shadow transition">
+            <i class="fa-solid fa-folder-open mr-1"></i> 1. Library & Play
+        </button>
+        <button id="nav-btn-creator" onclick="showScreen('creator')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-fredoka text-xs px-3.5 py-1.5 rounded-xl transition">
+            <i class="fa-solid fa-plus-circle mr-1"></i> 2. Creator & Cut
+        </button>
+        <button onclick="openJsonModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 font-fredoka text-xs px-3.5 py-1.5 rounded-xl border border-slate-700 transition">
+            <i class="fa-solid fa-code mr-1"></i> Export / Download JSON
+        </button>
+    </div>
+</header>
+
+<!-- ========================================================
+     SCREEN 1: LIBRARY & GAMEPLAY
+     ======================================================== -->
+<section id="screen-library" class="flex-1 flex flex-col overflow-hidden relative">
+    
+    <!-- Sub Header Controls for Library Play -->
+    <div class="px-6 py-2 bg-slate-900/60 border-b border-slate-800 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-400">Choose Puzzle:</span>
+            <select id="library-puz-select" onchange="selectLibraryPuzzle(this.value)" class="bg-slate-950 border border-slate-700 text-xs font-bold text-amber-300 rounded-xl px-3 py-1 focus:outline-none">
+            </select>
+        </div>
+        <div class="text-xs font-bold text-slate-300">
+            Tap piece in tray ➔ Tap black target hole (Green = Success, Red = Error)
+        </div>
+    </div>
+
+    <!-- Play Workspace -->
+    <div class="flex-1 flex items-center justify-center p-3 relative overflow-hidden bg-slate-950">
+        <div class="canvas-viewport" id="play-viewport">
+            <img id="main-play-img" src="" alt="Play Image" class="pointer-events-none select-none">
+            <div id="play-holes-container"></div>
+            <div id="play-placed-container"></div>
+        </div>
+    </div>
+
+    <!-- Standard Bottom Tray -->
+    <footer id="bottom-tray"></footer>
+</section>
+
+<!-- ========================================================
+     SCREEN 2: CREATOR & CUTTING STUDIO (SEPARATE SECTION)
+     ======================================================== -->
+<section id="screen-creator" class="hidden flex-1 flex flex-col overflow-hidden relative bg-slate-950 p-4">
+    
+    <!-- Creator Setup Toolbar -->
+    <div class="max-w-4xl mx-auto w-full bg-slate-900/80 border border-slate-800 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-2 flex-1 min-w-[280px]">
+            <label class="bg-emerald-600 hover:bg-emerald-500 text-white font-fredoka text-xs px-3.5 py-2 rounded-xl cursor-pointer shadow transition flex items-center gap-1.5 shrink-0">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Image
+                <input type="file" accept="image/*" class="hidden" onchange="handleCreatorImageUpload(event)">
+            </label>
+            <input type="text" id="creator-img-path" placeholder="images/your_file.png" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none">
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="saveCurrentCutsToDatabase()" class="bg-blue-600 hover:bg-blue-500 text-white font-fredoka text-xs px-4 py-2 rounded-xl shadow transition flex items-center gap-1">
+                <i class="fa-solid fa-floppy-disk"></i> Save To Library & Update JSON
+            </button>
+            <button onclick="clearCurrentCutsOnly()" class="bg-rose-900/80 hover:bg-rose-800 text-white font-fredoka text-xs px-3 py-2 rounded-xl transition">
+                Clear Cuts
+            </button>
+        </div>
+    </div>
+
+    <!-- Instruction Bar -->
+    <div class="text-center text-xs font-bold text-slate-400 mb-2">
+        ✂️ Click any square cell to cut a 1x1 cube piece! Click again to remove it. (No pieces will leak or mix).
+    </div>
+
+    <!-- Cutting Canvas Container -->
+    <div class="flex-1 flex items-center justify-center overflow-hidden">
+        <div class="canvas-viewport" id="creator-viewport">
+            <img id="creator-base-img" src="" alt="Upload Image to Start Cutting" onerror="this.src='https://placehold.co/600x400/0f172a/fff?text=Upload+Image+Above+First'">
+            <div id="grid-overlay" class="hidden"></div>
+            <div id="creator-cut-holes"></div>
+        </div>
+    </div>
+</section>
+
+<!-- JSON MODAL (Download / Export / Import) -->
+<div id="json-modal" class="fixed inset-0 bg-slate-950/90 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl flex flex-col max-h-[85vh] overflow-hidden shadow-2xl">
+        <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
+            <h3 class="font-fredoka text-amber-300 text-lg">Inbuilt JSON Puzzle Data</h3>
+            <button onclick="closeJsonModal()" class="text-slate-400 hover:text-white font-bold text-lg px-2">✕</button>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto">
+            <pre id="json-preview" class="bg-slate-950 p-4 rounded-2xl border border-slate-800 font-mono text-emerald-400 text-xs overflow-x-auto"></pre>
+        </div>
+        <div class="p-4 border-t border-slate-800 flex justify-between items-center bg-slate-950">
+            <label class="bg-slate-800 hover:bg-slate-700 text-white font-fredoka px-4 py-2 rounded-xl text-xs cursor-pointer">
+                Import JSON
+                <input type="file" accept=".json,application/json" class="hidden" onchange="importJsonFile(event)">
+            </label>
+            <button onclick="exportJsonFile()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-fredoka px-4 py-2 rounded-xl text-xs shadow">
+                <i class="fa-solid fa-download mr-1.5"></i> Download puzzles.json
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const GRID_SIZE = 10;
+let currentActiveScreen = 'library'; // 'library' | 'creator'
+
+// Main Database (Single Clean Array)
+let db = [
+    {
+        id: "puz_default",
+        name: "dog.png",
+        url: "images/dog.png",
+        pieces: [
+            { id: "pc_1", x: 4, y: 3, w: 1, h: 1 },
+            { id: "pc_2", x: 5, y: 3, w: 1, h: 1 },
+            { id: "pc_3", x: 4, y: 5, w: 1, h: 1 }
+        ]
+    }
+];
+
+// Active Playground State
+let activePlayPuzzle = null;
+let selectedPieceId = null;
+let placedCount = 0;
+
+// Creator State (Isolated strictly so old cuts NEVER mix with new uploads)
+let creatorCurrentPuzzle = {
+    id: "",
+    name: "",
+    url: "",
+    pieces: []
+};
+
+// Web Audio API
+let audioCtx = null;
+function getAC() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function playTone(freq, type, duration, vol=0.2) {
+    try {
+        const ac = getAC();
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.type = type; osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, ac.currentTime);
+        gain.gain.linearRampToValueAtTime(vol, ac.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+        osc.start(ac.currentTime); osc.stop(ac.currentTime + duration + 0.05);
+    } catch(e) {}
+}
+
+// 1. INITIALIZATION & DATA LOADING
+async function initDatabase() {
+    try {
+        const res = await fetch('./puzzles.json');
+        if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length) db = data;
+        }
+    } catch(e) {}
+    renderLibraryDropdown();
+    if(db.length) loadPlayPuzzle(db[0].id);
+}
+
+// 2. SCREEN NAVIGATION
+function showScreen(screen) {
+    currentActiveScreen = screen;
+    document.getElementById('screen-library').classList.toggle('hidden', screen !== 'library');
+    document.getElementById('screen-creator').classList.toggle('hidden', screen !== 'creator');
+
+    document.getElementById('nav-btn-library').classList.toggle('bg-amber-500', screen === 'library');
+    document.getElementById('nav-btn-library').classList.toggle('text-slate-950', screen === 'library');
+    document.getElementById('nav-btn-library').classList.toggle('bg-slate-800', screen !== 'library');
+    document.getElementById('nav-btn-library').classList.toggle('text-slate-200', screen !== 'library');
+
+    document.getElementById('nav-btn-creator').classList.toggle('bg-amber-500', screen === 'creator');
+    document.getElementById('nav-btn-creator').classList.toggle('text-slate-950', screen === 'creator');
+    document.getElementById('nav-btn-creator').classList.toggle('bg-slate-800', screen !== 'creator');
+    document.getElementById('nav-btn-creator').classList.toggle('text-slate-200', screen !== 'creator');
+
+    if (screen === 'library') {
+        document.getElementById('active-title-label').innerText = activePlayPuzzle ? activePlayPuzzle.name : 'Library';
+        if (activePlayPuzzle) renderPlayBoard();
+    } else {
+        document.getElementById('active-title-label').innerText = 'Creator Studio';
+        initCreatorGrid();
+    }
+}
+
+// ========================================================
+// SECTION 2 LOGIC: CREATOR & CUTTING
+// ========================================================
+function handleCreatorImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const originalName = file.name;
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+        // RESET CREATOR COMPLETELY SO PREVIOUS CUTS NEVER MIX
+        creatorCurrentPuzzle = {
+            id: 'puz_' + Date.now(),
+            name: originalName,
+            url: e.target.result,
+            storagePath: `images/${originalName}`,
+            pieces: [] // Completely isolated fresh pieces array
+        };
+
+        document.getElementById('creator-img-path').value = creatorCurrentPuzzle.storagePath;
+        const img = document.getElementById('creator-base-img');
+        img.src = creatorCurrentPuzzle.url;
+        img.onload = () => {
+            initCreatorGrid();
+            renderCreatorCutHoles();
+        };
+
+        alert(`"${originalName}" loaded! Tap on squares on the image to cut 1x1 pieces.`);
+    };
+
+    reader.readAsDataURL(file);
+    event.target.value = '';
+}
+
+function initCreatorGrid() {
+    const grid = document.getElementById('grid-overlay');
+    if (!creatorCurrentPuzzle.url) {
+        grid.classList.add('hidden');
+        return;
+    }
+
+    grid.classList.remove('hidden');
+    grid.innerHTML = '';
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            const cell = document.createElement('div');
+            cell.id = `cell-${x}-${y}`;
+            cell.className = 'grid-cell';
+            // Pure isolated 1x1 cube tap
+            cell.onclick = () => handleCreatorCubeClick(x, y);
+            grid.appendChild(cell);
+        }
+    }
+}
+
+function handleCreatorCubeClick(x, y) {
+    if (!creatorCurrentPuzzle.url) return;
+
+    const idx = creatorCurrentPuzzle.pieces.findIndex(p => p.x === x && p.y === y);
+    if (idx !== -1) {
+        // Toggle un-cut
+        creatorCurrentPuzzle.pieces.splice(idx, 1);
+        playTone(320, 'sine', 0.08);
+    } else {
+        // Add single isolated cube
+        creatorCurrentPuzzle.pieces.push({
+            id: `pc_${Date.now()}_${creatorCurrentPuzzle.pieces.length + 1}`,
+            x: x, 
+            y: y, 
+            w: 1, 
+            h: 1
+        });
+        playTone(600, 'triangle', 0.12);
+    }
+    renderCreatorCutHoles();
+}
+
+function renderCreatorCutHoles() {
+    const container = document.getElementById('creator-cut-holes');
+    container.innerHTML = creatorCurrentPuzzle.pieces.map(p => `
+        <div style="
+            position: absolute;
+            left: ${(p.x / GRID_SIZE) * 100}%;
+            top: ${(p.y / GRID_SIZE) * 100}%;
+            width: ${(p.w / GRID_SIZE) * 100}%;
+            height: ${(p.h / GRID_SIZE) * 100}%;
+            background: rgba(251, 191, 36, 0.45);
+            border: 2px dashed #fbbf24;
+            pointer-events: none;
+        "></div>
+    `).join('');
+}
+
+function clearCurrentCutsOnly() {
+    creatorCurrentPuzzle.pieces = [];
+    renderCreatorCutHoles();
+}
+
+function saveCurrentCutsToDatabase() {
+    if (!creatorCurrentPuzzle.url) return alert("Upload an image first!");
+    if (!creatorCurrentPuzzle.pieces.length) return alert("Cut at least 1 piece before saving!");
+
+    const finalPath = document.getElementById('creator-img-path').value.trim() || creatorCurrentPuzzle.storagePath;
+
+    // Build standalone puzzle object
+    const savedItem = {
+        id: creatorCurrentPuzzle.id,
+        name: creatorCurrentPuzzle.name,
+        url: finalPath, // points to original images/ file path
+        previewData: creatorCurrentPuzzle.url, // stores dataUrl for instant session play
+        pieces: JSON.parse(JSON.stringify(creatorCurrentPuzzle.pieces))
+    };
+
+    // Remove existing if any, and push fresh
+    db = db.filter(p => p.name !== savedItem.name);
+    db.push(savedItem);
+
+    renderLibraryDropdown();
+    loadPlayPuzzle(savedItem.id);
+    showScreen('library');
+    alert(`"${savedItem.name}" saved! It is now playable in the Library and stored in JSON.`);
+}
+
+// ========================================================
+// SECTION 1 LOGIC: LIBRARY & PLAY WITH GREEN/RED FEEDBACK
+// ========================================================
+function renderLibraryDropdown() {
+    const sel = document.getElementById('library-puz-select');
+    sel.innerHTML = db.map(p => `<option value="${p.id}" ${activePlayPuzzle?.id === p.id ? 'selected' : ''}>${p.name}</option>`).join('');
+}
+
+function selectLibraryPuzzle(id) {
+    loadPlayPuzzle(id);
+}
+
+function loadPlayPuzzle(id) {
+    activePlayPuzzle = db.find(p => p.id === id);
+    if (!activePlayPuzzle) return;
+
+    document.getElementById('active-title-label').innerText = activePlayPuzzle.name;
+    const img = document.getElementById('main-play-img');
+    img.src = activePlayPuzzle.previewData || activePlayPuzzle.url;
+
+    img.onload = () => {
+        renderPlayBoard();
+    };
+}
+
+function renderPlayBoard() {
+    const holes = document.getElementById('play-holes-container');
+    const placed = document.getElementById('play-placed-container');
+    const tray = document.getElementById('bottom-tray');
+
+    holes.innerHTML = ''; placed.innerHTML = ''; tray.innerHTML = '';
+    placedCount = 0;
+    selectedPieceId = null;
+
+    if (!activePlayPuzzle.pieces.length) {
+        tray.innerHTML = `<p class="text-slate-400 font-bold text-xs mx-auto">No cuts found for this puzzle. Go to "Creator & Cut" to cut pieces!</p>`;
+        return;
+    }
+
+    // Seeded shuffle for player synchronization
+    const shuffled = [...activePlayPuzzle.pieces];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(window.seededRandom() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // Render Target Holes
+    activePlayPuzzle.pieces.forEach(p => {
+        const h = document.createElement('div');
+        h.id = `hole-${p.id}`;
+        h.className = 'hole-box';
+        h.style.left = `${(p.x / GRID_SIZE) * 100}%`;
+        h.style.top = `${(p.y / GRID_SIZE) * 100}%`;
+        h.style.width = `${(p.w / GRID_SIZE) * 100}%`;
+        h.style.height = `${(p.h / GRID_SIZE) * 100}%`;
+        h.onclick = () => handlePlayHoleClick(p.id);
+        holes.appendChild(h);
+    });
+
+    // Render Uniform 1:1 Tray Cards
+    const imgSrc = activePlayPuzzle.previewData || activePlayPuzzle.url;
+    shuffled.forEach(p => {
+        const card = document.createElement('div');
+        card.id = `tray-${p.id}`;
+        card.className = 'tray-card';
+
+        card.innerHTML = `<img src="${imgSrc}" style="
+            width: ${(GRID_SIZE / p.w) * 100}%;
+            height: ${(GRID_SIZE / p.h) * 100}%;
+            left: ${-(p.x / p.w) * 100}%;
+            top: ${-(p.y / p.h) * 100}%;
+        ">`;
+
+        card.onclick = () => selectPlayTrayPiece(p.id);
+        tray.appendChild(card);
+    });
+}
+
+function selectPlayTrayPiece(id) {
+    playTone(500, 'sine', 0.08);
+    selectedPieceId = id;
+    document.querySelectorAll('.tray-card').forEach(c => c.classList.remove('selected'));
+    const chosen = document.getElementById(`tray-${id}`);
+    if (chosen) chosen.classList.add('selected');
+}
+
+// MATCHING MECHANISM: GREEN & RED EXPANDING RINGS
+function handlePlayHoleClick(targetId) {
+    if (!selectedPieceId) {
+        playTone(250, 'sawtooth', 0.1);
+        return;
+    }
+
+    const holeEl = document.getElementById(`hole-${targetId}`);
+    if (!holeEl) return;
+
+    if (selectedPieceId === targetId) {
+        // SUCCESS STATE: GREEN EXPANDING GLOW
+        playTone(750, 'triangle', 0.16);
+        holeEl.classList.remove('error-expand');
+        holeEl.classList.add('success-expand');
+
+        const p = activePlayPuzzle.pieces.find(x => x.id === targetId);
+        const trayEl = document.getElementById(`tray-${targetId}`);
+        const imgSrc = activePlayPuzzle.previewData || activePlayPuzzle.url;
+
+        setTimeout(() => {
+            holeEl.style.display = 'none';
+            if (trayEl) trayEl.classList.add('used');
+        }, 220);
+
+        // Snap placed piece
+        const placed = document.createElement('div');
+        placed.className = 'placed-box';
+        placed.style.left = `${(p.x / GRID_SIZE) * 100}%`;
+        placed.style.top = `${(p.y / GRID_SIZE) * 100}%`;
+        placed.style.width = `${(p.w / GRID_SIZE) * 100}%`;
+        placed.style.height = `${(p.h / GRID_SIZE) * 100}%`;
+        placed.innerHTML = `<img src="${imgSrc}" style="
+            width: ${(GRID_SIZE / p.w) * 100}%;
+            height: ${(GRID_SIZE / p.h) * 100}%;
+            left: ${-(p.x / p.w) * 100}%;
+            top: ${-(p.y / p.h) * 100}%;
+        ">`;
+        document.getElementById('play-placed-container').appendChild(placed);
+
+        selectedPieceId = null;
+        placedCount++;
+
+        if (placedCount === activePlayPuzzle.pieces.length) {
+            setTimeout(() => {
+                try { confetti({ particleCount: 110, spread: 75, origin: { y: 0.6 } }); } catch(e){}
+                playTone(1000, 'sine', 0.4);
+                alert("🎉 Success! All cut pieces matched and assembled perfectly!");
+            }, 350);
+        }
+    } else {
+        // FAILURE STATE: RED EXPANDING GLOW (NEVER FREEZES)
+        playTone(180, 'sawtooth', 0.22);
+        holeEl.classList.remove('error-expand');
+        void holeEl.offsetWidth; // restart animation
+        holeEl.classList.add('error-expand');
+
+        const card = document.getElementById(`tray-${selectedPieceId}`);
+        if (card) {
+            card.style.transform = 'translateX(-6px)';
+            setTimeout(() => card.style.transform = 'translateX(6px)', 90);
+            setTimeout(() => card.style.transform = '', 180);
+        }
+    }
+}
+
+// ========================================================
+// JSON DATA DOWNLOAD / IMPORT
+// ========================================================
+function openJsonModal() {
+    // Generate clean JSON export format referencing the original file path
+    const exportData = db.map(item => ({
+        id: item.id,
+        name: item.name,
+        url: item.url, // retains images/path format
+        pieces: item.pieces
+    }));
+
+    document.getElementById('json-preview').innerText = JSON.stringify(exportData, null, 2);
+    document.getElementById('json-modal').classList.remove('hidden');
+}
+
+function closeJsonModal() {
+    document.getElementById('json-modal').classList.add('hidden');
+}
+
+function exportJsonFile() {
+    const exportData = db.map(item => ({
+        id: item.id,
+        name: item.name,
+        url: item.url,
+        pieces: item.pieces
+    }));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'puzzles.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function importJsonFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const parsed = JSON.parse(reader.result);
+            if (Array.isArray(parsed) && parsed.length) {
+                db = parsed;
+                renderLibraryDropdown();
+                loadPlayPuzzle(db[0].id);
+                closeJsonModal();
+                alert("puzzles.json imported successfully!");
+            }
+        } catch(err) {
+            alert("Invalid JSON format!");
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Start on boot
+initDatabase();
+</script>
+</body>
+</html>

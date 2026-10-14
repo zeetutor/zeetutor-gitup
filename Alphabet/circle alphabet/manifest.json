@@ -1,0 +1,46 @@
+{
+  "title": "ENGLISH WORKSHEET FOR NURSERY CLASS",
+  "instructions": "Circle or click the correct starting letter for each picture!",
+  "rows": [
+    {
+      "id": "row_1",
+      "mediaType": "image",
+      "mediaSrc": "https://cdn-icons-png.flaticon.com/512/415/415733.png",
+      "alt": "Apple",
+      "correct": "A",
+      "options": ["A", "B", "C", "D", "E"]
+    },
+    {
+      "id": "row_2",
+      "mediaType": "image",
+      "mediaSrc": "https://cdn-icons-png.flaticon.com/512/2933/2933894.png",
+      "alt": "Boat",
+      "correct": "B",
+      "options": ["C", "E", "D", "A", "B"]
+    },
+    {
+      "id": "row_3",
+      "mediaType": "image",
+      "mediaSrc": "https://cdn-icons-png.flaticon.com/512/3202/3202926.png",
+      "alt": "Car",
+      "correct": "C",
+      "options": ["E", "B", "A", "C", "D"]
+    },
+    {
+      "id": "row_4",
+      "mediaType": "image",
+      "mediaSrc": "https://cdn-icons-png.flaticon.com/512/616/616408.png",
+      "alt": "Dog",
+      "correct": "D",
+      "options": ["D", "A", "C", "B", "E"]
+    },
+    {
+      "id": "row_5",
+      "mediaType": "image",
+      "mediaSrc": "https://cdn-icons-png.flaticon.com/512/1865/1865269.png",
+      "alt": "Elephant",
+      "correct": "E",
+      "options": ["B", "A", "E", "D", "C"]
+    }
+  ]
+}

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nursery Phonics Worksheet</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; touch-action: manipulation; user-select: none; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #f8fafc;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .font-fredoka { font-family: 'Fredoka One', cursive; }
+  
+  /* Grid border styling like standard printable worksheet */
+  .worksheet-table {
+    border: 3px solid #1e293b;
+    background: #ffffff;
+    border-collapse: collapse;
+  }
+  .worksheet-row {
+    border-bottom: 2.5px solid #334155;
+    transition: background-color 0.2s ease;
+  }
+  .worksheet-row:last-child {
+    border-bottom: none;
+  }
+  .media-cell {
+    border-right: 2.5px solid #334155;
+    background: #f1f5f9;
+  }
+
+  /* Interactive Option Circle Buttons */
+  .option-btn {
+    border: 2px solid transparent;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .option-btn:hover {
+    background: #e2e8f0;
+    transform: scale(1.08);
+  }
+  .option-btn:active {
+    transform: scale(0.95);
+  }
+  .option-btn.selected-correct {
+    background-color: #22c55e !important;
+    color: #ffffff !important;
+    border-color: #15803d !important;
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+    transform: scale(1.12);
+  }
+  .option-btn.selected-wrong {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #b91c1c !important;
+    animation: shake 0.35s ease;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+  }
+
+  /* Dynamic Media box */
+  .media-wrapper {
+    width: clamp(48px, 6vw, 75px);
+    height: clamp(48px, 6vw, 75px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .media-wrapper img, .media-wrapper video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+</style>
+</head>
+<body class="p-2 sm:p-4">
+
+  <!-- Top Controller Bar (Title + JSON Tools + Audio Voice) -->
+  <header class="flex flex-wrap items-center justify-between gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-slate-200 mb-2 shrink-0">
+    <div>
+      <h1 id="ws-title" class="font-fredoka text-base sm:text-xl md:text-2xl text-slate-900 tracking-wide">ENGLISH WORKSHEET FOR NURSERY CLASS</h1>
+      <p id="ws-instructions" class="text-[11px] sm:text-xs font-extrabold text-slate-500">Circle the starting letter for each picture</p>
+    </div>
+    
+    <!-- JSON Import / Export & Reset toolbar -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <button onclick="resetAllAnswers()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-2.5 py-1.5 rounded-xl text-xs font-black transition">Reset</button>
+      <button onclick="exportWorksheetJSON()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1.5 rounded-xl text-xs font-black transition">Export JSON</button>
+      <label class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1.5 rounded-xl text-xs font-black cursor-pointer transition">
+        Import JSON
+        <input type="file" id="json-input" accept=".json,application/json" class="hidden" onchange="importWorksheetJSON(event)">
+      </label>
+    </div>
+  </header>
+
+  <!-- Main Worksheet Content Table -->
+  <main class="flex-1 overflow-y-auto flex items-center justify-center p-1">
+    <div class="w-full max-w-4xl worksheet-table rounded-2xl shadow-xl overflow-hidden" id="worksheet-container">
+      <!-- Dynamic rows injected here -->
+    </div>
+  </main>
+
+<script>
+// Default Nursery Phonics Data
+let worksheetData = {
+  title: "ENGLISH WORKSHEET FOR NURSERY CLASS",
+  instructions: "Circle the starting letter for each picture",
+  rows: [
+    {
+      id: "row_1",
+      mediaType: "image",
+      mediaSrc: "https://cdn-icons-png.flaticon.com/512/415/415733.png",
+      alt: "Apple",
+      correct: "A",
+      options: ["A", "B", "C", "D", "E"]
+    },
+    {
+      id: "row_2",
+      mediaType: "image",
+      mediaSrc: "https://cdn-icons-png.flaticon.com/512/2933/2933894.png",
+      alt: "Boat",
+      correct: "B",
+      options: ["C", "E", "D", "A", "B"]
+    },
+    {
+      id: "row_3",
+      mediaType: "image",
+      mediaSrc: "https://cdn-icons-png.flaticon.com/512/3202/3202926.png",
+      alt: "Car",
+      correct: "C",
+      options: ["E", "B", "A", "C", "D"]
+    },
+    {
+      id: "row_4",
+      mediaType: "image",
+      mediaSrc: "https://cdn-icons-png.flaticon.com/512/616/616408.png",
+      alt: "Dog",
+      correct: "D",
+      options: ["D", "A", "C", "B", "E"]
+    },
+    {
+      id: "row_5",
+      mediaType: "image",
+      mediaSrc: "https://cdn-icons-png.flaticon.com/512/1865/1865269.png",
+      alt: "Elephant",
+      correct: "E",
+      options: ["B", "A", "E", "D", "C"]
+    }
+  ]
+};
+
+// Check if external data.json exists in the current folder, else use default
+async function initData() {
+  try {
+    const res = await fetch('data.json');
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.rows) worksheetData = json;
+    }
+  } catch(e) {
+    console.log("Using default fallback questions.");
+  }
+  renderWorksheet();
+}
+
+// Media renderer: handles PNG, JPG, GIF, WebP, SVG, MP4, Base64 data
+function renderMediaTag(row) {
+  const src = row.mediaSrc || '';
+  const isVideo = row.mediaType === 'video' || src.endsWith('.mp4') || src.includes('video');
+
+  if (isVideo) {
+    return `<video src="${src}" autoplay loop muted playsinline class="rounded-lg shadow-sm"></video>`;
+  }
+  return `<img src="${src}" alt="${row.alt || ''}" onerror="this.src='https://placehold.co/80x80?text=Icon'" class="rounded-lg drop-shadow-sm transition hover:scale-105">`;
+}
+
+// Render dynamic rows matching the image format
+function renderWorksheet() {
+  document.getElementById('ws-title').innerText = worksheetData.title || "ENGLISH WORKSHEET";
+  document.getElementById('ws-instructions').innerText = worksheetData.instructions || "";
+  const container = document.getElementById('worksheet-container');
+
+  container.innerHTML = worksheetData.rows.map((row) => {
+    const optButtons = row.options.map((letter) => {
+      const btnId = `opt_${row.id}_${letter}`;
+      return `
+        <button 
+          id="${btnId}"
+          data-row="${row.id}"
+          data-letter="${letter}"
+          onclick="handleOptionClick('${row.id}', '${letter}', this.id, true)"
+          class="option-btn w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center font-fredoka text-xl sm:text-2xl md:text-3xl text-slate-800 bg-slate-100 hover:bg-slate-200 cursor-pointer shadow-sm">
+          ${letter}
+        </button>
+      `;
+    }).join('');
+
+    return `
+      <div class="worksheet-row flex items-stretch" id="${row.id}">
+        <div class="media-cell p-2 sm:p-3 flex items-center justify-center shrink-0 w-24 sm:w-32 md:w-36">
+          <div class="media-wrapper cursor-pointer" onclick="speakWord('${row.alt || row.correct}')">
+            ${renderMediaTag(row)}
+          </div>
+        </div>
+        <div class="flex-1 flex items-center justify-around px-2 sm:px-6 py-2">
+          ${optButtons}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Sound effects using Web Audio API (No external sound files required)
+function playTone(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    if (type === 'correct') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+      osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15); // G5
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } else {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(140, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    }
+  } catch(e) {}
+}
+
+function speakWord(text) {
+  if ('speechSynthesis' in window && text) {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.9;
+    window.speechSynthesis.speak(utter);
+  }
+}
+
+// Click handler (dispatches action to LiveTutor Parent console)
+function handleOptionClick(rowId, letter, btnId, isLocal) {
+  const row = worksheetData.rows.find(r => r.id === rowId);
+  if (!row) return;
+
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+
+  const isCorrect = (letter.toUpperCase() === row.correct.toUpperCase());
+
+  // Clear previous active states for this row
+  const parentRow = document.getElementById(rowId);
+  parentRow.querySelectorAll('.option-btn').forEach(b => {
+    b.classList.remove('selected-correct', 'selected-wrong');
+  });
+
+  if (isCorrect) {
+    btn.classList.add('selected-correct');
+    playTone('correct');
+    speakWord(letter + " for " + (row.alt || ""));
+  } else {
+    btn.classList.add('selected-wrong');
+    playTone('wrong');
+  }
+
+  // Dual-Master Console Sync postMessage protocol
+  if (isLocal) {
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: {
+        actionId: 'clk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        type: 'OPTION_CLICK',
+        rowId: rowId,
+        letter: letter,
+        btnId: btnId
+      }
+    }, '*');
+  }
+}
+
+// Reset answers
+function resetAllAnswers(isLocal = true) {
+  document.querySelectorAll('.option-btn').forEach(b => {
+    b.classList.remove('selected-correct', 'selected-wrong');
+  });
+  if (isLocal) {
+    window.parent.postMessage({
+      type: 'IFRAME_ACTION_TRIGGERED',
+      payload: {
+        actionId: 'rst_' + Date.now(),
+        type: 'RESET_WORKSHEET'
+      }
+    }, '*');
+  }
+}
+
+// Cursor movement sync to parent console
+window.addEventListener('mousemove', (e) => {
+  const pctX = ((e.clientX / window.innerWidth) * 100).toFixed(2);
+  const pctY = ((e.clientY / window.innerHeight) * 100).toFixed(2);
+  window.parent.postMessage({
+    type: 'IFRAME_MOUSE_TRACK',
+    pctX: parseFloat(pctX),
+    pctY: parseFloat(pctY)
+  }, '*');
+});
+
+// Listen for remote events from the console (Teacher <-> Student sync)
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'EXECUTE_UNIVERSAL_ACTION') {
+    const act = event.data.action;
+    if (!act) return;
+
+    if (act.type === 'OPTION_CLICK' && act.btnId) {
+      handleOptionClick(act.rowId, act.letter, act.btnId, false);
+    } else if (act.type === 'RESET_WORKSHEET') {
+      resetAllAnswers(false);
+    } else if (act.type === 'RELOAD_JSON' && act.json) {
+      worksheetData = act.json;
+      renderWorksheet();
+    }
+  }
+});
+
+// JSON Export function
+function exportWorksheetJSON() {
+  const blob = new Blob([JSON.stringify(worksheetData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nursery_worksheet.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// JSON Import function (accepts updated letters, names, or image/video URLs)
+function importWorksheetJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (parsed && parsed.rows && Array.isArray(parsed.rows)) {
+        worksheetData = parsed;
+        renderWorksheet();
+
+        // Broadcast new JSON state to remote partner
+        window.parent.postMessage({
+          type: 'IFRAME_ACTION_TRIGGERED',
+          payload: {
+            actionId: 'json_' + Date.now(),
+            type: 'RELOAD_JSON',
+            json: worksheetData
+          }
+        }, '*');
+      } else {
+        alert("Invalid JSON format! Must contain a 'rows' array.");
+      }
+    } catch(err) {
+      alert("Error reading JSON file.");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// Initialize on page load
+initData();
+</script>
+</body>
+</html>
