@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magic Tracing Worksheet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght=700;900&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4;
+            touch-action: none;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0; padding: 0;
+            width: 100%; height: 100vh;
+        }
+
+        .kid-shadow { box-shadow: 0 6px 0 #00000022, 0 12px 18px rgba(0,0,0,0.1); }
+        .kid-button { transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .kid-button:active { transform: translateY(5px); box-shadow: 0 1px 0 #00000022; }
+
+        .bounce-in { animation: bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) both; }
+        @keyframes bounceIn {
+            0%   { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #canvas-container {
+            background-image:
+                linear-gradient(#e5e7eb 1.5px, transparent 1.5px),
+                linear-gradient(90deg, #e5e7eb 1.5px, transparent 1.5px);
+            background-size: 44px 44px;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.04), 0 8px 20px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #canvas-container.canvas-mode {
+            background-image: none;
+            background-color: #fffbf5;
+        }
+
+        .rainbow-text {
+            background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00cc00, #0000ff, #8b00ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: rainbow 5s linear infinite;
+            background-size: 200% auto;
+        }
+        @keyframes rainbow {
+            0%   { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        #start-overlay { backdrop-filter: blur(6px); }
+        #confetti-canvas {
+            position: fixed; inset: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; z-index: 50;
+        }
+
+        #remote-cursor {
+            position: absolute;
+            width: 22px; height: 22px;
+            background: #ef4444;
+            border: 3px solid white;
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+            z-index: 30;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 0 2px #ef4444, 0 3px 8px rgba(0,0,0,0.35);
+            transition: left 0.04s linear, top 0.04s linear;
+        }
+        #remote-cursor-label {
+            position: absolute;
+            top: -22px; left: 8px;
+            font-size: 11px; font-weight: 800;
+            background: rgba(0,0,0,0.72);
+            color: white;
+            padding: 1px 6px;
+            border-radius: 6px;
+            white-space: nowrap;
+            pointer-events: none;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .mode-tab {
+            padding: 0.3rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 900;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+            color: white;
+        }
+        .mode-tab.active-trace  { background: #6366f1; box-shadow: 0 3px 0 #4338ca; }
+        .mode-tab.active-canvas { background: #ec4899; box-shadow: 0 3px 0 #be185d; }
+        .mode-tab.inactive      { background: #d1d5db; color: #6b7280; box-shadow: none; }
+
+        #canvas-toolbar {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #canvas-toolbar.visible { display: flex; }
+
+        .color-swatch {
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .color-swatch:active { transform: scale(0.88); }
+        .color-swatch.selected { box-shadow: 0 0 0 3px #000, 0 2px 5px rgba(0,0,0,0.3); }
+
+        #character-grid {
+            overflow-y: auto; overflow-x: hidden;
+            scrollbar-width: thin;
+        }
+        @media (max-width: 640px) {
+            #character-grid {
+                overflow-y: hidden; overflow-x: auto;
+                flex-direction: row !important;
+                height: 5.5rem !important;
+                width: 100% !important;
+            }
+        }
+
+        /* Rule 3 Click prevention inside children elements */
+        button * {
+            pointer-events: none !important;
+        }
+
+        #role-banner {
+            display: none;
+            position: absolute; top: 8px; right: 10px;
+            z-index: 25;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 900;
+            color: white;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="w-full h-screen flex flex-col justify-center items-center p-0 m-0 overflow-hidden">
+
+    <div id="app-wrapper" class="w-full h-full max-w-[1400px] max-h-[900px] flex flex-col relative bg-transparent overflow-hidden">
+
+        <!-- START OVERLAY -->
+        <div id="start-overlay" class="absolute inset-0 z-50 flex items-center justify-center bg-white/80">
+            <button id="btn-start"
+                class="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-3xl font-black py-5 px-10 rounded-full kid-shadow kid-button bounce-in border-4 border-white">
+                <span>Let's Play! 🎨</span>
+            </button>
+        </div>
+
+        <canvas id="confetti-canvas"></canvas>
+
+        <!-- HEADER -->
+        <header class="w-full px-3 py-2 flex flex-wrap justify-between items-center bg-white shadow-md z-10 rounded-b-3xl gap-2 flex-shrink-0">
+            <h1 class="text-2xl md:text-3xl font-black rainbow-text drop-shadow-sm">Magic ABCs & 123s</h1>
+
+            <!-- Mode Tabs -->
+            <div class="flex gap-1 items-center">
+                <button id="btn-mode-trace"  class="mode-tab active-trace">✏️ Trace</button>
+                <button id="btn-mode-canvas" class="mode-tab inactive">🎨 Canvas</button>
+            </div>
+
+            <!-- Category -->
+            <div class="flex gap-1">
+                <button id="btn-uppercase" class="bg-blue-400 text-white font-bold py-1.5 px-3 rounded-xl kid-shadow kid-button border-2 border-white text-sm">ABC</button>
+                <button id="btn-lowercase" class="bg-green-400 text-white font-bold py-1.5 px-3 rounded-xl kid-shadow kid-button border-2 border-white text-sm">abc</button>
+                <button id="btn-numbers"   class="bg-orange-400 text-white font-bold py-1.5 px-3 rounded-xl kid-shadow kid-button border-2 border-white text-sm">123</button>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="flex-1 flex flex-col md:flex-row overflow-hidden p-3 gap-3" style="min-height:0;">
+
+            <!-- LEFT: Character Selector -->
+            <aside id="character-grid"
+                class="md:w-20 w-full flex md:flex-col flex-row gap-1.5 bg-white rounded-2xl shadow-lg p-2 flex-shrink-0"
+                style="max-height:100%;">
+                <!-- injected by JS -->
+            </aside>
+
+            <!-- RIGHT: Canvas + Toolbar -->
+            <section class="flex-1 flex flex-col gap-2 min-h-0">
+
+                <!-- Canvas Container -->
+                <div id="canvas-container" class="flex-1 w-full border-4 border-dashed border-gray-300" style="min-height:0;">
+                    <canvas id="drawing-canvas" style="position:absolute;inset:0;cursor:crosshair;touch-action:none;"></canvas>
+
+                    <!-- Mandatory Red Remote Cursor -->
+                    <div id="remote-cursor">
+                        <div id="remote-cursor-label">👩‍🏫 Teacher</div>
+                    </div>
+
+                    <!-- Role Banner inside canvas -->
+                    <div id="role-banner"></div>
+                </div>
+
+                <!-- Canvas Mode Toolbar -->
+                <div id="canvas-toolbar">
+                    <span style="font-size:0.78rem;font-weight:800;color:#374151;">🎨 Color:</span>
+                    <input type="color" id="canvas-color-picker" value="#e74c3c"
+                        style="width:32px;height:32px;border-radius:8px;border:2px solid #e5e7eb;cursor:pointer;padding:2px;">
+                    <!-- Preset swatches -->
+                    <div id="swatch-row" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+                    <span style="font-size:0.78rem;font-weight:800;color:#374151;">🖌</span>
+                    <input type="range" id="brush-size-slider" min="3" max="40" value="10"
+                        style="width:70px;accent-color:#a855f7;">
+                    <span id="brush-size-label" style="font-size:0.75rem;font-weight:800;color:#6b7280;min-width:24px;">10</span>
+                </div>
+
+                <!-- Bottom Toolbar -->
+                <div class="flex justify-center gap-2 flex-wrap flex-shrink-0">
+                    <button id="btn-clear" class="bg-red-500 text-white text-base font-bold py-2 px-5 rounded-full kid-shadow kid-button border-3 border-white flex items-center gap-1.5">
+                        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span>Erase</span>
+                    </button>
+                    <button id="btn-speak" class="bg-blue-500 text-white text-base font-bold py-2 px-5 rounded-full kid-shadow kid-button border-3 border-white flex items-center gap-1.5">
+                        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+                        <span>Listen</span>
+                    </button>
+                    <button id="btn-done" class="bg-green-500 text-white text-base font-bold py-2 px-5 rounded-full kid-shadow kid-button border-3 border-white flex items-center gap-1.5">
+                        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>I Did It!</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Seeded random calculation engine (Rule 4 Determinism)
+        let _seed = 42;
+        function seededRandom() {
+            _seed ^= _seed << 13; _seed ^= _seed >> 17; _seed ^= _seed << 5;
+            return ((_seed >>> 0) / 4294967296);
+        }
+
+        const charSets = {
+            uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+            lowercase: 'abcdefghijklmnopqrstuvwxyz'.split(''),
+            numbers:   '0123456789'.split('')
+        };
+
+        let currentSet  = 'uppercase';
+        let currentChar = 'A';
+        let mode        = 'trace';
+        let myRole      = 'student';
+        let isDrawing   = false;
+        let lastPx = 0, lastPy = 0; // Local draw points in pixels
+        let remoteLastPx = 0, remoteLastPy = 0; // Remote draw points in pixels
+        let hue = 0;
+        let isSimulating = false; // Action Echo Prevention Lock
+        let brushColor   = '#e74c3c';
+        let brushSize    = 10;
+        let audioInitialized = false;
+        let synth;
+
+        let _lastCursorSend = 0;
+        let _lastStrokeSend = 0;
+
+        function detectRole() {
+            const hash = window.location.hash || '';
+            const match = hash.match(/role=(\w+)/);
+            if (match) myRole = match[1];
+        }
+
+        const gridEl    = document.getElementById('character-grid');
+        const canvas    = document.getElementById('drawing-canvas');
+        const ctx       = canvas.getContext('2d', { willReadFrequently: true });
+        const container = document.getElementById('canvas-container');
+        const remoteCursor = document.getElementById('remote-cursor');
+        const roleBanner   = document.getElementById('role-banner');
+
+        async function initAudio() {
+            if (audioInitialized) return;
+            try {
+                await Tone.start();
+                synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.5 }
+                }).toDestination();
+                synth.volume.value = -10;
+                audioInitialized = true;
+            } catch (e) {
+                console.log("Audio synthesis context waiting gesture.");
+            }
+        }
+
+        function playPop()  { if (audioInitialized && synth) synth.triggerAttackRelease('C5','16n'); }
+        function playTada() { if (audioInitialized && synth) synth.triggerAttackRelease(['C4','E4','G4','C5'],'4n',Tone.now()); }
+
+        function speakChar(char) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            let text = char === 'a' ? 'ay' : char;
+            const u = new SpeechSynthesisUtterance(text);
+            u.rate = 0.8; u.pitch = 1.2;
+            window.speechSynthesis.speak(u);
+        }
+
+        function sendAction(payload) {
+            window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload }, '*');
+        }
+
+        function sendCursorMove(pctX, pctY) {
+            const now = Date.now();
+            if (now - _lastCursorSend < 40) return; // 40ms throttling (Rule 6)
+            _lastCursorSend = now;
+            sendAction({ type: 'UNIVERSAL_CURSOR', pctX, pctY });
+            window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX, pctY }, '*');
+        }
+
+        function sendStateAction(actionType, extra) {
+            sendAction({ type: actionType, actionId: actionType + '_' + Date.now(), ...extra });
+        }
+
+        // Receive Message Handler
+        window.addEventListener('message', (event) => {
+            const msg = event.data;
+            if (!msg) return;
+
+            if (msg.type === 'SET_ROLE') {
+                myRole = msg.role;
+                updateRoleBanner();
+                return;
+            }
+
+            if (msg.type === 'EXECUTE_UNIVERSAL_ACTION') {
+                const action = msg.action;
+                if (!action || isSimulating) return;
+                isSimulating = true;
+
+                switch(action.type) {
+                    case 'START_GAME':
+                        _applyStartGame();
+                        break;
+                    case 'SELECT_CHAR':
+                        _applySelectChar(action.char, action.set);
+                        break;
+                    case 'SELECT_SET':
+                        _applySelectSet(action.set);
+                        break;
+                    case 'SWITCH_MODE':
+                        _applySwitchMode(action.mode);
+                        break;
+                    case 'CLEAR_CANVAS':
+                        _applyErase();
+                        break;
+                    case 'DONE_CLICK':
+                        _applyDoneClick(action.next, action.set);
+                        break;
+                    case 'CANVAS_STROKE_START':
+                        const startRect = container.getBoundingClientRect();
+                        remoteLastPx = action.pctX * startRect.width;
+                        remoteLastPy = action.pctY * startRect.height;
+                        // Tap dot sync remotely immediately on start
+                        _replayStroke({ pctX: action.pctX, pctY: action.pctY, mode: action.mode || mode, brushColor: action.brushColor || brushColor, brushSize: action.brushSize || brushSize, hue: action.hue || hue });
+                        break;
+                    case 'CANVAS_STROKE_MOVE':
+                        _replayStroke(action);
+                        break;
+                    case 'CANVAS_STROKE_END':
+                        ctx.beginPath();
+                        break;
+                }
+
+                isSimulating = false;
+                return;
+            }
+        });
+
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            const dpr  = window.devicePixelRatio || 1;
+            canvas.width  = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width  = rect.width  + 'px';
+            canvas.style.height = rect.height + 'px';
+            canvas.style.position = 'absolute';
+            canvas.style.inset = '0';
+            drawStencil();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawStencil() {
+            if (mode === 'canvas') return;
+            const rect = container.getBoundingClientRect();
+            const w = rect.width, h = rect.height;
+            if (w === 0 || h === 0) return;
+            ctx.clearRect(0, 0, w, h);
+
+            // Guidelines
+            ctx.beginPath();
+            ctx.strokeStyle = '#93c5fd';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]);
+            const midY   = h / 2;
+            const spacing = Math.min(w, h) * 0.25;
+            ctx.moveTo(0, midY - spacing); ctx.lineTo(w, midY - spacing);
+            ctx.moveTo(0, midY + spacing); ctx.lineTo(w, midY + spacing);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.setLineDash([10, 10]);
+            ctx.moveTo(0, midY); ctx.lineTo(w, midY);
+            ctx.stroke();
+
+            // Ghost Letter Stencil Render
+            ctx.setLineDash([15, 15]);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#d1d5db';
+            ctx.fillStyle = '#f3f4f640';
+            const fontSize = Math.min(w, h) * 0.6;
+            ctx.font = `900 ${fontSize}px "Comic Sans MS","Chalkboard SE","Nunito",sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.1)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+            ctx.strokeText(currentChar, w/2, h/2);
+            ctx.fillText(currentChar, w/2, h/2);
+            ctx.setLineDash([]);
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+        }
+
+        // Relative Coordinate Calculation
+        function getPct(clientX, clientY) {
+            const rect = container.getBoundingClientRect();
+            return {
+                pctX: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
+                pctY: Math.max(0, Math.min(1, (clientY - rect.top)  / rect.height))
+            };
+        }
+
+        function getCssPx(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onPointerDown(e) {
+            if (e.cancelable) e.preventDefault();
+            isDrawing = true;
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            const { x, y } = getCssPx(clientX, clientY);
+            lastPx = x; lastPy = y;
+            const { pctX, pctY } = getPct(clientX, clientY);
+            
+            // Draw dot locally right away on pointerdown
+            _drawLocalStroke(x, y);
+
+            if (!isSimulating) {
+                sendStateAction('CANVAS_STROKE_START', { pctX, pctY });
+                // Instantly send stroke move to replicate tap dot remotely
+                sendStateAction('CANVAS_STROKE_MOVE', { pctX, pctY, hue, brushColor, brushSize, mode });
+            }
+        }
+
+        function onPointerMove(e) {
+            if (e.cancelable) e.preventDefault();
+            if (!isDrawing) return;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const { x, y } = getCssPx(clientX, clientY);
+            const { pctX, pctY } = getPct(clientX, clientY);
+
+            _drawLocalStroke(x, y);
+
+            const now = Date.now();
+            if (!isSimulating && now - _lastStrokeSend >= 40) {
+                _lastStrokeSend = now;
+                sendStateAction('CANVAS_STROKE_MOVE', { pctX, pctY, hue, brushColor, brushSize, mode });
+            }
+
+            lastPx = x; lastPy = y;
+            hue = (hue + 2) % 360;
+        }
+
+        function onPointerUp() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            ctx.beginPath();
+            if (!isSimulating) sendStateAction('CANVAS_STROKE_END', {});
+        }
+
+        function _drawLocalStroke(x, y) {
+            const rect = container.getBoundingClientRect();
+            
+            // Proportional Brush Size scaling to match across different screen resolutions perfectly
+            const relativeSize = (mode === 'canvas') 
+                ? (brushSize / 400) * Math.min(rect.width, rect.height) 
+                : Math.min(rect.width, rect.height) * 0.05;
+
+            ctx.beginPath();
+            ctx.moveTo(lastPx, lastPy);
+            ctx.lineTo(x, y);
+            if (mode === 'canvas') {
+                ctx.strokeStyle = brushColor;
+                ctx.lineWidth   = relativeSize;
+                ctx.shadowBlur  = 0;
+            } else {
+                ctx.strokeStyle = `hsl(${hue},100%,50%)`;
+                ctx.lineWidth   = relativeSize;
+                ctx.shadowBlur  = 10;
+                ctx.shadowColor = `hsl(${hue},100%,50%)`;
+            }
+            ctx.lineCap  = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        function _replayStroke(action) {
+            const rect = container.getBoundingClientRect();
+            const x = action.pctX * rect.width;
+            const y = action.pctY * rect.height;
+            
+            // Replay proportional brush size matching
+            const relativeSize = (action.mode === 'canvas') 
+                ? ((action.brushSize || 10) / 400) * Math.min(rect.width, rect.height) 
+                : Math.min(rect.width, rect.height) * 0.05;
+
+            ctx.beginPath();
+            ctx.moveTo(remoteLastPx, remoteLastPy);
+            ctx.lineTo(x, y);
+            if (action.mode === 'canvas') {
+                ctx.strokeStyle = action.brushColor || '#e74c3c';
+                ctx.lineWidth   = relativeSize;
+                ctx.shadowBlur  = 0;
+            } else {
+                ctx.strokeStyle = `hsl(${action.hue || 0},100%,50%)`;
+                ctx.lineWidth   = relativeSize;
+                ctx.shadowBlur  = 10;
+                ctx.shadowColor = `hsl(${action.hue || 0},100%,50%)`;
+            }
+            ctx.lineCap  = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            remoteLastPx = x; remoteLastPy = y;
+        }
+
+        canvas.addEventListener('mousedown',  onPointerDown);
+        canvas.addEventListener('mousemove',  onPointerMove);
+        window.addEventListener('mouseup',    onPointerUp);
+        canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+        canvas.addEventListener('touchmove',  onPointerMove, { passive: false });
+        window.addEventListener('touchend',   onPointerUp);
+
+        document.addEventListener('mousemove', (e) => {
+            if (isSimulating) return;
+            const rect = container.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            
+            // Calculate coordinates always relative to the canvas container for seamless cross-device layout mapping
+            const pctX = (e.clientX - rect.left) / rect.width;
+            const pctY = (e.clientY - rect.top) / rect.height;
+            
+            sendCursorMove(pctX, pctY);
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isSimulating || !e.touches || e.touches.length === 0) return;
+            const rect = container.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            
+            const pctX = (e.touches[0].clientX - rect.left) / rect.width;
+            const pctY = (e.touches[0].clientY - rect.top) / rect.height;
+            
+            sendCursorMove(pctX, pctY);
+        }, { passive: true });
+
+        function renderGrid(setType) {
+            currentSet = setType;
+            gridEl.innerHTML = '';
+
+            ['uppercase','lowercase','numbers'].forEach(t => {
+                const b = document.getElementById(`btn-${t}`);
+                if (!b) return;
+                b.classList.toggle('ring-4',   t === setType);
+                b.classList.toggle('ring-yellow-300', t === setType);
+            });
+
+            charSets[setType].forEach((char, i) => {
+                const btn = document.createElement('button');
+                btn.id = `char-btn-${char.charCodeAt(0)}`;
+                btn.dataset.char = char;
+                btn.className = 'flex-shrink-0 bg-white border-4 border-gray-200 rounded-2xl text-xl font-black text-gray-700 hover:border-pink-400 hover:text-pink-500 transition-all kid-shadow';
+                btn.style.cssText = `width:56px;height:56px;animation-delay:${i*0.02}s;`;
+                btn.classList.add('bounce-in');
+                btn.innerHTML = `<span style="pointer-events:none;display:block;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${char}</span>`;
+
+                btn.addEventListener('click', () => {
+                    if (isSimulating) return;
+                    playPop();
+                    selectChar(char, btn, true);
+                });
+                gridEl.appendChild(btn);
+            });
+        }
+
+        function selectChar(char, btnEl, broadcast) {
+            currentChar = char;
+            speakChar(char);
+
+            Array.from(gridEl.children).forEach(b => {
+                b.classList.remove('border-pink-500','text-pink-600','bg-pink-50');
+                b.classList.add('border-gray-200','text-gray-700','bg-white');
+            });
+            
+            if (btnEl) {
+                btnEl.classList.remove('border-gray-200','text-gray-700','bg-white');
+                btnEl.classList.add('border-pink-500','text-pink-600','bg-pink-50');
+                btnEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            drawStencil();
+
+            if (broadcast && !isSimulating) {
+                sendStateAction('SELECT_CHAR', { char, set: currentSet });
+            }
+        }
+
+        function _applySelectChar(char, set) {
+            if (set && set !== currentSet) _applySelectSet(set);
+            currentChar = char;
+            const btn = gridEl.querySelector(`[data-char="${char}"]`);
+            Array.from(gridEl.children).forEach(b => {
+                b.classList.remove('border-pink-500','text-pink-600','bg-pink-50');
+                b.classList.add('border-gray-200','text-gray-700','bg-white');
+            });
+            if (btn) {
+                btn.classList.remove('border-gray-200','text-gray-700','bg-white');
+                btn.classList.add('border-pink-500','text-pink-600','bg-pink-50');
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            speakChar(char);
+            drawStencil();
+        }
+
+        function _applySelectSet(setType) {
+            currentSet = setType;
+            renderGrid(setType);
+        }
+
+        function switchMode(newMode, broadcast) {
+            mode = newMode;
+            const traceBtn  = document.getElementById('btn-mode-trace');
+            const canvasBtn = document.getElementById('btn-mode-canvas');
+            const toolbar   = document.getElementById('canvas-toolbar');
+
+            if (mode === 'canvas') {
+                traceBtn.className  = 'mode-tab inactive';
+                canvasBtn.className = 'mode-tab active-canvas';
+                toolbar.classList.add('visible');
+                container.classList.add('canvas-mode');
+                const rect = container.getBoundingClientRect();
+                ctx.clearRect(0, 0, rect.width, rect.height);
+            } else {
+                traceBtn.className  = 'mode-tab active-trace';
+                canvasBtn.className = 'mode-tab inactive';
+                toolbar.classList.remove('visible');
+                container.classList.remove('canvas-mode');
+                drawStencil();
+            }
+
+            if (broadcast && !isSimulating) {
+                sendStateAction('SWITCH_MODE', { mode: newMode });
+            }
+        }
+
+        function _applySwitchMode(newMode) {
+            switchMode(newMode, false);
+        }
+
+        function _applyErase() {
+            if (mode === 'canvas') {
+                const rect = container.getBoundingClientRect();
+                ctx.clearRect(0, 0, rect.width, rect.height);
+            } else {
+                drawStencil();
+            }
+        }
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            if (isSimulating) return;
+            playPop();
+            _applyErase();
+            sendStateAction('CLEAR_CANVAS', { mode });
+        });
+
+        document.getElementById('btn-speak').addEventListener('click', () => {
+            if (isSimulating) return;
+            playPop();
+            speakChar(currentChar);
+        });
+
+        document.getElementById('btn-done').addEventListener('click', () => {
+            if (isSimulating) return;
+            const arr = charSets[currentSet];
+            const idx = arr.indexOf(currentChar);
+            const next = arr[(idx + 1) % arr.length];
+            
+            _applyDoneClick(next, currentSet);
+            sendStateAction('DONE_CLICK', { next, set: currentSet });
+        });
+
+        function _applyDoneClick(next, set) {
+            playTada();
+            launchConfetti();
+            setTimeout(() => {
+                const btn = gridEl.querySelector(`[data-char="${next}"]`);
+                selectChar(next, btn, false);
+            }, 1500);
+        }
+
+        // Category Controls
+        document.getElementById('btn-uppercase').addEventListener('click', () => {
+            if (isSimulating) return;
+            playPop();
+            renderGrid('uppercase');
+            selectChar('A', gridEl.children[0], true);
+            sendStateAction('SELECT_SET', { set: 'uppercase' });
+        });
+        document.getElementById('btn-lowercase').addEventListener('click', () => {
+            if (isSimulating) return;
+            playPop();
+            renderGrid('lowercase');
+            selectChar('a', gridEl.children[0], true);
+            sendStateAction('SELECT_SET', { set: 'lowercase' });
+        });
+        document.getElementById('btn-numbers').addEventListener('click', () => {
+            if (isSimulating) return;
+            playPop();
+            renderGrid('numbers');
+            selectChar('0', gridEl.children[0], true);
+            sendStateAction('SELECT_SET', { set: 'numbers' });
+        });
+
+        // Mode Toggles
+        document.getElementById('btn-mode-trace').addEventListener('click', () => {
+            if (isSimulating) return;
+            playPop();
+            switchMode('trace', true);
+        });
+        document.getElementById('btn-mode-canvas').addEventListener('click', () => {
+            if (isSimulating) return;
+            playPop();
+            switchMode('canvas', true);
+        });
+
+        // Presets swatches config
+        const swatchColors = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#ec4899','#000000','#ffffff'];
+        const swatchRow = document.getElementById('swatch-row');
+        swatchColors.forEach(color => {
+            const sw = document.createElement('button');
+            sw.className = 'color-swatch';
+            sw.style.background = color;
+            sw.style.border = color === '#ffffff' ? '3px solid #d1d5db' : '3px solid white';
+            sw.addEventListener('click', () => {
+                brushColor = color;
+                document.getElementById('canvas-color-picker').value = color;
+                document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+                sw.classList.add('selected');
+            });
+            swatchRow.appendChild(sw);
+        });
+        if (swatchRow.children.length > 0) {
+            swatchRow.children[0].classList.add('selected');
+        }
+
+        document.getElementById('canvas-color-picker').addEventListener('input', e => {
+            brushColor = e.target.value;
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        });
+
+        document.getElementById('brush-size-slider').addEventListener('input', e => {
+            brushSize = parseInt(e.target.value);
+            document.getElementById('brush-size-label').textContent = brushSize;
+        });
+
+        // Remote Red Cursor tracker
+        window.addEventListener('message', (event) => {
+            const msg = event.data;
+            if (!msg) return;
+            if (msg.type === 'EXECUTE_UNIVERSAL_ACTION' && msg.action?.type === 'UNIVERSAL_CURSOR') {
+                const rect = container.getBoundingClientRect();
+                remoteCursor.style.left = (msg.action.pctX * rect.width)  + 'px';
+                remoteCursor.style.top  = (msg.action.pctY * rect.height) + 'px';
+                remoteCursor.style.display = 'block';
+                clearTimeout(window._hideCursorTimer);
+                window._hideCursorTimer = setTimeout(() => {
+                    remoteCursor.style.display = 'none';
+                }, 2500);
+            }
+        });
+
+        function updateRoleBanner() {
+            if (myRole === 'teacher') {
+                roleBanner.style.display = 'block';
+                roleBanner.style.background = '#6366f1';
+                roleBanner.textContent = '👩‍🏫 Teacher View';
+            } else if (myRole === 'student') {
+                roleBanner.style.display = 'block';
+                roleBanner.style.background = '#10b981';
+                roleBanner.textContent = '🧑‍🎓 Student View';
+            }
+        }
+
+        // Start button overlay sync setup
+        document.getElementById('btn-start').addEventListener('click', async () => {
+            if (isSimulating) return;
+            await initAudio();
+            _applyStartGame();
+            sendStateAction('START_GAME', {});
+        });
+
+        function _applyStartGame() {
+            const overlay = document.getElementById('start-overlay');
+            if (overlay) overlay.style.display = 'none';
+            resizeCanvas();
+            renderGrid('uppercase');
+            if (gridEl.children.length > 0) {
+                selectChar('A', gridEl.children[0], false);
+            } else {
+                selectChar('A', null, false);
+            }
+        }
+
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const cCtx = confettiCanvas.getContext('2d');
+        let particles = [];
+
+        function resizeConfetti() {
+            confettiCanvas.width  = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeConfetti);
+        resizeConfetti();
+
+        function launchConfetti() {
+            for (let i = 0; i < 60; i++) {
+                particles.push({
+                    x: confettiCanvas.width / 2,
+                    y: confettiCanvas.height * 0.6,
+                    r: seededRandom() * 6 + 4,
+                    dx: seededRandom() * 20 - 10,
+                    dy: -(seededRandom() * 18 + 4),
+                    color: `hsl(${Math.floor(seededRandom() * 360)},100%,55%)`,
+                    tilt: seededRandom() * 10 - 5,
+                    tiltAngle: 0,
+                    tiltInc: seededRandom() * 0.07 + 0.05
+                });
+            }
+        }
+
+        function animateConfetti() {
+            requestAnimationFrame(animateConfetti);
+            cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.tiltAngle += p.tiltInc;
+                p.y += (Math.cos(p.tiltAngle) + 1 + p.r / 2) / 2;
+                p.x += Math.sin(p.tiltAngle) * 2;
+                p.dy += 0.2;
+                p.y += p.dy;
+                p.x += p.dx;
+
+                cCtx.beginPath();
+                cCtx.lineWidth = p.r;
+                cCtx.strokeStyle = p.color;
+                cCtx.moveTo(p.x + p.tilt + p.r, p.y);
+                cCtx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+                cCtx.stroke();
+            }
+            particles = particles.filter(p => p.y < confettiCanvas.height + 20);
+        }
+        animateConfetti();
+
+        window.onload = () => {
+            detectRole();
+            updateRoleBanner();
+            resizeCanvas();
+        };
+    </script>
+</body>
+</html>

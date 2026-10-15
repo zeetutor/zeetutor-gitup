@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght=700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; }
 
@@ -32,21 +32,33 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        #canvas-container {
+        /* Fixed Square Aspect Stage wrapper to eliminate distortion between laptop & mobile */
+        #stage-wrapper {
+            position: relative;
             background-image:
                 linear-gradient(#e5e7eb 1.5px, transparent 1.5px),
                 linear-gradient(90deg, #e5e7eb 1.5px, transparent 1.5px);
-            background-size: 44px 44px;
+            background-size: 40px 40px;
             background-color: white;
             border-radius: 20px;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.04), 0 8px 20px rgba(0,0,0,0.08);
-            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.12);
             overflow: hidden;
+            border: 4px dashed #cbd5e1;
+            aspect-ratio: 1 / 1;
         }
 
-        #canvas-container.canvas-mode {
+        #stage-wrapper.canvas-mode {
             background-image: none;
             background-color: #fffbf5;
+        }
+
+        #drawing-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            touch-action: none;
         }
 
         .rainbow-text {
@@ -80,13 +92,12 @@
             z-index: 30;
             transform: translate(-50%, -50%);
             box-shadow: 0 0 0 2px #ef4444, 0 3px 8px rgba(0,0,0,0.35);
-            transition: left 0.04s linear, top 0.04s linear;
         }
         #remote-cursor-label {
             position: absolute;
             top: -22px; left: 8px;
             font-size: 11px; font-weight: 800;
-            background: rgba(0,0,0,0.72);
+            background: rgba(0,0,0,0.75);
             color: white;
             padding: 1px 6px;
             border-radius: 6px;
@@ -141,15 +152,12 @@
             #character-grid {
                 overflow-y: hidden; overflow-x: auto;
                 flex-direction: row !important;
-                height: 5.5rem !important;
+                height: 4.8rem !important;
                 width: 100% !important;
             }
         }
 
-        /* Rule 3 Click prevention inside children elements */
-        button * {
-            pointer-events: none !important;
-        }
+        button * { pointer-events: none !important; }
 
         #role-banner {
             display: none;
@@ -166,7 +174,7 @@
 </head>
 <body class="w-full h-screen flex flex-col justify-center items-center p-0 m-0 overflow-hidden">
 
-    <div id="app-wrapper" class="w-full h-full max-w-[1400px] max-h-[900px] flex flex-col relative bg-transparent overflow-hidden">
+    <div id="app-wrapper" class="w-full h-full max-w-[1400px] flex flex-col relative bg-transparent overflow-hidden">
 
         <!-- START OVERLAY -->
         <div id="start-overlay" class="absolute inset-0 z-50 flex items-center justify-center bg-white/80">
@@ -188,7 +196,7 @@
                 <button id="btn-mode-canvas" class="mode-tab inactive">🎨 Canvas</button>
             </div>
 
-            <!-- Category -->
+            <!-- Category Buttons -->
             <div class="flex gap-1">
                 <button id="btn-uppercase" class="bg-blue-400 text-white font-bold py-1.5 px-3 rounded-xl kid-shadow kid-button border-2 border-white text-sm">ABC</button>
                 <button id="btn-lowercase" class="bg-green-400 text-white font-bold py-1.5 px-3 rounded-xl kid-shadow kid-button border-2 border-white text-sm">abc</button>
@@ -197,29 +205,28 @@
         </header>
 
         <!-- MAIN LAYOUT -->
-        <main class="flex-1 flex flex-col md:flex-row overflow-hidden p-3 gap-3" style="min-height:0;">
+        <main class="flex-1 flex flex-col md:flex-row overflow-hidden p-2 md:p-3 gap-2 md:gap-3" style="min-height:0;">
 
-            <!-- LEFT: Character Selector -->
+            <!-- LEFT / TOP: Character Selector -->
             <aside id="character-grid"
-                class="md:w-20 w-full flex md:flex-col flex-row gap-1.5 bg-white rounded-2xl shadow-lg p-2 flex-shrink-0"
-                style="max-height:100%;">
-                <!-- injected by JS -->
+                class="md:w-20 w-full flex md:flex-col flex-row gap-1.5 bg-white rounded-2xl shadow-lg p-2 flex-shrink-0">
             </aside>
 
-            <!-- RIGHT: Canvas + Toolbar -->
-            <section class="flex-1 flex flex-col gap-2 min-h-0">
+            <!-- RIGHT / CENTER: Canvas Stage Area -->
+            <section class="flex-1 flex flex-col gap-2 min-h-0 items-center justify-between">
 
-                <!-- Canvas Container -->
-                <div id="canvas-container" class="flex-1 w-full border-4 border-dashed border-gray-300" style="min-height:0;">
-                    <canvas id="drawing-canvas" style="position:absolute;inset:0;cursor:crosshair;touch-action:none;"></canvas>
+                <!-- Flex Area that Centers and Auto-fits 1:1 Stage -->
+                <div id="canvas-viewport" class="flex-1 w-full flex items-center justify-center min-h-0 relative overflow-hidden">
+                    <div id="stage-wrapper">
+                        <!-- Internal Virtual 1000x1000 Resolution Canvas -->
+                        <canvas id="drawing-canvas" width="1000" height="1000"></canvas>
 
-                    <!-- Mandatory Red Remote Cursor -->
-                    <div id="remote-cursor">
-                        <div id="remote-cursor-label">👩‍🏫 Teacher</div>
+                        <div id="remote-cursor">
+                            <div id="remote-cursor-label">👩‍🏫 Teacher</div>
+                        </div>
+
+                        <div id="role-banner"></div>
                     </div>
-
-                    <!-- Role Banner inside canvas -->
-                    <div id="role-banner"></div>
                 </div>
 
                 <!-- Canvas Mode Toolbar -->
@@ -227,26 +234,25 @@
                     <span style="font-size:0.78rem;font-weight:800;color:#374151;">🎨 Color:</span>
                     <input type="color" id="canvas-color-picker" value="#e74c3c"
                         style="width:32px;height:32px;border-radius:8px;border:2px solid #e5e7eb;cursor:pointer;padding:2px;">
-                    <!-- Preset swatches -->
                     <div id="swatch-row" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
                     <span style="font-size:0.78rem;font-weight:800;color:#374151;">🖌</span>
-                    <input type="range" id="brush-size-slider" min="3" max="40" value="10"
+                    <input type="range" id="brush-size-slider" min="3" max="40" value="12"
                         style="width:70px;accent-color:#a855f7;">
-                    <span id="brush-size-label" style="font-size:0.75rem;font-weight:800;color:#6b7280;min-width:24px;">10</span>
+                    <span id="brush-size-label" style="font-size:0.75rem;font-weight:800;color:#6b7280;min-width:24px;">12</span>
                 </div>
 
                 <!-- Bottom Toolbar -->
-                <div class="flex justify-center gap-2 flex-wrap flex-shrink-0">
-                    <button id="btn-clear" class="bg-red-500 text-white text-base font-bold py-2 px-5 rounded-full kid-shadow kid-button border-3 border-white flex items-center gap-1.5">
-                        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <div class="flex justify-center gap-2 flex-wrap flex-shrink-0 py-1">
+                    <button id="btn-clear" class="bg-red-500 text-white text-sm md:text-base font-bold py-1.5 md:py-2 px-4 md:px-5 rounded-full kid-shadow kid-button border-2 border-white flex items-center gap-1.5">
+                        <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         <span>Erase</span>
                     </button>
-                    <button id="btn-speak" class="bg-blue-500 text-white text-base font-bold py-2 px-5 rounded-full kid-shadow kid-button border-3 border-white flex items-center gap-1.5">
-                        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+                    <button id="btn-speak" class="bg-blue-500 text-white text-sm md:text-base font-bold py-1.5 md:py-2 px-4 md:px-5 rounded-full kid-shadow kid-button border-2 border-white flex items-center gap-1.5">
+                        <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
                         <span>Listen</span>
                     </button>
-                    <button id="btn-done" class="bg-green-500 text-white text-base font-bold py-2 px-5 rounded-full kid-shadow kid-button border-3 border-white flex items-center gap-1.5">
-                        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <button id="btn-done" class="bg-green-500 text-white text-sm md:text-base font-bold py-1.5 md:py-2 px-4 md:px-5 rounded-full kid-shadow kid-button border-2 border-white flex items-center gap-1.5">
+                        <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         <span>I Did It!</span>
                     </button>
                 </div>
@@ -255,7 +261,9 @@
     </div>
 
     <script>
-        // Seeded random calculation engine (Rule 4 Determinism)
+        // Virtual Square Standard Baseline (Eliminates stretching between laptop & mobile)
+        const VIRTUAL_SIZE = 1000;
+
         let _seed = 42;
         function seededRandom() {
             _seed ^= _seed << 13; _seed ^= _seed >> 17; _seed ^= _seed << 5;
@@ -273,12 +281,12 @@
         let mode        = 'trace';
         let myRole      = 'student';
         let isDrawing   = false;
-        let lastPx = 0, lastPy = 0; // Local draw points in pixels
-        let remoteLastPx = 0, remoteLastPy = 0; // Remote draw points in pixels
+        let lastVx = 0, lastVy = 0; // Stored in virtual 0-1000 coordinate space
+        let remoteLastVx = 0, remoteLastVy = 0;
         let hue = 0;
-        let isSimulating = false; // Action Echo Prevention Lock
+        let isSimulating = false;
         let brushColor   = '#e74c3c';
-        let brushSize    = 10;
+        let brushSize    = 12;
         let audioInitialized = false;
         let synth;
 
@@ -291,12 +299,38 @@
             if (match) myRole = match[1];
         }
 
-        const gridEl    = document.getElementById('character-grid');
-        const canvas    = document.getElementById('drawing-canvas');
-        const ctx       = canvas.getContext('2d', { willReadFrequently: true });
-        const container = document.getElementById('canvas-container');
+        const gridEl       = document.getElementById('character-grid');
+        const canvas       = document.getElementById('drawing-canvas');
+        const ctx          = canvas.getContext('2d', { willReadFrequently: true });
+        const stageWrapper = document.getElementById('stage-wrapper');
+        const viewportEl   = document.getElementById('canvas-viewport');
         const remoteCursor = document.getElementById('remote-cursor');
         const roleBanner   = document.getElementById('role-banner');
+
+        // ============================================================
+        // MATHEMATICAL 1:1 STAGE AUTO-FITTER (Zero Aspect Distortion)
+        // ============================================================
+        function autoFitStage() {
+            if (!viewportEl || !stageWrapper) return;
+            const availableW = viewportEl.clientWidth - 12;
+            const availableH = viewportEl.clientHeight - 12;
+
+            if (availableW <= 0 || availableH <= 0) return;
+
+            // Fit exact square
+            const squareSize = Math.min(availableW, availableH);
+
+            stageWrapper.style.width  = `${Math.floor(squareSize)}px`;
+            stageWrapper.style.height = `${Math.floor(squareSize)}px`;
+        }
+
+        window.addEventListener('resize', () => {
+            autoFitStage();
+            drawStencil();
+        });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => { autoFitStage(); drawStencil(); }, 100);
+        });
 
         async function initAudio() {
             if (audioInitialized) return;
@@ -308,9 +342,7 @@
                 }).toDestination();
                 synth.volume.value = -10;
                 audioInitialized = true;
-            } catch (e) {
-                console.log("Audio synthesis context waiting gesture.");
-            }
+            } catch (e) {}
         }
 
         function playPop()  { if (audioInitialized && synth) synth.triggerAttackRelease('C5','16n'); }
@@ -329,19 +361,22 @@
             window.parent.postMessage({ type: 'IFRAME_ACTION_TRIGGERED', payload }, '*');
         }
 
-        function sendCursorMove(pctX, pctY) {
+        function sendCursorMove(vx, vy) {
             const now = Date.now();
-            if (now - _lastCursorSend < 40) return; // 40ms throttling (Rule 6)
+            if (now - _lastCursorSend < 40) return;
             _lastCursorSend = now;
-            sendAction({ type: 'UNIVERSAL_CURSOR', pctX, pctY });
-            window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX, pctY }, '*');
+            sendAction({ type: 'UNIVERSAL_CURSOR', vx, vy });
+            // Post percentage relative to virtual space
+            window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK', pctX: (vx / VIRTUAL_SIZE) * 100, pctY: (vy / VIRTUAL_SIZE) * 100 }, '*');
         }
 
         function sendStateAction(actionType, extra) {
             sendAction({ type: actionType, actionId: actionType + '_' + Date.now(), ...extra });
         }
 
-        // Receive Message Handler
+        // ============================================================
+        // REALTIME SYNC HANDLER (RECEPTOR)
+        // ============================================================
         window.addEventListener('message', (event) => {
             const msg = event.data;
             if (!msg) return;
@@ -377,14 +412,14 @@
                         _applyDoneClick(action.next, action.set);
                         break;
                     case 'CANVAS_STROKE_START':
-                        const startRect = container.getBoundingClientRect();
-                        remoteLastPx = action.pctX * startRect.width;
-                        remoteLastPy = action.pctY * startRect.height;
-                        // Tap dot sync remotely immediately on start
-                        _replayStroke({ pctX: action.pctX, pctY: action.pctY, mode: action.mode || mode, brushColor: action.brushColor || brushColor, brushSize: action.brushSize || brushSize, hue: action.hue || hue });
+                        remoteLastVx = action.vx;
+                        remoteLastVy = action.vy;
+                        _drawVirtualStroke(action.vx, action.vy, action.vx, action.vy, action.mode || mode, action.brushColor || brushColor, action.brushSize || brushSize, action.hue || hue);
                         break;
                     case 'CANVAS_STROKE_MOVE':
-                        _replayStroke(action);
+                        _drawVirtualStroke(remoteLastVx, remoteLastVy, action.vx, action.vy, action.mode || mode, action.brushColor || brushColor, action.brushSize || brushSize, action.hue || hue);
+                        remoteLastVx = action.vx;
+                        remoteLastVy = action.vy;
                         break;
                     case 'CANVAS_STROKE_END':
                         ctx.beginPath();
@@ -396,57 +431,40 @@
             }
         });
 
-        function resizeCanvas() {
-            const rect = container.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) return;
-            const dpr  = window.devicePixelRatio || 1;
-            canvas.width  = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-            canvas.style.width  = rect.width  + 'px';
-            canvas.style.height = rect.height + 'px';
-            canvas.style.position = 'absolute';
-            canvas.style.inset = '0';
-            drawStencil();
-        }
-        window.addEventListener('resize', resizeCanvas);
-
+        // Background Stencil (Drawn in internal 1000x1000 resolution)
         function drawStencil() {
             if (mode === 'canvas') return;
-            const rect = container.getBoundingClientRect();
-            const w = rect.width, h = rect.height;
-            if (w === 0 || h === 0) return;
+            const w = VIRTUAL_SIZE, h = VIRTUAL_SIZE;
             ctx.clearRect(0, 0, w, h);
 
             // Guidelines
             ctx.beginPath();
             ctx.strokeStyle = '#93c5fd';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 4;
             ctx.setLineDash([]);
-            const midY   = h / 2;
-            const spacing = Math.min(w, h) * 0.25;
+            const midY = h / 2;
+            const spacing = 260;
             ctx.moveTo(0, midY - spacing); ctx.lineTo(w, midY - spacing);
             ctx.moveTo(0, midY + spacing); ctx.lineTo(w, midY + spacing);
             ctx.stroke();
 
             ctx.beginPath();
-            ctx.setLineDash([10, 10]);
+            ctx.setLineDash([16, 16]);
             ctx.moveTo(0, midY); ctx.lineTo(w, midY);
             ctx.stroke();
 
-            // Ghost Letter Stencil Render
-            ctx.setLineDash([15, 15]);
+            // Ghost Stencil Letter
+            ctx.setLineDash([22, 22]);
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.strokeStyle = '#d1d5db';
-            ctx.fillStyle = '#f3f4f640';
-            const fontSize = Math.min(w, h) * 0.6;
-            ctx.font = `900 ${fontSize}px "Comic Sans MS","Chalkboard SE","Nunito",sans-serif`;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.fillStyle = '#f1f5f955';
+            ctx.font = `900 620px "Comic Sans MS","Chalkboard SE","Nunito",sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.shadowColor = 'rgba(0,0,0,0.1)';
-            ctx.shadowBlur = 5;
-            ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+            ctx.shadowColor = 'rgba(0,0,0,0.08)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3;
             ctx.strokeText(currentChar, w/2, h/2);
             ctx.fillText(currentChar, w/2, h/2);
             ctx.setLineDash([]);
@@ -454,38 +472,35 @@
             ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
         }
 
-        // Relative Coordinate Calculation
-        function getPct(clientX, clientY) {
-            const rect = container.getBoundingClientRect();
-            return {
-                pctX: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
-                pctY: Math.max(0, Math.min(1, (clientY - rect.top)  / rect.height))
-            };
-        }
-
-        function getCssPx(clientX, clientY) {
+        // ============================================================
+        // VIRTUAL COORDINATES CONVERSION (ZERO DISTORTION ENGINE)
+        // ============================================================
+        function getVirtualPoint(e) {
             const rect = canvas.getBoundingClientRect();
-            return { x: clientX - rect.left, y: clientY - rect.top };
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const fracX = (clientX - rect.left) / rect.width;
+            const fracY = (clientY - rect.top)  / rect.height;
+
+            return {
+                vx: Math.round(Math.max(0, Math.min(1, fracX)) * VIRTUAL_SIZE * 10) / 10,
+                vy: Math.round(Math.max(0, Math.min(1, fracY)) * VIRTUAL_SIZE * 10) / 10
+            };
         }
 
         function onPointerDown(e) {
             if (e.cancelable) e.preventDefault();
             isDrawing = true;
-            
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            const { x, y } = getCssPx(clientX, clientY);
-            lastPx = x; lastPy = y;
-            const { pctX, pctY } = getPct(clientX, clientY);
-            
-            // Draw dot locally right away on pointerdown
-            _drawLocalStroke(x, y);
+
+            const { vx, vy } = getVirtualPoint(e);
+            lastVx = vx; lastVy = vy;
+
+            _drawVirtualStroke(vx, vy, vx, vy, mode, brushColor, brushSize, hue);
 
             if (!isSimulating) {
-                sendStateAction('CANVAS_STROKE_START', { pctX, pctY });
-                // Instantly send stroke move to replicate tap dot remotely
-                sendStateAction('CANVAS_STROKE_MOVE', { pctX, pctY, hue, brushColor, brushSize, mode });
+                sendStateAction('CANVAS_STROKE_START', { vx, vy });
+                sendStateAction('CANVAS_STROKE_MOVE', { vx, vy, hue, brushColor, brushSize, mode });
             }
         }
 
@@ -493,21 +508,17 @@
             if (e.cancelable) e.preventDefault();
             if (!isDrawing) return;
 
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const { vx, vy } = getVirtualPoint(e);
 
-            const { x, y } = getCssPx(clientX, clientY);
-            const { pctX, pctY } = getPct(clientX, clientY);
-
-            _drawLocalStroke(x, y);
+            _drawVirtualStroke(lastVx, lastVy, vx, vy, mode, brushColor, brushSize, hue);
 
             const now = Date.now();
-            if (!isSimulating && now - _lastStrokeSend >= 40) {
+            if (!isSimulating && now - _lastStrokeSend >= 35) {
                 _lastStrokeSend = now;
-                sendStateAction('CANVAS_STROKE_MOVE', { pctX, pctY, hue, brushColor, brushSize, mode });
+                sendStateAction('CANVAS_STROKE_MOVE', { vx, vy, hue, brushColor, brushSize, mode });
             }
 
-            lastPx = x; lastPy = y;
+            lastVx = vx; lastVy = vy;
             hue = (hue + 2) % 360;
         }
 
@@ -518,62 +529,29 @@
             if (!isSimulating) sendStateAction('CANVAS_STROKE_END', {});
         }
 
-        function _drawLocalStroke(x, y) {
-            const rect = container.getBoundingClientRect();
-            
-            // Proportional Brush Size scaling to match across different screen resolutions perfectly
-            const relativeSize = (mode === 'canvas') 
-                ? (brushSize / 400) * Math.min(rect.width, rect.height) 
-                : Math.min(rect.width, rect.height) * 0.05;
+        // Unified Drawing Routine scaled to 1000px virtual canvas
+        function _drawVirtualStroke(fromX, fromY, toX, toY, strokeMode, color, bSize, curHue) {
+            // Fixed brush size proportional to 1000px coordinate system
+            const virtualLineWidth = (strokeMode === 'canvas') ? (bSize * 2.5) : 48;
 
             ctx.beginPath();
-            ctx.moveTo(lastPx, lastPy);
-            ctx.lineTo(x, y);
-            if (mode === 'canvas') {
-                ctx.strokeStyle = brushColor;
-                ctx.lineWidth   = relativeSize;
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+
+            if (strokeMode === 'canvas') {
+                ctx.strokeStyle = color;
+                ctx.lineWidth   = virtualLineWidth;
                 ctx.shadowBlur  = 0;
             } else {
-                ctx.strokeStyle = `hsl(${hue},100%,50%)`;
-                ctx.lineWidth   = relativeSize;
-                ctx.shadowBlur  = 10;
-                ctx.shadowColor = `hsl(${hue},100%,50%)`;
+                ctx.strokeStyle = `hsl(${curHue}, 100%, 50%)`;
+                ctx.lineWidth   = virtualLineWidth;
+                ctx.shadowBlur  = 16;
+                ctx.shadowColor = `hsl(${curHue}, 100%, 50%)`;
             }
             ctx.lineCap  = 'round';
             ctx.lineJoin = 'round';
             ctx.stroke();
             ctx.shadowBlur = 0;
-        }
-
-        function _replayStroke(action) {
-            const rect = container.getBoundingClientRect();
-            const x = action.pctX * rect.width;
-            const y = action.pctY * rect.height;
-            
-            // Replay proportional brush size matching
-            const relativeSize = (action.mode === 'canvas') 
-                ? ((action.brushSize || 10) / 400) * Math.min(rect.width, rect.height) 
-                : Math.min(rect.width, rect.height) * 0.05;
-
-            ctx.beginPath();
-            ctx.moveTo(remoteLastPx, remoteLastPy);
-            ctx.lineTo(x, y);
-            if (action.mode === 'canvas') {
-                ctx.strokeStyle = action.brushColor || '#e74c3c';
-                ctx.lineWidth   = relativeSize;
-                ctx.shadowBlur  = 0;
-            } else {
-                ctx.strokeStyle = `hsl(${action.hue || 0},100%,50%)`;
-                ctx.lineWidth   = relativeSize;
-                ctx.shadowBlur  = 10;
-                ctx.shadowColor = `hsl(${action.hue || 0},100%,50%)`;
-            }
-            ctx.lineCap  = 'round';
-            ctx.lineJoin = 'round';
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            
-            remoteLastPx = x; remoteLastPy = y;
         }
 
         canvas.addEventListener('mousedown',  onPointerDown);
@@ -583,28 +561,37 @@
         canvas.addEventListener('touchmove',  onPointerMove, { passive: false });
         window.addEventListener('touchend',   onPointerUp);
 
+        // Remote Red Pointer Mapping
         document.addEventListener('mousemove', (e) => {
             if (isSimulating) return;
-            const rect = container.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) return;
-            
-            // Calculate coordinates always relative to the canvas container for seamless cross-device layout mapping
-            const pctX = (e.clientX - rect.left) / rect.width;
-            const pctY = (e.clientY - rect.top) / rect.height;
-            
-            sendCursorMove(pctX, pctY);
+            const pt = getVirtualPoint(e);
+            sendCursorMove(pt.vx, pt.vy);
         });
 
         document.addEventListener('touchmove', (e) => {
             if (isSimulating || !e.touches || e.touches.length === 0) return;
-            const rect = container.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) return;
-            
-            const pctX = (e.touches[0].clientX - rect.left) / rect.width;
-            const pctY = (e.touches[0].clientY - rect.top) / rect.height;
-            
-            sendCursorMove(pctX, pctY);
+            const pt = getVirtualPoint(e);
+            sendCursorMove(pt.vx, pt.vy);
         }, { passive: true });
+
+        window.addEventListener('message', (event) => {
+            const msg = event.data;
+            if (!msg) return;
+            if (msg.type === 'EXECUTE_UNIVERSAL_ACTION' && msg.action?.type === 'UNIVERSAL_CURSOR') {
+                const rect = stageWrapper.getBoundingClientRect();
+                const actualX = (msg.action.vx / VIRTUAL_SIZE) * rect.width;
+                const actualY = (msg.action.vy / VIRTUAL_SIZE) * rect.height;
+
+                remoteCursor.style.left = `${actualX}px`;
+                remoteCursor.style.top  = `${actualY}px`;
+                remoteCursor.style.display = 'block';
+
+                clearTimeout(window._hideCursorTimer);
+                window._hideCursorTimer = setTimeout(() => {
+                    remoteCursor.style.display = 'none';
+                }, 2500);
+            }
+        });
 
         function renderGrid(setType) {
             currentSet = setType;
@@ -622,9 +609,9 @@
                 btn.id = `char-btn-${char.charCodeAt(0)}`;
                 btn.dataset.char = char;
                 btn.className = 'flex-shrink-0 bg-white border-4 border-gray-200 rounded-2xl text-xl font-black text-gray-700 hover:border-pink-400 hover:text-pink-500 transition-all kid-shadow';
-                btn.style.cssText = `width:56px;height:56px;animation-delay:${i*0.02}s;`;
+                btn.style.cssText = `width:52px;height:52px;animation-delay:${i*0.02}s;`;
                 btn.classList.add('bounce-in');
-                btn.innerHTML = `<span style="pointer-events:none;display:block;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${char}</span>`;
+                btn.innerHTML = `<span style="pointer-events:none;display:flex;width:100%;height:100%;align-items:center;justify-content:center;">${char}</span>`;
 
                 btn.addEventListener('click', () => {
                     if (isSimulating) return;
@@ -689,14 +676,13 @@
                 traceBtn.className  = 'mode-tab inactive';
                 canvasBtn.className = 'mode-tab active-canvas';
                 toolbar.classList.add('visible');
-                container.classList.add('canvas-mode');
-                const rect = container.getBoundingClientRect();
-                ctx.clearRect(0, 0, rect.width, rect.height);
+                stageWrapper.classList.add('canvas-mode');
+                ctx.clearRect(0, 0, VIRTUAL_SIZE, VIRTUAL_SIZE);
             } else {
                 traceBtn.className  = 'mode-tab active-trace';
                 canvasBtn.className = 'mode-tab inactive';
                 toolbar.classList.remove('visible');
-                container.classList.remove('canvas-mode');
+                stageWrapper.classList.remove('canvas-mode');
                 drawStencil();
             }
 
@@ -711,8 +697,7 @@
 
         function _applyErase() {
             if (mode === 'canvas') {
-                const rect = container.getBoundingClientRect();
-                ctx.clearRect(0, 0, rect.width, rect.height);
+                ctx.clearRect(0, 0, VIRTUAL_SIZE, VIRTUAL_SIZE);
             } else {
                 drawStencil();
             }
@@ -785,7 +770,7 @@
             switchMode('canvas', true);
         });
 
-        // Presets swatches config
+        // Swatches Presets
         const swatchColors = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#ec4899','#000000','#ffffff'];
         const swatchRow = document.getElementById('swatch-row');
         swatchColors.forEach(color => {
@@ -815,22 +800,6 @@
             document.getElementById('brush-size-label').textContent = brushSize;
         });
 
-        // Remote Red Cursor tracker
-        window.addEventListener('message', (event) => {
-            const msg = event.data;
-            if (!msg) return;
-            if (msg.type === 'EXECUTE_UNIVERSAL_ACTION' && msg.action?.type === 'UNIVERSAL_CURSOR') {
-                const rect = container.getBoundingClientRect();
-                remoteCursor.style.left = (msg.action.pctX * rect.width)  + 'px';
-                remoteCursor.style.top  = (msg.action.pctY * rect.height) + 'px';
-                remoteCursor.style.display = 'block';
-                clearTimeout(window._hideCursorTimer);
-                window._hideCursorTimer = setTimeout(() => {
-                    remoteCursor.style.display = 'none';
-                }, 2500);
-            }
-        });
-
         function updateRoleBanner() {
             if (myRole === 'teacher') {
                 roleBanner.style.display = 'block';
@@ -843,7 +812,6 @@
             }
         }
 
-        // Start button overlay sync setup
         document.getElementById('btn-start').addEventListener('click', async () => {
             if (isSimulating) return;
             await initAudio();
@@ -854,7 +822,8 @@
         function _applyStartGame() {
             const overlay = document.getElementById('start-overlay');
             if (overlay) overlay.style.display = 'none';
-            resizeCanvas();
+            autoFitStage();
+            drawStencil();
             renderGrid('uppercase');
             if (gridEl.children.length > 0) {
                 selectChar('A', gridEl.children[0], false);
@@ -863,6 +832,7 @@
             }
         }
 
+        // Confetti Particle Engine
         const confettiCanvas = document.getElementById('confetti-canvas');
         const cCtx = confettiCanvas.getContext('2d');
         let particles = [];
@@ -916,7 +886,8 @@
         window.onload = () => {
             detectRole();
             updateRoleBanner();
-            resizeCanvas();
+            autoFitStage();
+            drawStencil();
         };
     </script>
 </body>

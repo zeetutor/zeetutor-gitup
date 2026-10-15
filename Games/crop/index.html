@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cut & Join — Studio & Player</title>
+<title>Cut & Join — Free Lasso Studio & Player</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -108,7 +108,7 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
     backdrop-filter: blur(14px);
 }
 
-.canvas-viewport {
+.viewport-box {
     position: relative;
     max-width: 100%;
     max-height: calc(100vh - 215px);
@@ -127,58 +127,47 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
     display: block;
 }
 
-#grid-overlay {
+#lasso-canvas {
     position: absolute;
     inset: 0;
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    grid-template-rows: repeat(10, 1fr);
-    z-index: 10;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    z-index: 20;
 }
-.grid-cell {
-    border: 1px dashed rgba(255,255,255,0.45);
-    cursor: pointer;
-    transition: background 0.1s;
-}
-.grid-cell:hover { background: rgba(56, 189, 248, 0.35); }
 
-/* Hole Box */
-.hole-box {
+/* Play Target Area */
+.lasso-target-hole {
     position: absolute;
-    background: rgba(8, 12, 24, 0.95);
-    border: 2px dashed rgba(255, 255, 255, 0.85);
-    z-index: 12;
     cursor: pointer;
+    z-index: 12;
     transition: transform 0.12s ease;
 }
-.hole-box:hover {
-    border-color: #38bdf8;
-    background: rgba(56, 189, 248, 0.25);
+.lasso-target-hole:hover {
+    transform: scale(1.02);
 }
 
 /* Green & Red Expanding Animations */
-@keyframes expandGreenGlow {
-    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.9); border-color: #22c55e; }
-    100% { box-shadow: 0 0 0 25px rgba(34, 197, 94, 0); border-color: #22c55e; }
+@keyframes expandGreenRing {
+    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.95); }
+    100% { box-shadow: 0 0 0 30px rgba(34, 197, 94, 0); }
 }
-@keyframes expandRedGlow {
-    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9); border-color: #ef4444; }
-    100% { box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); border-color: #ef4444; }
+@keyframes expandRedRing {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.95); }
+    100% { box-shadow: 0 0 0 30px rgba(239, 68, 68, 0); }
 }
 .success-expand {
-    animation: expandGreenGlow 0.7s ease-out forwards;
+    animation: expandGreenRing 0.75s ease-out forwards;
 }
 .error-expand {
-    animation: expandRedGlow 0.6s ease-out forwards;
+    animation: expandRedRing 0.65s ease-out forwards;
 }
 
-.placed-box {
+.placed-lasso-piece {
     position: absolute;
     z-index: 15;
-    overflow: hidden;
-    border-radius: 4px;
+    pointer-events: none;
 }
-.placed-box img { position: absolute; max-width: none; }
 
 /* Uniform Bottom Horizontal Tray */
 #bottom-tray {
@@ -190,7 +179,7 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
     gap: 12px;
     padding: 0 16px;
     overflow-x: auto;
-    z-index: 20;
+    z-index: 30;
 }
 #bottom-tray::-webkit-scrollbar { height: 6px; }
 #bottom-tray::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
@@ -207,6 +196,10 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
     flex-shrink: 0;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     transition: transform 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
 }
 .tray-card:hover { transform: translateY(-3px); border-color: #38bdf8; }
 .tray-card.selected {
@@ -215,11 +208,6 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
     box-shadow: 0 0 16px rgba(251, 191, 36, 0.6);
 }
 .tray-card.used { display: none !important; }
-.tray-card img {
-    position: absolute;
-    max-width: none;
-    pointer-events: none;
-}
 
 #remote-cursor {
     position: absolute;
@@ -239,21 +227,21 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
 <div id="remote-cursor"></div>
 
 <!-- Top Navigation -->
-<header class="glass-nav px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shrink-0 z-30">
+<header class="glass-nav px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shrink-0 z-40">
     <div class="flex items-center gap-3">
-        <h1 class="font-fredoka text-amber-400 text-lg md:text-xl tracking-wide">🧩 Cut & Join Studio</h1>
+        <h1 class="font-fredoka text-amber-400 text-lg md:text-xl tracking-wide">✂️ Lasso Cut & Join Studio</h1>
         <span id="active-title-label" class="bg-indigo-950 text-indigo-300 border border-indigo-800 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full truncate max-w-[150px]">
-            Library
+            No Puzzle Loaded
         </span>
     </div>
 
     <!-- Mode Selector Tabs -->
     <div class="flex items-center gap-2">
         <button id="nav-btn-library" onclick="showScreen('library')" class="bg-amber-500 text-slate-950 font-fredoka text-xs px-3.5 py-1.5 rounded-xl shadow transition">
-            <i class="fa-solid fa-folder-open mr-1"></i> 1. Library & Play
+            <i class="fa-solid fa-gamepad mr-1"></i> 1. Play Mode
         </button>
         <button id="nav-btn-creator" onclick="showScreen('creator')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-fredoka text-xs px-3.5 py-1.5 rounded-xl transition">
-            <i class="fa-solid fa-plus-circle mr-1"></i> 2. Creator & Cut
+            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 2. Lasso Cut Creator
         </button>
         <button onclick="openJsonModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 font-fredoka text-xs px-3.5 py-1.5 rounded-xl border border-slate-700 transition">
             <i class="fa-solid fa-code mr-1"></i> Export / Download JSON
@@ -266,38 +254,35 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
      ======================================================== -->
 <section id="screen-library" class="flex-1 flex flex-col overflow-hidden relative">
     
-    <!-- Sub Header Controls for Library Play -->
     <div class="px-6 py-2 bg-slate-900/60 border-b border-slate-800 flex justify-between items-center shrink-0">
         <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-slate-400">Choose Puzzle:</span>
+            <span class="text-xs font-bold text-slate-400">Select Puzzle:</span>
             <select id="library-puz-select" onchange="selectLibraryPuzzle(this.value)" class="bg-slate-950 border border-slate-700 text-xs font-bold text-amber-300 rounded-xl px-3 py-1 focus:outline-none">
             </select>
         </div>
         <div class="text-xs font-bold text-slate-300">
-            Tap piece in tray ➔ Tap black target hole (Green = Success, Red = Error)
+            Tap piece in tray ➔ Tap target on image (Green = Correct, Red = Wrong)
         </div>
     </div>
 
-    <!-- Play Workspace -->
     <div class="flex-1 flex items-center justify-center p-3 relative overflow-hidden bg-slate-950">
-        <div class="canvas-viewport" id="play-viewport">
-            <img id="main-play-img" src="" alt="Play Image" class="pointer-events-none select-none">
-            <div id="play-holes-container"></div>
-            <div id="play-placed-container"></div>
+        <div class="viewport-box" id="play-viewport">
+            <img id="main-play-img" src="" alt="Please upload or choose a puzzle" class="pointer-events-none select-none" onerror="this.src='https://placehold.co/600x400/0f172a/fff?text=No+Image+Loaded.+Go+to+Creator+to+Add.'">
+            <div id="play-holes-container" class="absolute inset-0"></div>
+            <div id="play-placed-container" class="absolute inset-0 pointer-events-none"></div>
         </div>
     </div>
 
-    <!-- Standard Bottom Tray -->
     <footer id="bottom-tray"></footer>
 </section>
 
 <!-- ========================================================
-     SCREEN 2: CREATOR & CUTTING STUDIO (SEPARATE SECTION)
+     SCREEN 2: CREATOR & FREE LASSO CUT STUDIO
      ======================================================== -->
 <section id="screen-creator" class="hidden flex-1 flex flex-col overflow-hidden relative bg-slate-950 p-4">
     
     <!-- Creator Setup Toolbar -->
-    <div class="max-w-4xl mx-auto w-full bg-slate-900/80 border border-slate-800 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 mb-3">
+    <div class="max-w-4xl mx-auto w-full bg-slate-900/80 border border-slate-800 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 mb-2">
         <div class="flex items-center gap-2 flex-1 min-w-[280px]">
             <label class="bg-emerald-600 hover:bg-emerald-500 text-white font-fredoka text-xs px-3.5 py-2 rounded-xl cursor-pointer shadow transition flex items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-cloud-arrow-up"></i> Upload Image
@@ -308,9 +293,9 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
 
         <div class="flex items-center gap-2">
             <button onclick="saveCurrentCutsToDatabase()" class="bg-blue-600 hover:bg-blue-500 text-white font-fredoka text-xs px-4 py-2 rounded-xl shadow transition flex items-center gap-1">
-                <i class="fa-solid fa-floppy-disk"></i> Save To Library & Update JSON
+                <i class="fa-solid fa-floppy-disk"></i> Save Puzzle & Update JSON
             </button>
-            <button onclick="clearCurrentCutsOnly()" class="bg-rose-900/80 hover:bg-rose-800 text-white font-fredoka text-xs px-3 py-2 rounded-xl transition">
+            <button onclick="clearCurrentLassoCuts()" class="bg-rose-900/80 hover:bg-rose-800 text-white font-fredoka text-xs px-3 py-2 rounded-xl transition">
                 Clear Cuts
             </button>
         </div>
@@ -318,15 +303,15 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
 
     <!-- Instruction Bar -->
     <div class="text-center text-xs font-bold text-slate-400 mb-2">
-        ✂️ Click any square cell to cut a 1x1 cube piece! Click again to remove it. (No pieces will leak or mix).
+        ✏️ Drag your mouse freely around any area (ear, eyes, hat, etc.) to draw a Lasso loop. When you release, that exact part will be cut!
     </div>
 
-    <!-- Cutting Canvas Container -->
+    <!-- Free-draw Canvas Container -->
     <div class="flex-1 flex items-center justify-center overflow-hidden">
-        <div class="canvas-viewport" id="creator-viewport">
+        <div class="viewport-box" id="creator-viewport">
             <img id="creator-base-img" src="" alt="Upload Image to Start Cutting" onerror="this.src='https://placehold.co/600x400/0f172a/fff?text=Upload+Image+Above+First'">
-            <div id="grid-overlay" class="hidden"></div>
-            <div id="creator-cut-holes"></div>
+            <canvas id="lasso-canvas"></canvas>
+            <div id="creator-cut-holes" class="absolute inset-0 pointer-events-none"></div>
         </div>
     </div>
 </section>
@@ -354,35 +339,27 @@ body { font-family: 'Nunito', sans-serif; background: #0b0f19; color: #f8fafc; h
 </div>
 
 <script>
-const GRID_SIZE = 10;
-let currentActiveScreen = 'library'; // 'library' | 'creator'
+let currentActiveScreen = 'library';
 
-// Main Database (Single Clean Array)
-let db = [
-    {
-        id: "puz_default",
-        name: "dog.png",
-        url: "images/dog.png",
-        pieces: [
-            { id: "pc_1", x: 4, y: 3, w: 1, h: 1 },
-            { id: "pc_2", x: 5, y: 3, w: 1, h: 1 },
-            { id: "pc_3", x: 4, y: 5, w: 1, h: 1 }
-        ]
-    }
-];
+// NO DEMO IMAGES: Clean empty initial array
+let db = [];
 
-// Active Playground State
+// Active Playing State
 let activePlayPuzzle = null;
 let selectedPieceId = null;
 let placedCount = 0;
 
-// Creator State (Isolated strictly so old cuts NEVER mix with new uploads)
+// Creator State
 let creatorCurrentPuzzle = {
     id: "",
     name: "",
     url: "",
+    storagePath: "",
     pieces: []
 };
+
+let isDrawingLasso = false;
+let currentLassoPoints = [];
 
 // Web Audio API
 let audioCtx = null;
@@ -401,7 +378,7 @@ function playTone(freq, type, duration, vol=0.2) {
     } catch(e) {}
 }
 
-// 1. INITIALIZATION & DATA LOADING
+// 1. BOOT & JSON FETCH
 async function initDatabase() {
     try {
         const res = await fetch('./puzzles.json');
@@ -410,8 +387,13 @@ async function initDatabase() {
             if (Array.isArray(data) && data.length) db = data;
         }
     } catch(e) {}
+    
     renderLibraryDropdown();
-    if(db.length) loadPlayPuzzle(db[0].id);
+    if (db.length) {
+        loadPlayPuzzle(db[0].id);
+    } else {
+        showScreen('creator');
+    }
 }
 
 // 2. SCREEN NAVIGATION
@@ -434,13 +416,13 @@ function showScreen(screen) {
         document.getElementById('active-title-label').innerText = activePlayPuzzle ? activePlayPuzzle.name : 'Library';
         if (activePlayPuzzle) renderPlayBoard();
     } else {
-        document.getElementById('active-title-label').innerText = 'Creator Studio';
-        initCreatorGrid();
+        document.getElementById('active-title-label').innerText = 'Lasso Creator Studio';
+        setupLassoCanvas();
     }
 }
 
 // ========================================================
-// SECTION 2 LOGIC: CREATOR & CUTTING
+// SECTION 2: LASSO CUTTING STUDIO
 // ========================================================
 function handleCreatorImageUpload(event) {
     const file = event.target.files[0];
@@ -450,124 +432,192 @@ function handleCreatorImageUpload(event) {
     const reader = new FileReader();
 
     reader.onload = (e) => {
-        // RESET CREATOR COMPLETELY SO PREVIOUS CUTS NEVER MIX
+        // Fresh reset: previous cuts will never leak
         creatorCurrentPuzzle = {
             id: 'puz_' + Date.now(),
             name: originalName,
             url: e.target.result,
             storagePath: `images/${originalName}`,
-            pieces: [] // Completely isolated fresh pieces array
+            pieces: []
         };
 
         document.getElementById('creator-img-path').value = creatorCurrentPuzzle.storagePath;
         const img = document.getElementById('creator-base-img');
         img.src = creatorCurrentPuzzle.url;
         img.onload = () => {
-            initCreatorGrid();
-            renderCreatorCutHoles();
+            setupLassoCanvas();
+            renderCreatorLassoCutIndicators();
         };
 
-        alert(`"${originalName}" loaded! Tap on squares on the image to cut 1x1 pieces.`);
+        alert(`"${originalName}" loaded! Drag on the image to draw your custom lasso cut.`);
     };
 
     reader.readAsDataURL(file);
     event.target.value = '';
 }
 
-function initCreatorGrid() {
-    const grid = document.getElementById('grid-overlay');
+function setupLassoCanvas() {
+    const canvas = document.getElementById('lasso-canvas');
+    const img = document.getElementById('creator-base-img');
+    const vp = document.getElementById('creator-viewport');
+    
     if (!creatorCurrentPuzzle.url) {
-        grid.classList.add('hidden');
+        canvas.style.display = 'none';
         return;
     }
+    
+    canvas.style.display = 'block';
+    canvas.width = vp.clientWidth;
+    canvas.height = vp.clientHeight;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    grid.classList.remove('hidden');
-    grid.innerHTML = '';
-    for (let y = 0; y < GRID_SIZE; y++) {
-        for (let x = 0; x < GRID_SIZE; x++) {
-            const cell = document.createElement('div');
-            cell.id = `cell-${x}-${y}`;
-            cell.className = 'grid-cell';
-            // Pure isolated 1x1 cube tap
-            cell.onclick = () => handleCreatorCubeClick(x, y);
-            grid.appendChild(cell);
-        }
-    }
-}
+    canvas.onmousedown = (e) => {
+        isDrawingLasso = true;
+        const rect = canvas.getBoundingClientRect();
+        currentLassoPoints = [{
+            x: ((e.clientX - rect.left) / rect.width) * 100,
+            y: ((e.clientY - rect.top) / rect.height) * 100
+        }];
+    };
 
-function handleCreatorCubeClick(x, y) {
-    if (!creatorCurrentPuzzle.url) return;
-
-    const idx = creatorCurrentPuzzle.pieces.findIndex(p => p.x === x && p.y === y);
-    if (idx !== -1) {
-        // Toggle un-cut
-        creatorCurrentPuzzle.pieces.splice(idx, 1);
-        playTone(320, 'sine', 0.08);
-    } else {
-        // Add single isolated cube
-        creatorCurrentPuzzle.pieces.push({
-            id: `pc_${Date.now()}_${creatorCurrentPuzzle.pieces.length + 1}`,
-            x: x, 
-            y: y, 
-            w: 1, 
-            h: 1
+    canvas.onmousemove = (e) => {
+        if (!isDrawingLasso) return;
+        const rect = canvas.getBoundingClientRect();
+        currentLassoPoints.push({
+            x: ((e.clientX - rect.left) / rect.width) * 100,
+            y: ((e.clientY - rect.top) / rect.height) * 100
         });
-        playTone(600, 'triangle', 0.12);
-    }
-    renderCreatorCutHoles();
+        drawLassoPreview(ctx, canvas);
+    };
+
+    window.onmouseup = () => {
+        if (!isDrawingLasso) return;
+        isDrawingLasso = false;
+        
+        if (currentLassoPoints.length > 5) {
+            commitLassoPieceCut();
+        }
+        currentLassoPoints = [];
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
 }
 
-function renderCreatorCutHoles() {
+function drawLassoPreview(ctx, canvas) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (currentLassoPoints.length < 2) return;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo((currentLassoPoints[0].x / 100) * canvas.width, (currentLassoPoints[0].y / 100) * canvas.height);
+    for (let i = 1; i < currentLassoPoints.length; i++) {
+        ctx.lineTo((currentLassoPoints[i].x / 100) * canvas.width, (currentLassoPoints[i].y / 100) * canvas.height);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 3]);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.fill();
+    ctx.restore();
+}
+
+function commitLassoPieceCut() {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    currentLassoPoints.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y > maxY) maxY = p.y;
+    });
+
+    const w = Math.max(3, maxX - minX);
+    const h = Math.max(3, maxY - minY);
+
+    // Compute path points relative to the bounding box
+    const relativeClipPoints = currentLassoPoints.map(p => ({
+        x: +((p.x - minX) / w * 100).toFixed(1),
+        y: +((p.y - minY) / h * 100).toFixed(1)
+    }));
+
+    const clipPathStr = `polygon(${relativeClipPoints.map(p => `${p.x}\%${p.y}%`).join(', ')})`;
+
+    const pieceId = `pc_${Date.now()}_${creatorCurrentPuzzle.pieces.length + 1}`;
+    creatorCurrentPuzzle.pieces.push({
+        id: pieceId,
+        box: {
+            xPct: +minX.toFixed(2),
+            yPct: +minY.toFixed(2),
+            wPct: +w.toFixed(2),
+            hPct: +h.toFixed(2)
+        },
+        clipPath: clipPathStr
+    });
+
+    playTone(680, 'triangle', 0.14);
+    renderCreatorLassoCutIndicators();
+}
+
+function renderCreatorLassoCutIndicators() {
     const container = document.getElementById('creator-cut-holes');
-    container.innerHTML = creatorCurrentPuzzle.pieces.map(p => `
+    container.innerHTML = creatorCurrentPuzzle.pieces.map((p, idx) => `
         <div style="
             position: absolute;
-            left: ${(p.x / GRID_SIZE) * 100}%;
-            top: ${(p.y / GRID_SIZE) * 100}%;
-            width: ${(p.w / GRID_SIZE) * 100}%;
-            height: ${(p.h / GRID_SIZE) * 100}%;
+            left: ${p.box.xPct}%;
+            top: ${p.box.yPct}%;
+            width: ${p.box.wPct}%;
+            height: ${p.box.hPct}%;
+            clip-path: ${p.clipPath};
             background: rgba(251, 191, 36, 0.45);
             border: 2px dashed #fbbf24;
-            pointer-events: none;
-        "></div>
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        ">
+            <span class="bg-slate-900/90 text-amber-300 text-[10px] font-bold px-1 rounded">#${idx + 1}</span>
+        </div>
     `).join('');
 }
 
-function clearCurrentCutsOnly() {
+function clearCurrentLassoCuts() {
     creatorCurrentPuzzle.pieces = [];
-    renderCreatorCutHoles();
+    renderCreatorLassoCutIndicators();
 }
 
 function saveCurrentCutsToDatabase() {
-    if (!creatorCurrentPuzzle.url) return alert("Upload an image first!");
-    if (!creatorCurrentPuzzle.pieces.length) return alert("Cut at least 1 piece before saving!");
+    if (!creatorCurrentPuzzle.url) return alert("Please upload an image first!");
+    if (!creatorCurrentPuzzle.pieces.length) return alert("Please draw at least 1 lasso cut piece!");
 
     const finalPath = document.getElementById('creator-img-path').value.trim() || creatorCurrentPuzzle.storagePath;
 
-    // Build standalone puzzle object
     const savedItem = {
         id: creatorCurrentPuzzle.id,
         name: creatorCurrentPuzzle.name,
-        url: finalPath, // points to original images/ file path
-        previewData: creatorCurrentPuzzle.url, // stores dataUrl for instant session play
+        url: finalPath,
+        previewData: creatorCurrentPuzzle.url,
         pieces: JSON.parse(JSON.stringify(creatorCurrentPuzzle.pieces))
     };
 
-    // Remove existing if any, and push fresh
     db = db.filter(p => p.name !== savedItem.name);
     db.push(savedItem);
 
     renderLibraryDropdown();
     loadPlayPuzzle(savedItem.id);
     showScreen('library');
-    alert(`"${savedItem.name}" saved! It is now playable in the Library and stored in JSON.`);
+    alert(`"${savedItem.name}" saved successfully into JSON dataset!`);
 }
 
 // ========================================================
-// SECTION 1 LOGIC: LIBRARY & PLAY WITH GREEN/RED FEEDBACK
+// SECTION 1: LIBRARY PLAY WITH GREEN / RED FEEDBACK
 // ========================================================
 function renderLibraryDropdown() {
     const sel = document.getElementById('library-puz-select');
+    if (!db.length) {
+        sel.innerHTML = '<option value="">(No Puzzles in JSON)</option>';
+        return;
+    }
     sel.innerHTML = db.map(p => `<option value="${p.id}" ${activePlayPuzzle?.id === p.id ? 'selected' : ''}>${p.name}</option>`).join('');
 }
 
@@ -597,51 +647,69 @@ function renderPlayBoard() {
     placedCount = 0;
     selectedPieceId = null;
 
-    if (!activePlayPuzzle.pieces.length) {
-        tray.innerHTML = `<p class="text-slate-400 font-bold text-xs mx-auto">No cuts found for this puzzle. Go to "Creator & Cut" to cut pieces!</p>`;
+    if (!activePlayPuzzle || !activePlayPuzzle.pieces.length) {
+        tray.innerHTML = `<p class="text-slate-400 font-bold text-xs mx-auto">No cuts found for this puzzle. Go to "Lasso Cut Creator" to cut pieces!</p>`;
         return;
     }
 
-    // Seeded shuffle for player synchronization
     const shuffled = [...activePlayPuzzle.pieces];
     for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(window.seededRandom() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
 
-    // Render Target Holes
+    // 1. Render Missing Lasso Target Holes
     activePlayPuzzle.pieces.forEach(p => {
         const h = document.createElement('div');
         h.id = `hole-${p.id}`;
-        h.className = 'hole-box';
-        h.style.left = `${(p.x / GRID_SIZE) * 100}%`;
-        h.style.top = `${(p.y / GRID_SIZE) * 100}%`;
-        h.style.width = `${(p.w / GRID_SIZE) * 100}%`;
-        h.style.height = `${(p.h / GRID_SIZE) * 100}%`;
-        h.onclick = () => handlePlayHoleClick(p.id);
+        h.className = 'lasso-target-hole';
+        h.style.cssText = `
+            left: ${p.box.xPct}%;
+            top: ${p.box.yPct}%;
+            width: ${p.box.wPct}%;
+            height: ${p.box.hPct}%;
+            clip-path: ${p.clipPath};
+            background: rgba(8, 12, 24, 0.94);
+            border: 2px dashed rgba(255, 255, 255, 0.85);
+        `;
+        h.onclick = () => handleTargetHoleClick(p.id);
         holes.appendChild(h);
     });
 
-    // Render Uniform 1:1 Tray Cards
+    // 2. Render Bottom Tray Pieces in Uniform Cards
     const imgSrc = activePlayPuzzle.previewData || activePlayPuzzle.url;
     shuffled.forEach(p => {
         const card = document.createElement('div');
         card.id = `tray-${p.id}`;
         card.className = 'tray-card';
 
-        card.innerHTML = `<img src="${imgSrc}" style="
-            width: ${(GRID_SIZE / p.w) * 100}%;
-            height: ${(GRID_SIZE / p.h) * 100}%;
-            left: ${-(p.x / p.w) * 100}%;
-            top: ${-(p.y / p.h) * 100}%;
-        ">`;
+        // Display the isolated piece with its exact lasso cut shape inside
+        card.innerHTML = `
+            <div style="
+                width: 100%;
+                height: 100%;
+                clip-path: ${p.clipPath};
+                position: relative;
+                overflow: hidden;
+            ">
+                <img src="${imgSrc}" style="
+                    position: absolute;
+                    width: ${(100 / p.box.wPct) * 100}%;
+                    height: ${(100 / p.box.hPct) * 100}%;
+                    left: -${(p.box.xPct / p.box.wPct) * 100}%;
+                    top: -${(p.box.yPct / p.box.hPct) * 100}%;
+                    max-width: none;
+                    pointer-events: none;
+                ">
+            </div>
+        `;
 
-        card.onclick = () => selectPlayTrayPiece(p.id);
+        card.onclick = () => selectTrayPiece(p.id);
         tray.appendChild(card);
     });
 }
 
-function selectPlayTrayPiece(id) {
+function selectTrayPiece(id) {
     playTone(500, 'sine', 0.08);
     selectedPieceId = id;
     document.querySelectorAll('.tray-card').forEach(c => c.classList.remove('selected'));
@@ -649,8 +717,8 @@ function selectPlayTrayPiece(id) {
     if (chosen) chosen.classList.add('selected');
 }
 
-// MATCHING MECHANISM: GREEN & RED EXPANDING RINGS
-function handlePlayHoleClick(targetId) {
+// MATCHING MECHANISM: GREEN & RED EXPANSION LOGIC
+function handleTargetHoleClick(targetId) {
     if (!selectedPieceId) {
         playTone(250, 'sawtooth', 0.1);
         return;
@@ -660,7 +728,7 @@ function handlePlayHoleClick(targetId) {
     if (!holeEl) return;
 
     if (selectedPieceId === targetId) {
-        // SUCCESS STATE: GREEN EXPANDING GLOW
+        // SUCCESS: GREEN EXPANDING RING
         playTone(750, 'triangle', 0.16);
         holeEl.classList.remove('error-expand');
         holeEl.classList.add('success-expand');
@@ -674,19 +742,27 @@ function handlePlayHoleClick(targetId) {
             if (trayEl) trayEl.classList.add('used');
         }, 220);
 
-        // Snap placed piece
+        // Snap and place the cut piece
         const placed = document.createElement('div');
-        placed.className = 'placed-box';
-        placed.style.left = `${(p.x / GRID_SIZE) * 100}%`;
-        placed.style.top = `${(p.y / GRID_SIZE) * 100}%`;
-        placed.style.width = `${(p.w / GRID_SIZE) * 100}%`;
-        placed.style.height = `${(p.h / GRID_SIZE) * 100}%`;
-        placed.innerHTML = `<img src="${imgSrc}" style="
-            width: ${(GRID_SIZE / p.w) * 100}%;
-            height: ${(GRID_SIZE / p.h) * 100}%;
-            left: ${-(p.x / p.w) * 100}%;
-            top: ${-(p.y / p.h) * 100}%;
-        ">`;
+        placed.className = 'placed-lasso-piece';
+        placed.style.cssText = `
+            left: ${p.box.xPct}%;
+            top: ${p.box.yPct}%;
+            width: ${p.box.wPct}%;
+            height: ${p.box.hPct}%;
+            clip-path: ${p.clipPath};
+            overflow: hidden;
+        `;
+        placed.innerHTML = `
+            <img src="${imgSrc}" style="
+                position: absolute;
+                width: ${(100 / p.box.wPct) * 100}%;
+                height: ${(100 / p.box.hPct) * 100}%;
+                left: -${(p.box.xPct / p.box.wPct) * 100}%;
+                top: -${(p.box.yPct / p.box.hPct) * 100}%;
+                max-width: none;
+            ">
+        `;
         document.getElementById('play-placed-container').appendChild(placed);
 
         selectedPieceId = null;
@@ -696,11 +772,11 @@ function handlePlayHoleClick(targetId) {
             setTimeout(() => {
                 try { confetti({ particleCount: 110, spread: 75, origin: { y: 0.6 } }); } catch(e){}
                 playTone(1000, 'sine', 0.4);
-                alert("🎉 Success! All cut pieces matched and assembled perfectly!");
+                alert("🎉 Puzzle Solved Successfully!");
             }, 350);
         }
     } else {
-        // FAILURE STATE: RED EXPANDING GLOW (NEVER FREEZES)
+        // FAILURE: RED EXPANDING RING
         playTone(180, 'sawtooth', 0.22);
         holeEl.classList.remove('error-expand');
         void holeEl.offsetWidth; // restart animation
@@ -719,11 +795,10 @@ function handlePlayHoleClick(targetId) {
 // JSON DATA DOWNLOAD / IMPORT
 // ========================================================
 function openJsonModal() {
-    // Generate clean JSON export format referencing the original file path
     const exportData = db.map(item => ({
         id: item.id,
         name: item.name,
-        url: item.url, // retains images/path format
+        url: item.url,
         pieces: item.pieces
     }));
 
@@ -772,7 +847,7 @@ function importJsonFile(e) {
     reader.readAsText(file);
 }
 
-// Start on boot
+// Start
 initDatabase();
 </script>
 </body>

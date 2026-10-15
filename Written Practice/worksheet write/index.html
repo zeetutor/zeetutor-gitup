@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LiveTutor Synced Canvas + JSON Generator</title>
+    <title>LiveTutor Fixed-Aspect Synced Canvas</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -21,13 +21,34 @@
         .font-fredoka {
             font-family: 'Fredoka One', cursive;
         }
-        #worksheet-canvas {
-            touch-action: none;
-        }
         .active-card {
             border-color: #6366f1 !important;
             background: rgba(99, 102, 241, 0.15) !important;
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+        }
+        /* Fixed-ratio stage container ensuring identical visual space on both Laptop & Mobile */
+        #stage-wrapper {
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            background: #ffffff;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        #worksheet-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            z-index: 10;
+        }
+        #worksheet-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -56,7 +77,7 @@
     <!-- MAIN FLOW CONTAINER -->
     <main class="flex-1 flex flex-col relative overflow-hidden">
 
-        <!-- SCREEN 1: FILE LIST & UPLOAD TRIGGER -->
+        <!-- SCREEN 1: FILE GALLERY -->
         <section id="selection-screen" class="absolute inset-0 z-30 bg-[#0b0f19] flex flex-col p-4 overflow-y-auto">
             <div class="max-w-4xl mx-auto w-full">
                 <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
@@ -71,14 +92,11 @@
                     </button>
                 </div>
 
-                <!-- File checklist grid -->
-                <div id="file-selector-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    <!-- Populated dynamically via JS -->
-                </div>
+                <div id="file-selector-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
             </div>
         </section>
 
-        <!-- SCREEN 2: ACTIVE FULL-SIZED WORKSPACE VIEW -->
+        <!-- SCREEN 2: ACTIVE DRAWING VIEW -->
         <section id="drawing-view-screen" class="flex-1 flex flex-col min-h-0 relative bg-slate-950 opacity-40 pointer-events-none transition-opacity duration-300">
             
             <!-- TOOLBAR -->
@@ -109,19 +127,6 @@
 
                 <!-- Operations -->
                 <div class="flex items-center gap-1.5 shrink-0">
-                    <div class="flex items-center bg-slate-950 px-1.5 py-0.5 rounded-lg border border-slate-800 gap-1">
-                        <button id="btn-zoom-out" onclick="adjustZoom(-0.25)" class="p-1 hover:text-white text-slate-400 transition" title="Zoom Out">
-                            <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <span id="zoom-indicator" class="text-[10px] font-bold font-mono min-w-[28px] text-center">100%</span>
-                        <button id="btn-zoom-in" onclick="adjustZoom(0.25)" class="p-1 hover:text-white text-slate-400 transition" title="Zoom In">
-                            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <button id="btn-zoom-reset" onclick="resetZoom()" class="p-1 hover:text-white text-indigo-400 transition" title="Fit Screen">
-                            <i data-lucide="maximize" class="w-3 h-3"></i>
-                        </button>
-                    </div>
-
                     <button id="btn-undo" onclick="executeUndo()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition" title="Undo Stroke">
                         <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
                     </button>
@@ -131,11 +136,12 @@
                 </div>
             </div>
 
-            <!-- CANVAS VIEWPORT -->
-            <div id="worksheet-viewport" class="flex-1 relative overflow-auto bg-slate-950 p-0 m-0 w-full h-full">
-                <div id="canvas-container" class="w-full h-full absolute inset-0 origin-center transition-transform duration-100">
-                    <img id="worksheet-img" class="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" src="" alt="Worksheet Background">
-                    <canvas id="worksheet-canvas" class="absolute inset-0 w-full h-full z-10" style="touch-action: none;"></canvas>
+            <!-- VIEWPORT WITH AUTO-FITTING EXACT ASPECT RATIO STAGE -->
+            <div id="worksheet-viewport" class="flex-1 relative flex items-center justify-center p-2 md:p-4 overflow-hidden bg-slate-950">
+                <div id="stage-wrapper">
+                    <img id="worksheet-img" src="" alt="Worksheet Image">
+                    <!-- Standard internal resolution 1000x1414 (A4 ratio) -->
+                    <canvas id="worksheet-canvas" width="1000" height="1414"></canvas>
                 </div>
             </div>
 
@@ -143,7 +149,7 @@
 
     </main>
 
-    <!-- ==================== JSON BUILDER MODAL ==================== -->
+    <!-- JSON MODAL -->
     <div id="json-modal" class="fixed inset-0 bg-slate-950/90 z-50 flex items-center justify-center p-3 hidden">
         <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
             <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
@@ -152,18 +158,16 @@
             </div>
 
             <div class="p-4 overflow-y-auto space-y-4 flex-1 text-xs md:text-sm">
-                <!-- Direct Image Uploader Box -->
                 <div class="bg-slate-950 border border-dashed border-indigo-500/50 p-5 rounded-2xl text-center flex flex-col items-center justify-center gap-2">
                     <i data-lucide="upload-cloud" class="w-8 h-8 text-indigo-400"></i>
                     <p class="font-bold text-white">Upload Worksheet Images (JPG / PNG)</p>
-                    <p class="text-[11px] text-slate-400">Select one or multiple images to convert them to Base64 JSON.</p>
+                    <p class="text-[11px] text-slate-400">Select images to bundle into manifest.json</p>
                     <label class="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs cursor-pointer">
                         Browse Images
                         <input type="file" accept="image/*" multiple class="hidden" onchange="handleMultipleImageUpload(event)">
                     </label>
                 </div>
 
-                <!-- Image Deck Summary -->
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <p class="font-fredoka text-white text-sm">Loaded Worksheets (<span id="json-item-count">0</span>)</p>
@@ -173,7 +177,6 @@
                 </div>
             </div>
 
-            <!-- Footer Operations -->
             <div class="p-4 border-t border-slate-800 bg-slate-950 flex flex-wrap gap-2 justify-between items-center">
                 <div class="flex gap-2">
                     <label class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-2 rounded-xl text-xs cursor-pointer border border-slate-700">
@@ -191,7 +194,7 @@
 
     <script>
         // ==========================================
-        // 1. Deterministic Room Seed & Setup
+        // 1. Room ID Setup
         // ==========================================
         let roomId = "1234";
         const urlHash = window.location.hash || window.location.search;
@@ -201,30 +204,20 @@
         }
         document.getElementById('room-code-display').innerText = roomId;
 
-        (function installSeededRNG() {
-            let seed = 0;
-            for (let i = 0; i < roomId.length; i++) {
-                seed = (seed + roomId.charCodeAt(i)) | 0;
-            }
-            Math.random = function() {
-                let t = seed += 0x6D2B79F5;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
-        })();
+        // ==========================================
+        // 2. Fixed Dimension Virtual Canvas Coordinates
+        // ==========================================
+        // Standard virtual coordinate resolution (1000 width baseline)
+        const V_WIDTH = 1000;
+        let v_height = 1414; // Default A4 portrait (1:1.414). Dynamically syncs to uploaded image natural ratio!
 
-        // ==========================================
-        // 2. Worksheet State & Variables
-        // ==========================================
-        let worksheetDeck = []; // { id, display, dataUri }
+        let worksheetDeck = [];
         let activeWorksheetId = "";
         let isDrawing = false;
         let activeTool = 'pen'; 
         let brushColor = '#3b82f6'; 
         let brushThickness = 4;
         let rainbowHue = 0;
-        let zoomScale = 1.0;
 
         let strokeHistory = []; 
         let currentStroke = null;
@@ -235,8 +228,9 @@
         const canvas = document.getElementById('worksheet-canvas');
         const ctx = canvas.getContext('2d');
         const imgNode = document.getElementById('worksheet-img');
+        const stageWrapper = document.getElementById('stage-wrapper');
 
-        const colorsList = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ffffff'];
+        const colorsList = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#000000'];
 
         // ==========================================
         // 3. Lifecycle Initialization
@@ -246,8 +240,8 @@
             buildColorsPalette();
             loadManifestOnBoot();
             
-            window.addEventListener('resize', handleDelayedResize);
-            window.addEventListener('orientationchange', handleDelayedResize);
+            window.addEventListener('resize', autoFitStage);
+            window.addEventListener('orientationchange', autoFitStage);
             
             canvas.addEventListener('pointerdown', onPointerDown);
             canvas.addEventListener('pointermove', onPointerMove);
@@ -256,7 +250,38 @@
         });
 
         // ==========================================
-        // 4. Manifest Boot & Fallback
+        // 4. Mathematical Responsive Stage Auto-Fitter
+        // ==========================================
+        // Calculates exact bounds so the stage never gets distorted on ANY screen aspect ratio
+        function autoFitStage() {
+            const viewport = document.getElementById('worksheet-viewport');
+            if (!viewport || !stageWrapper) return;
+
+            const pad = window.innerWidth < 768 ? 8 : 24;
+            const availableW = viewport.clientWidth - pad;
+            const availableH = viewport.clientHeight - pad;
+
+            const imageRatio = V_WIDTH / v_height;
+            const viewportRatio = availableW / availableH;
+
+            let finalW, finalH;
+
+            if (viewportRatio > imageRatio) {
+                // Screen is wider (Laptop) -> Fit by available height
+                finalH = availableH;
+                finalW = finalH * imageRatio;
+            } else {
+                // Screen is taller (Mobile Portrait) -> Fit by available width
+                finalW = availableW;
+                finalH = finalW / imageRatio;
+            }
+
+            stageWrapper.style.width = `${Math.floor(finalW)}px`;
+            stageWrapper.style.height = `${Math.floor(finalH)}px`;
+        }
+
+        // ==========================================
+        // 5. Load Manifest & Fallback
         // ==========================================
         async function loadManifestOnBoot() {
             try {
@@ -276,7 +301,7 @@
         }
 
         function useDefaultMockWorksheets() {
-            const defaults = ["Straight Lines", "Curve Practice", "Maze Fun", "Alphabet Tracing"];
+            const defaults = ["Tracing Line 1", "Alphabet Board", "Math Practice"];
             worksheetDeck = defaults.map((title, i) => ({
                 id: 'ws_' + (i + 1),
                 display: title,
@@ -284,9 +309,6 @@
             }));
         }
 
-        // ==========================================
-        // 5. UI Palette & Selection Grid
-        // ==========================================
         function buildColorsPalette() {
             const container = document.getElementById('color-palette');
             container.innerHTML = '';
@@ -336,9 +358,7 @@
                     }
                 }
             });
-            if (activeTool === 'eraser' || activeTool === 'rainbow') {
-                selectTool('pen');
-            }
+            if (activeTool === 'eraser' || activeTool === 'rainbow') selectTool('pen');
         }
 
         function selectTool(tool) {
@@ -368,7 +388,7 @@
         }
 
         // ==========================================
-        // 6. Dual-Master PostMessage Communication
+        // 6. Dual-Master Realtime Sync Bridge
         // ==========================================
         function sendStateAction(type, payload = {}) {
             if (window.isSimulating) return; 
@@ -417,15 +437,15 @@
                         type: action.toolType,
                         color: action.color,
                         thickness: action.thickness,
-                        points: [{ pctX: action.pctX, pctY: action.pctY, color: action.pointColor }]
+                        points: [{ vx: action.vx, vy: action.vy, color: action.pointColor }]
                     };
                     redrawCanvasLayers();
                     break;
                 case 'CANVAS_STROKE_MOVE':
                     if (remoteStrokes[action.strokeId]) {
                         remoteStrokes[action.strokeId].points.push({
-                            pctX: action.pctX,
-                            pctY: action.pctY,
+                            vx: action.vx,
+                            vy: action.vy,
                             color: action.pointColor
                         });
                         redrawCanvasLayers();
@@ -451,7 +471,7 @@
         }
 
         // ==========================================
-        // 7. Navigation & Viewport Routing
+        // 7. Navigation & Loading Dynamic Ratio Images
         // ==========================================
         function selectWorksheetLocal(item) {
             loadWorksheetIntoView(item);
@@ -462,8 +482,6 @@
             activeWorksheetId = item.id;
             strokeHistory = [];
             remoteStrokes = {};
-            zoomScale = 1.0;
-            updateZoomUI();
 
             document.getElementById('selection-screen').classList.add('hidden');
             const drawScreen = document.getElementById('drawing-view-screen');
@@ -471,20 +489,19 @@
             document.getElementById('btn-back').classList.remove('hidden');
             document.getElementById('selected-worksheet-name').innerText = item.display;
 
-            worksheetDeck.forEach(f => {
-                const node = document.getElementById(`card-${f.id}`);
-                if (node) {
-                    if (f.id === item.id) node.classList.add('active-card');
-                    else node.classList.remove('active-card');
+            imgNode.onload = () => {
+                if (imgNode.naturalWidth && imgNode.naturalHeight) {
+                    v_height = Math.round((imgNode.naturalHeight / imgNode.naturalWidth) * V_WIDTH);
+                } else {
+                    v_height = 1414;
                 }
-            });
-
-            imgNode.onload = () => realignWorkspaceBounds();
-            imgNode.onerror = () => {
-                imgNode.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" style="background-color:%23ffffff;"><rect width="100%" height="100%" fill="%23ffffff"/><text x="400" y="300" font-family="'Fredoka One', sans-serif" font-weight="900" font-size="36" fill="%2394a3b8" text-anchor="middle">${item.display}</text><text x="400" y="350" font-family="'Nunito', sans-serif" font-size="20" fill="%23cbd5e1" text-anchor="middle">Ready to Draw!</text></svg>`;
+                canvas.width = V_WIDTH;
+                canvas.height = v_height;
+                autoFitStage();
+                redrawCanvasLayers();
             };
 
-            imgNode.src = item.dataUri || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" style="background-color:%23ffffff;"><rect width="100%" height="100%" fill="%23ffffff"/><text x="400" y="300" font-family="'Fredoka One', sans-serif" font-weight="900" font-size="36" fill="%2394a3b8" text-anchor="middle">${item.display}</text></svg>`;
+            imgNode.src = item.dataUri || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1414" viewBox="0 0 1000 1414" style="background-color:%23ffffff;"><rect width="100%" height="100%" fill="%23ffffff"/><text x="500" y="650" font-family="'Fredoka One', sans-serif" font-weight="900" font-size="48" fill="%2394a3b8" text-anchor="middle">${item.display}</text><text x="500" y="720" font-family="'Nunito', sans-serif" font-size="24" fill="%23cbd5e1" text-anchor="middle">Ready to Write!</text></svg>`;
         }
 
         function goToSelectionScreen() {
@@ -500,52 +517,23 @@
             document.getElementById('selected-worksheet-name').innerText = "No Image Selected";
         }
 
-        let resizeTimeout;
-        function handleDelayedResize() {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => realignWorkspaceBounds(), 80);
-        }
-
-        function realignWorkspaceBounds() {
-            const container = document.getElementById('canvas-container');
-            if (!container) return;
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-            redrawCanvasLayers();
-        }
-
-        function adjustZoom(amount) {
-            zoomScale += amount;
-            if (zoomScale < 0.5) zoomScale = 0.5;
-            if (zoomScale > 3.0) zoomScale = 3.0;
-            updateZoomUI();
-        }
-
-        function resetZoom() {
-            zoomScale = 1.0;
-            updateZoomUI();
-        }
-
-        function updateZoomUI() {
-            const container = document.getElementById('canvas-container');
-            if (container) container.style.transform = `scale(${zoomScale})`;
-            document.getElementById('zoom-indicator').innerText = `${Math.round(zoomScale * 100)}%`;
-        }
-
         // ==========================================
-        // 8. Pointer Event Calculations & Drawing
+        // 8. Virtual Point Conversion Engine (Writing Parity Guaranteed)
         // ==========================================
-        function getComputedPercentages(e) {
+        function getVirtualCoordinates(e) {
             const rect = canvas.getBoundingClientRect();
             const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
             const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
             
-            const x = clientX - rect.left;
-            const y = clientY - rect.top;
+            // Convert to 0.0 -> 1.0 fraction
+            const fracX = (clientX - rect.left) / rect.width;
+            const fracY = (clientY - rect.top) / rect.height;
 
-            const pctX = (x / rect.width) * 100;
-            const pctY = (y / rect.height) * 100;
-            return { pctX, pctY };
+            // Map strictly to internal virtual resolution (V_WIDTH x v_height)
+            const vx = Math.round(fracX * V_WIDTH * 10) / 10;
+            const vy = Math.round(fracY * v_height * 10) / 10;
+
+            return { vx, vy };
         }
 
         function onPointerDown(e) {
@@ -553,12 +541,12 @@
             isDrawing = true;
             canvas.setPointerCapture(e.pointerId);
 
-            const { pctX, pctY } = getComputedPercentages(e);
+            const { vx, vy } = getVirtualCoordinates(e);
             const strokeId = 'str_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
 
             let ptColor = brushColor;
             if (activeTool === 'rainbow') {
-                rainbowHue = (rainbowHue + 3) % 360;
+                rainbowHue = (rainbowHue + 4) % 360;
                 ptColor = `hsl(${rainbowHue}, 100%, 50%)`;
             }
 
@@ -567,14 +555,14 @@
                 color: activeTool === 'eraser' ? 'transparent' : brushColor,
                 thickness: brushThickness,
                 strokeId: strokeId,
-                points: [{ pctX, pctY, color: ptColor }]
+                points: [{ vx, vy, color: ptColor }]
             };
 
             redrawCanvasLayers();
 
             sendStateAction('CANVAS_STROKE_START', {
-                pctX: pctX,
-                pctY: pctY,
+                vx: vx,
+                vy: vy,
                 color: currentStroke.color,
                 thickness: currentStroke.thickness,
                 toolType: activeTool,
@@ -586,23 +574,23 @@
         function onPointerMove(e) {
             if (!isDrawing || !currentStroke) return;
 
-            const { pctX, pctY } = getComputedPercentages(e);
+            const { vx, vy } = getVirtualCoordinates(e);
 
             let ptColor = brushColor;
             if (activeTool === 'rainbow') {
-                rainbowHue = (rainbowHue + 3) % 360;
+                rainbowHue = (rainbowHue + 4) % 360;
                 ptColor = `hsl(${rainbowHue}, 100%, 50%)`;
             }
 
-            currentStroke.points.push({ pctX, pctY, color: ptColor });
+            currentStroke.points.push({ vx, vy, color: ptColor });
             redrawCanvasLayers();
 
             const now = Date.now();
-            if (now - lastStrokeSendTime > 40) {
+            if (now - lastStrokeSendTime > 30) {
                 lastStrokeSendTime = now;
                 sendStateAction('CANVAS_STROKE_MOVE', {
-                    pctX: pctX,
-                    pctY: pctY,
+                    vx: vx,
+                    vy: vy,
                     pointColor: ptColor,
                     strokeId: currentStroke.strokeId
                 });
@@ -614,11 +602,11 @@
             isDrawing = false;
             try { canvas.releasePointerCapture(e.pointerId); } catch(err) {}
 
-            const { pctX, pctY } = getComputedPercentages(e);
+            const { vx, vy } = getVirtualCoordinates(e);
 
             sendStateAction('CANVAS_STROKE_END', {
-                pctX: pctX,
-                pctY: pctY,
+                vx: vx,
+                vy: vy,
                 strokeId: currentStroke.strokeId
             });
 
@@ -643,7 +631,8 @@
             ctx.beginPath();
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.lineWidth = stroke.thickness;
+            // Scale internal brush thickness proportionally to virtual resolution
+            ctx.lineWidth = stroke.thickness * (V_WIDTH / 600);
 
             if (stroke.type === 'eraser') {
                 ctx.globalCompositeOperation = 'destination-out';
@@ -652,28 +641,22 @@
             }
 
             const start = stroke.points[0];
-            const startX = (start.pctX / 100) * canvas.width;
-            const startY = (start.pctY / 100) * canvas.height;
-
-            ctx.moveTo(startX, startY);
+            ctx.moveTo(start.vx, start.vy);
 
             if (stroke.points.length === 1) {
-                ctx.lineTo(startX, startY);
+                ctx.lineTo(start.vx, start.vy);
                 ctx.strokeStyle = stroke.type === 'rainbow' ? start.color : stroke.color;
                 ctx.stroke();
             } else {
                 for (let i = 1; i < stroke.points.length; i++) {
                     const pt = stroke.points[i];
-                    const x = (pt.pctX / 100) * canvas.width;
-                    const y = (pt.pctY / 100) * canvas.height;
-                    
-                    ctx.lineTo(x, y);
+                    ctx.lineTo(pt.vx, pt.vy);
                     
                     if (stroke.type === 'rainbow') {
                         ctx.strokeStyle = pt.color;
                         ctx.stroke();
                         ctx.beginPath();
-                        ctx.moveTo(x, y);
+                        ctx.moveTo(pt.vx, pt.vy);
                     }
                 }
                 if (stroke.type !== 'rainbow') {
@@ -697,7 +680,7 @@
         }
 
         // ==========================================
-        // 9. Image-to-JSON Generator Modal Logic
+        // 9. JSON Generator Modal
         // ==========================================
         function openJsonModal() {
             renderModalList();

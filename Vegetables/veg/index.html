@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Match - LiveTutor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+        :root {
+            --primary: #8b5cf6;
+            --secondary: #ec4899;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-color: #f8fafc;
+            --text-dark: #1f2937;
+            --blue-box: #eff6ff;
+            --blue-border: #3b82f6;
+            --green-box: #22c55e;
+            --green-border: #16a34a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#cbd5e1 3px, transparent 3px);
+            background-size: 40px 40px;
+            color: var(--text-dark);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .top-bar {
+            height: 70px; background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; z-index: 100; position: relative;
+        }
+        .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+        #manifest-status { font-size: 11px; font-weight: 700; color: #64748b; }
+        .btn {
+            padding: 10px 20px; border-radius: 15px; border: none;
+            font-family: inherit; font-size: 1.1rem; font-weight: 600;
+            cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn:active { transform: translateY(3px); box-shadow: 0 0px 0 rgba(0,0,0,0) !important; }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 0 #6d28d9; }
+        .btn-success { background: var(--success); color: white; box-shadow: 0 4px 0 #059669; }
+        .btn-danger { background: var(--danger); color: white; box-shadow: 0 4px 0 #b91c1c; }
+        .btn-secondary { background: var(--secondary); color: white; box-shadow: 0 4px 0 #be185d; }
+        .btn-outline { background: white; color: var(--text-dark); border: 2px solid #cbd5e1; box-shadow: 0 4px 0 #cbd5e1; }
+        .screen {
+            display: none; flex: 1; overflow-y: auto; padding: 20px;
+            position: relative; flex-direction: column; align-items: center;
+        }
+        .screen.active { display: flex; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        .panel {
+            background: white; border-radius: 20px; padding: 20px;
+            width: 100%; max-width: 800px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 20px; border: 4px solid #e2e8f0;
+        }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
+        .grid-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .card {
+            border: 3px solid #e2e8f0; border-radius: 15px; padding: 15px;
+            text-align: center; cursor: pointer; transition: all 0.2s;
+            background: #f8fafc; font-size: 1.2rem; font-weight: bold;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .card:hover { border-color: var(--primary); background: #f3e8ff; transform: translateY(-3px); }
+        .form-group { margin-bottom: 15px; text-align: left; width: 100%; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .form-control { width: 100%; padding: 10px; border-radius: 10px; border: 2px solid #cbd5e1; font-family: inherit; font-size: 1rem; }
+        .item-row {
+            display: flex; gap: 10px; align-items: center; background: #f1f5f9;
+            padding: 10px; border-radius: 10px; margin-bottom: 10px; flex-wrap: wrap;
+        }
+        .media-preview-container {
+            width: 60px; height: 60px; border-radius: 8px; background: #e2e8f0;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+            flex-shrink: 0; border: 2px dashed #cbd5e1; position: relative;
+        }
+        .media-preview-container.green-bg { background: var(--green-box); border-color: var(--green-border); }
+        .media-el { width: 100%; height: 100%; object-fit: contain; }
+        .white-shadow-effect { filter: brightness(0) invert(1) drop-shadow(0px 0px 1px white); }
+        .game-container {
+            display: flex; flex-direction: column; align-items: center; gap: 40px;
+            width: 100%; max-width: 800px; padding: 20px;
+        }
+        .question-box {
+            background: white;
+            border: 6px solid var(--blue-border);
+            border-radius: 30px;
+            padding: 30px;
+            width: 250px; height: 250px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.2);
+            animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .question-box img, .question-box video {
+            width: 100%; height: 100%; object-fit: contain;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.1));
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px; width: 100%; max-width: 500px;
+        }
+        .option-box {
+            background: var(--green-box);
+            border: 5px solid var(--green-border);
+            border-radius: 0;
+            padding: 20px;
+            height: 200px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #15803d;
+            transition: all 0.2s;
+        }
+        .option-box:active { transform: translateY(6px); box-shadow: 0 0 0 #15803d; }
+        .option-box img, .option-box video {
+            width: 100%; height: 100%; object-fit: contain;
+            transform: scale(0.9);
+        }
+        .option-box.wrong {
+            border-color: var(--danger); background: #fca5a5; box-shadow: 0 6px 0 #b91c1c;
+            animation: shake 0.4s;
+        }
+        .option-box.correct {
+            border-color: #3b82f6; background: #60a5fa; box-shadow: 0 6px 0 #2563eb;
+            transform: scale(1.05); z-index: 10;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .celebration-particle {
+            position: fixed; font-size: 4rem; pointer-events: none; z-index: 1000;
+            animation: flyAway 1s ease-out forwards;
+        }
+        @keyframes flyAway {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            50% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.5) rotate(var(--rot)); opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--dx) * 1.5), calc(-50% + var(--dy) * 1.5)) scale(0.5) rotate(calc(var(--rot) * 2)); opacity: 0; }
+        }
+        @media (max-width: 600px) {
+            .question-box { width: 180px; height: 180px; padding: 20px; }
+            .option-box { height: 150px; padding: 10px; }
+            .options-grid { gap: 10px; }
+            .logo { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div>
+            <div class="logo">Shadow Match</div>
+            <div id="manifest-status">LiveTutor worksheet</div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap:wrap;">
+            <select id="reward-emoji" class="form-control" style="width: auto; padding: 5px;">
+                <option value="🍦">🍦 Ice Cream</option>
+                <option value="💖">💖 Heart</option>
+                <option value="😊">😊 Smile</option>
+                <option value="⭐">⭐ Star</option>
+                <option value="🎉">🎉 Party</option>
+            </select>
+            <button class="btn btn-outline" id="btn-sound">🔊 Sound On</button>
+            <button class="btn btn-primary" id="btn-home">🏠 Home</button>
+        </div>
+    </div>
+
+    <div id="menu-screen" class="screen active">
+        <div class="panel" style="text-align: center; margin-top: 50px;">
+            <h1 style="font-size: 2.4rem; color: var(--primary); margin-bottom: 30px;">Find the Silhouette!</h1>
+            <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <button class="btn btn-success" id="btn-play" style="font-size: 1.5rem; padding: 20px 40px;">🎮 Play Game</button>
+                <button class="btn btn-secondary" id="btn-admin" style="font-size: 1.5rem; padding: 20px 40px;">⚙️ Admin / JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-screen" class="screen">
+        <div class="panel" id="cat-list-panel">
+            <div class="header-flex">
+                <h2>Manage Categories</h2>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <input type="file" id="import-json" accept=".json,application/json" style="display:none;">
+                    <button class="btn btn-outline" id="btn-import">📂 Import JSON</button>
+                    <button class="btn btn-outline" id="btn-export">💾 Download JSON</button>
+                    <button class="btn btn-primary" id="btn-new-cat">+ New Category</button>
+                </div>
+            </div>
+            <p style="font-size:0.9rem; color:#64748b; margin-bottom:12px;">Upload PNG images here, then Download JSON. Put that file next to this worksheet as <b>manifest.json</b>. Images stay inside the JSON.</p>
+            <div class="grid-list" id="admin-cat-list"></div>
+        </div>
+        <div class="panel" id="add-cat-panel" style="display:none;">
+            <div class="header-flex">
+                <h3 id="cat-panel-title">Create Category</h3>
+                <button class="btn btn-outline" id="btn-back-cat">🔙 Back</button>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <input type="text" id="cat-name" class="form-control" placeholder="e.g., Farm Animals, Fruits">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-success" id="add-cat-btn">Save Category</button>
+                <button class="btn btn-danger" id="delete-cat-btn" style="display:none;">🗑️ Delete Category</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-sets-screen" class="screen">
+        <div class="panel" id="sets-list-panel">
+            <div class="header-flex">
+                <h2 id="sets-title">Category: Sets</h2>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-outline" id="btn-back-admin">🔙 Back</button>
+                    <button class="btn btn-primary" id="btn-add-set">+ Add Image Set</button>
+                </div>
+            </div>
+            <div class="grid-list" id="admin-set-list"></div>
+        </div>
+        <div class="panel" id="add-set-panel" style="display:none;">
+            <div class="header-flex">
+                <h3 id="set-panel-title">Create New Set (Min 4 Images)</h3>
+                <button class="btn btn-outline" id="btn-hide-set">🔙 Back</button>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Set Name</label>
+                <input type="text" id="set-name" class="form-control" placeholder="Set Name (e.g., Level 1)">
+            </div>
+            <div style="background:#e0f2fe; padding:10px; border-radius:10px; margin-bottom:15px; font-size:0.9rem; border:2px solid #bae6fd;">
+                <b>TIP:</b> Use <b>PNG with transparent background</b> so the white silhouette works.
+            </div>
+            <label style="font-weight:bold; display:block; margin-bottom:10px;">Images (Upload 4 to 9 items)</label>
+            <div id="items-container"></div>
+            <button class="btn btn-outline" id="btn-add-row" style="margin-bottom: 20px;">+ Add Another Image</button>
+            <br>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-success" id="add-set-btn">Save Full Set</button>
+                <button class="btn btn-danger" id="delete-set-btn" style="display:none;">🗑️ Delete Set</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="play-cat-screen" class="screen">
+        <div class="panel">
+            <h2 style="text-align: center; margin-bottom: 20px; font-size: 2rem;">Select a Category</h2>
+            <div class="grid-list" id="play-cat-list"></div>
+        </div>
+    </div>
+
+    <div id="play-set-screen" class="screen">
+        <div class="panel">
+            <div class="header-flex">
+                <h2>Select a Level</h2>
+                <button class="btn btn-outline" id="btn-back-play-cat">🔙 Back</button>
+            </div>
+            <div class="grid-list" id="play-set-list"></div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <h2 id="game-title" style="font-size: 2rem; color: var(--primary);">Find the Correct Silhouette!</h2>
+        <div class="game-container">
+            <div class="question-box" id="question-box"></div>
+            <div class="options-grid" id="options-grid"></div>
+        </div>
+        <button class="btn btn-success" id="btn-next-game" style="display: none; margin-top: 30px; font-size: 1.5rem; padding: 15px 30px;">Play Another Level!</button>
+    </div>
+
+<script>
+window.isRemoteUpdate = false;
+const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+const roomId = hashParams.get('room') || 'default_room';
+
+function sendAction(actionType, extra) {
+    if (window.isRemoteUpdate) return;
+    if (!window.parent || window.parent === window) return;
+    window.parent.postMessage({
+        type: 'IFRAME_ACTION_TRIGGERED',
+        payload: Object.assign({
+            actionType: actionType,
+            actionId: 'click_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)
+        }, extra || {})
+    }, '*');
+}
+
+window.addEventListener('message', function(event) {
+    const data = event.data;
+    if (!data || data.type !== 'EXECUTE_UNIVERSAL_ACTION') return;
+    const action = data.action || {};
+    window.isRemoteUpdate = true;
+    applyRemoteAction(action);
+    window.isRemoteUpdate = false;
+});
+
+function applyRemoteAction(action) {
+    const type = action.actionType || action.type;
+    if (type === 'SHOW_SCREEN') showScreen(action.screen);
+    else if (type === 'TOGGLE_SOUND') setSound(action.soundOn);
+    else if (type === 'SET_EMOJI') {
+        document.getElementById('reward-emoji').value = action.emoji || '🍦';
+    } else if (type === 'OPEN_ADMIN') showAdmin();
+    else if (type === 'PLAY_CATS') loadCategoriesToPlay();
+    else if (type === 'SELECT_CAT') loadSetsToPlay(action.catId);
+    else if (type === 'START_GAME') {
+        const set = allSetsCache.find(s => s.id === action.setId);
+        if (set) startGame(set, action.queueIds, action.targetId, action.choiceIds);
+    } else if (type === 'PICK_OPTION') applyPick(action.choiceId, true);
+    else if (type === 'NEXT_QUESTION') loadNextQuestion(currentAllItems, action.queueIds, action.targetId, action.choiceIds);
+    else if (type === 'GAME_HOME') loadCategoriesToPlay();
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let soundOn = true;
+let bgmInterval = null;
+
+function setSound(on) {
+    soundOn = !!on;
+    document.getElementById('btn-sound').textContent = soundOn ? '🔊 Sound On' : '🔇 Sound Off';
+    if (!soundOn && bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
+    else if (soundOn) startBGM();
+}
+
+document.getElementById('btn-sound').onclick = function() {
+    setSound(!soundOn);
+    sendAction('TOGGLE_SOUND', { soundOn: soundOn });
+};
+document.getElementById('reward-emoji').onchange = function() {
+    sendAction('SET_EMOJI', { emoji: this.value });
+};
+
+function playTone(freq, type, duration, vol) {
+    if (!soundOn) return;
+    vol = vol == null ? 0.1 : vol;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+function playCorrect() {
+    playTone(523.25, 'sine', 0.1, 0.2);
+    setTimeout(() => playTone(659.25, 'sine', 0.1, 0.2), 100);
+    setTimeout(() => playTone(783.99, 'sine', 0.3, 0.2), 200);
+}
+function playWrong() { playTone(200, 'sawtooth', 0.3, 0.1); }
+function playFinish() {
+    [261, 329, 392, 523, 659, 783, 1046].forEach((f, i) => {
+        setTimeout(() => playTone(f, 'sine', 0.2, 0.2), i * 100);
+    });
+}
+function startBGM() {
+    if (bgmInterval || !soundOn) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const notes = [261.63, 329.63, 392.00, 523.25];
+    let step = 0;
+    bgmInterval = setInterval(() => {
+        playTone(notes[step % notes.length], 'sine', 0.2, 0.03);
+        step++;
+    }, 600);
+}
+
+let db;
+const DB_NAME = 'ShadowMatchDB_LiveTutor';
+function initDB() {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (e) => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains('categories')) d.createObjectStore('categories', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('matchSets')) d.createObjectStore('matchSets', { keyPath: 'id' });
+    };
+    request.onsuccess = (e) => { db = e.target.result; loadFolderManifest(); };
+    request.onerror = () => { loadFolderManifest(); };
+}
+initDB();
+
+function getDBData(storeName) {
+    return new Promise((resolve) => {
+        if (!db) { setTimeout(() => resolve(getDBData(storeName)), 300); return; }
+        const tx = db.transaction(storeName, 'readonly');
+        const req = tx.objectStore(storeName).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+    });
+}
+function putDBData(storeName, data) {
+    return new Promise((resolve) => {
+        if (!db) { resolve(false); return; }
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.objectStore(storeName).put(data);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+    });
+}
+function deleteDBData(storeName, id) {
+    if (!db) return;
+    db.transaction(storeName, 'readwrite').objectStore(storeName).delete(id);
+}
+function clearDBStore(storeName) {
+    return new Promise((resolve) => {
+        if (!db) { resolve(true); return; }
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.objectStore(storeName).clear();
+        tx.oncomplete = () => resolve(true);
+    });
+}
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+let allCatsCache = [];
+let allSetsCache = [];
+async function refreshCache() {
+    allCatsCache = await getDBData('categories');
+    allSetsCache = await getDBData('matchSets');
+}
+
+async function loadFolderManifest() {
+    const status = document.getElementById('manifest-status');
+    try {
+        const res = await fetch('manifest.json');
+        if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.categories) && Array.isArray(data.matchSets)) {
+                await clearDBStore('categories');
+                await clearDBStore('matchSets');
+                for (const c of data.categories) await putDBData('categories', c);
+                for (const s of data.matchSets) await putDBData('matchSets', s);
+                await refreshCache();
+                status.textContent = 'Loaded manifest.json (' + data.categories.length + ' categories)';
+                status.style.color = '#059669';
+                return;
+            }
+        }
+    } catch (e) {}
+    await refreshCache();
+    status.textContent = allCatsCache.length ? 'Using saved sets' : 'No manifest.json — create in Admin, then Download JSON';
+    status.style.color = '#dc2626';
+}
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 'menu-screen') startBGM();
+}
+
+let currentCatId = null;
+let editingCatId = null;
+let editingSetId = null;
+
+async function showAdmin() {
+    document.getElementById('cat-list-panel').style.display = 'block';
+    document.getElementById('add-cat-panel').style.display = 'none';
+    showScreen('admin-screen');
+    await refreshCache();
+    const list = document.getElementById('admin-cat-list');
+    list.innerHTML = '';
+    allCatsCache.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = '<div style="margin-bottom:10px; font-size:1.4rem;">' + c.name + '</div>';
+        div.onclick = () => openCategoryAdmin(c.id, c.name);
+        list.appendChild(div);
+    });
+}
+
+function showAddCategory() {
+    editingCatId = null;
+    document.getElementById('cat-name').value = '';
+    document.getElementById('cat-panel-title').textContent = 'Create Category';
+    document.getElementById('add-cat-btn').textContent = 'Save Category';
+    document.getElementById('delete-cat-btn').style.display = 'none';
+    document.getElementById('cat-list-panel').style.display = 'none';
+    document.getElementById('add-cat-panel').style.display = 'block';
+}
+function hideAddCategory() {
+    document.getElementById('add-cat-panel').style.display = 'none';
+    document.getElementById('cat-list-panel').style.display = 'block';
+    editingCatId = null;
+}
+async function saveCategory() {
+    const name = document.getElementById('cat-name').value.trim();
+    if (!name) return;
+    const idToSave = editingCatId || generateId();
+    await putDBData('categories', { id: idToSave, name: name });
+    hideAddCategory();
+    showAdmin();
+}
+async function deleteCatFromEdit() {
+    if (!editingCatId) return;
+    if (!confirm('Delete this category and its sets?')) return;
+    deleteDBData('categories', editingCatId);
+    const sets = await getDBData('matchSets');
+    sets.filter(s => s.categoryId === editingCatId).forEach(s => deleteDBData('matchSets', s.id));
+    hideAddCategory();
+    showAdmin();
+}
+async function openCategoryAdmin(id, name) {
+    currentCatId = id;
+    document.getElementById('sets-title').textContent = 'Category: ' + name;
+    document.getElementById('sets-list-panel').style.display = 'block';
+    document.getElementById('add-set-panel').style.display = 'none';
+    showScreen('admin-sets-screen');
+    refreshSetsList();
+}
+async function refreshSetsList() {
+    await refreshCache();
+    const catSets = allSetsCache.filter(s => s.categoryId === currentCatId);
+    const list = document.getElementById('admin-set-list');
+    list.innerHTML = '';
+    catSets.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = '<div><div style="margin-bottom:5px; font-size:1.3rem;">' + s.name + '</div><div style="font-size:0.9rem; color:#666;">' + s.items.length + ' Images</div></div>';
+        div.onclick = () => editSet(s.id);
+        list.appendChild(div);
+    });
+}
+function showAddSet() {
+    editingSetId = null;
+    document.getElementById('set-name').value = '';
+    document.getElementById('set-panel-title').textContent = 'Create New Set (Min 4 Images)';
+    document.getElementById('add-set-btn').textContent = 'Save Full Set';
+    document.getElementById('delete-set-btn').style.display = 'none';
+    document.getElementById('sets-list-panel').style.display = 'none';
+    document.getElementById('add-set-panel').style.display = 'block';
+    document.getElementById('items-container').innerHTML = '';
+    for (let i = 0; i < 4; i++) addEmptyItemRow();
+}
+function hideAddSet() {
+    document.getElementById('add-set-panel').style.display = 'none';
+    document.getElementById('sets-list-panel').style.display = 'block';
+    editingSetId = null;
+}
+async function editSet(id) {
+    await refreshCache();
+    const set = allSetsCache.find(s => s.id === id);
+    if (!set) return;
+    editingSetId = id;
+    document.getElementById('set-name').value = set.name;
+    document.getElementById('set-panel-title').textContent = 'Edit Image Set';
+    document.getElementById('add-set-btn').textContent = 'Update Set';
+    document.getElementById('delete-set-btn').style.display = 'inline-flex';
+    document.getElementById('items-container').innerHTML = '';
+    set.items.forEach(item => addEmptyItemRow(item));
+    document.getElementById('sets-list-panel').style.display = 'none';
+    document.getElementById('add-set-panel').style.display = 'block';
+}
+async function deleteSetFromEdit() {
+    if (!editingSetId) return;
+    if (!confirm('Delete this set?')) return;
+    deleteDBData('matchSets', editingSetId);
+    hideAddSet();
+    refreshSetsList();
+}
+function addEmptyItemRow(existingItem) {
+    const container = document.getElementById('items-container');
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    const b64 = existingItem ? existingItem.media : '';
+    const type = existingItem ? existingItem.type : '';
+    let mediaPreviewHtml = existingItem
+        ? (type === 'video'
+            ? '<video class="media-el" src="' + b64 + '" autoplay loop muted></video>'
+            : '<img class="media-el" src="' + b64 + '">')
+        : '<span style="color:#94a3b8; font-size:0.7rem;">Real</span>';
+    let shadowPreviewHtml = existingItem
+        ? (type === 'video'
+            ? '<video class="media-el white-shadow-effect" src="' + b64 + '" autoplay loop muted></video>'
+            : '<img class="media-el white-shadow-effect" src="' + b64 + '">')
+        : '<span style="color:#fff; font-size:0.7rem; text-align:center;">White<br>Silh</span>';
+    row.innerHTML =
+        '<div style="display:flex; gap:5px;">' +
+        '<div class="media-preview-container" data-b64="' + b64 + '" data-type="' + type + '">' + mediaPreviewHtml + '</div>' +
+        '<div class="media-preview-container green-bg">' + shadowPreviewHtml + '</div></div>' +
+        '<input type="file" class="form-control file-input" accept="image/*,video/*" style="flex:1;">' +
+        '<button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger);">X</button>';
+    row.querySelector('.file-input').onchange = function() { previewMedia(this); };
+    row.querySelector('button').onclick = function() { row.remove(); };
+    container.appendChild(row);
+}
+function previewMedia(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const previews = input.previousElementSibling.querySelectorAll('.media-preview-container');
+        const realContainer = previews[0];
+        const shadowContainer = previews[1];
+        const type = file.type.startsWith('video') ? 'video' : 'image';
+        realContainer.innerHTML = '';
+        shadowContainer.innerHTML = '';
+        const realEl = type === 'video' ? document.createElement('video') : document.createElement('img');
+        const shadowEl = type === 'video' ? document.createElement('video') : document.createElement('img');
+        if (type === 'video') {
+            realEl.autoplay = true; realEl.loop = true; realEl.muted = true;
+            shadowEl.autoplay = true; shadowEl.loop = true; shadowEl.muted = true;
+        }
+        realEl.src = e.target.result;
+        realEl.className = 'media-el';
+        shadowEl.src = e.target.result;
+        shadowEl.className = 'media-el white-shadow-effect';
+        realContainer.appendChild(realEl);
+        shadowContainer.appendChild(shadowEl);
+        realContainer.dataset.type = type;
+        realContainer.dataset.b64 = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+async function saveSet() {
+    const name = document.getElementById('set-name').value.trim();
+    if (!name) return alert('Enter Set Name');
+    const items = [];
+    document.querySelectorAll('.item-row').forEach(row => {
+        const container = row.querySelector('.media-preview-container');
+        if (container.dataset.b64) {
+            items.push({ id: generateId(), media: container.dataset.b64, type: container.dataset.type });
+        }
+    });
+    if (items.length < 4) return alert('Add at least 4 images');
+    await putDBData('matchSets', {
+        id: editingSetId || generateId(),
+        categoryId: currentCatId,
+        name: name,
+        items: items
+    });
+    hideAddSet();
+    refreshSetsList();
+}
+
+async function exportData() {
+    await refreshCache();
+    const data = JSON.stringify({ categories: allCatsCache, matchSets: allSetsCache });
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'manifest.json';
+    a.click(); URL.revokeObjectURL(url);
+}
+function importData(event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data.categories || !data.matchSets) throw new Error('bad');
+            await clearDBStore('categories');
+            await clearDBStore('matchSets');
+            for (const c of data.categories) await putDBData('categories', c);
+            for (const s of data.matchSets) await putDBData('matchSets', s);
+            await refreshCache();
+            alert('JSON imported. Images stay inside the file.');
+            showAdmin();
+        } catch (err) { alert('Invalid JSON. Use Shadow Match manifest format.'); }
+    };
+    reader.readAsText(file);
+}
+
+async function loadCategoriesToPlay() {
+    startBGM();
+    document.getElementById('btn-next-game').style.display = 'none';
+    await refreshCache();
+    if (!allCatsCache.length) return alert('Create categories in Admin, Download JSON, put it as manifest.json next to this file.');
+    showScreen('play-cat-screen');
+    const list = document.getElementById('play-cat-list');
+    list.innerHTML = '';
+    allCatsCache.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.textContent = c.name;
+        div.onclick = () => {
+            sendAction('SELECT_CAT', { catId: c.id });
+            loadSetsToPlay(c.id);
+        };
+        list.appendChild(div);
+    });
+}
+async function loadSetsToPlay(catId) {
+    await refreshCache();
+    const sets = allSetsCache.filter(s => s.categoryId === catId);
+    if (!sets.length) return alert('No image sets in this category.');
+    showScreen('play-set-screen');
+    const list = document.getElementById('play-set-list');
+    list.innerHTML = '';
+    sets.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.textContent = s.name;
+        div.onclick = () => startGame(s);
+        list.appendChild(div);
+    });
+}
+
+let gameItemsQueue = [];
+let currentAllItems = [];
+let currentSet = null;
+let currentTarget = null;
+
+function shuffleCopy(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+}
+
+function startGame(set, queueIds, targetId, choiceIds) {
+    currentSet = set;
+    currentAllItems = set.items.slice();
+    showScreen('game-screen');
+    document.getElementById('btn-next-game').style.display = 'none';
+    if (queueIds && queueIds.length) {
+        gameItemsQueue = queueIds.map(id => currentAllItems.find(it => it.id === id)).filter(Boolean);
+    } else {
+        gameItemsQueue = shuffleCopy(set.items);
+        queueIds = gameItemsQueue.map(it => it.id);
+    }
+    loadNextQuestion(set.items, queueIds, targetId, choiceIds, true);
+}
+
+function loadNextQuestion(allItems, queueIds, targetId, choiceIds, isStart) {
+    currentAllItems = allItems;
+    if (queueIds) {
+        gameItemsQueue = queueIds.map(id => allItems.find(it => it.id === id)).filter(Boolean);
+    }
+    if (!gameItemsQueue.length && !targetId) {
+        playFinish();
+        spawnCelebration(window.innerWidth / 2, window.innerHeight / 2);
+        document.getElementById('question-box').innerHTML = '<h2 style="color:var(--primary);text-align:center;">Well Done!</h2>';
+        document.getElementById('options-grid').innerHTML = '';
+        document.getElementById('btn-next-game').style.display = 'block';
+        return;
+    }
+
+    if (targetId) {
+        currentTarget = allItems.find(it => it.id === targetId) || gameItemsQueue.pop();
+        gameItemsQueue = gameItemsQueue.filter(it => it.id !== targetId);
+    } else {
+        currentTarget = gameItemsQueue.pop();
+    }
+
+    const qBox = document.getElementById('question-box');
+    if (currentTarget.type === 'video') qBox.innerHTML = '<video src="' + currentTarget.media + '" autoplay loop muted></video>';
+    else qBox.innerHTML = '<img src="' + currentTarget.media + '">';
+
+    let choices;
+    if (choiceIds && choiceIds.length) {
+        choices = choiceIds.map(id => allItems.find(it => it.id === id)).filter(Boolean);
+    } else {
+        const wrong = shuffleCopy(allItems.filter(item => item.id !== currentTarget.id)).slice(0, 3);
+        choices = shuffleCopy([currentTarget].concat(wrong));
+        if (!window.isRemoteUpdate) {
+            sendAction(isStart ? 'START_GAME' : 'NEXT_QUESTION', {
+                setId: currentSet && currentSet.id,
+                queueIds: gameItemsQueue.map(it => it.id),
+                targetId: currentTarget.id,
+                choiceIds: choices.map(it => it.id)
+            });
+        }
+    }
+
+    const optionsGrid = document.getElementById('options-grid');
+    optionsGrid.innerHTML = '';
+    choices.forEach(choice => {
+        const box = document.createElement('div');
+        box.className = 'option-box';
+        box.dataset.choiceId = choice.id;
+        if (choice.type === 'video') box.innerHTML = '<video class="white-shadow-effect" src="' + choice.media + '" autoplay loop muted></video>';
+        else box.innerHTML = '<img class="white-shadow-effect" src="' + choice.media + '">';
+        box.onclick = function() {
+            if (this.dataset.clicked) return;
+            sendAction('PICK_OPTION', { choiceId: choice.id });
+            applyPick(choice.id, false);
+        };
+        optionsGrid.appendChild(box);
+    });
+}
+
+function applyPick(choiceId, fromRemote) {
+    const optionsGrid = document.getElementById('options-grid');
+    const box = Array.from(optionsGrid.children).find(b => b.dataset.choiceId === choiceId);
+    if (!box || box.dataset.clicked) return;
+    if (choiceId === currentTarget.id) {
+        playCorrect();
+        box.classList.add('correct');
+        Array.from(optionsGrid.children).forEach(b => b.dataset.clicked = 'true');
+        const rect = box.getBoundingClientRect();
+        spawnCelebration(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        setTimeout(() => {
+            if (fromRemote) return;
+            loadNextQuestion(currentAllItems);
+        }, 1200);
+    } else {
+        playWrong();
+        box.classList.add('wrong');
+        setTimeout(() => box.classList.remove('wrong'), 400);
+    }
+}
+
+function spawnCelebration(x, y) {
+    const emoji = document.getElementById('reward-emoji').value;
+    for (let i = 0; i < 8; i++) {
+        const p = document.createElement('div');
+        p.className = 'celebration-particle';
+        p.textContent = emoji;
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 100 + 50;
+        p.style.setProperty('--dx', (Math.cos(angle) * distance) + 'px');
+        p.style.setProperty('--dy', (Math.sin(angle) * distance) + 'px');
+        p.style.setProperty('--rot', (Math.random() * 360) + 'deg');
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1000);
+    }
+}
+
+document.getElementById('btn-home').onclick = function() {
+    showScreen('menu-screen');
+    sendAction('SHOW_SCREEN', { screen: 'menu-screen' });
+};
+document.getElementById('btn-play').onclick = function() {
+    loadCategoriesToPlay();
+    sendAction('PLAY_CATS');
+};
+document.getElementById('btn-admin').onclick = function() {
+    showAdmin();
+    sendAction('OPEN_ADMIN');
+};
+document.getElementById('btn-import').onclick = function() {
+    document.getElementById('import-json').click();
+};
+document.getElementById('import-json').onchange = importData;
+document.getElementById('btn-export').onclick = exportData;
+document.getElementById('btn-new-cat').onclick = showAddCategory;
+document.getElementById('btn-back-cat').onclick = hideAddCategory;
+document.getElementById('add-cat-btn').onclick = saveCategory;
+document.getElementById('delete-cat-btn').onclick = deleteCatFromEdit;
+document.getElementById('btn-back-admin').onclick = showAdmin;
+document.getElementById('btn-add-set').onclick = showAddSet;
+document.getElementById('btn-hide-set').onclick = hideAddSet;
+document.getElementById('btn-add-row').onclick = function() { addEmptyItemRow(); };
+document.getElementById('add-set-btn').onclick = saveSet;
+document.getElementById('delete-set-btn').onclick = deleteSetFromEdit;
+document.getElementById('btn-back-play-cat').onclick = function() {
+    loadCategoriesToPlay();
+    sendAction('PLAY_CATS');
+};
+document.getElementById('btn-next-game').onclick = function() {
+    loadCategoriesToPlay();
+    sendAction('GAME_HOME');
+};
+</script>
+</body>
+</html>
