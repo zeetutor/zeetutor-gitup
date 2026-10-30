@@ -21,7 +21,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #0f172a; /* Slate-900 background outside scaled view */
+      background-color: #0f172a;
       font-family: 'Nunito', sans-serif;
       user-select: none;
     }
@@ -30,7 +30,6 @@
       font-family: 'Fredoka', sans-serif;
     }
 
-    /* Isolated scrollbars to prevent full viewport breaking */
     .scroll-container::-webkit-scrollbar {
       width: 8px;
     }
@@ -46,7 +45,6 @@
       background: rgba(0, 0, 0, 0.35);
     }
 
-    /* Interactive active tap visual feedback */
     .active-pop {
       transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
@@ -66,14 +64,12 @@
   <!-- MASTER WORKSPACE SCALING CONTAINER -->
   <div id="app" class="relative bg-white shadow-2xl rounded-none md:rounded-2xl overflow-hidden flex flex-col border-0 md:border-4 border-slate-800 transition-all duration-300">
     
-    <!-- 1. HEADER BAR (Always visible, 52px height) -->
+    <!-- 1. HEADER BAR -->
     <header class="h-[52px] bg-slate-900 px-4 flex items-center justify-between text-white border-b border-slate-800 shrink-0 z-50 select-none">
-      <!-- Title Area -->
       <div class="flex items-center space-x-2">
         <i class="fa-solid fa-graduation-cap text-purple-400 text-xl animate-bounce"></i>
         <span class="font-fredoka text-lg font-bold tracking-wide">LiveTutor Phonics - Learn Phonics Sounds</span>
         
-        <!-- Live status green dot pulse -->
         <div class="flex items-center space-x-1 bg-emerald-500/15 text-emerald-400 text-[10px] uppercase font-black px-2 py-0.5 rounded-full tracking-widest border border-emerald-500/20">
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -83,7 +79,6 @@
         </div>
       </div>
 
-      <!-- Sync Status Badge -->
       <div class="flex items-center space-x-1.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-fredoka px-3 py-1 rounded-full text-xs font-bold shadow-inner">
         <i class="fa-solid fa-satellite-dish animate-pulse"></i>
         <span>Sync Active</span>
@@ -105,7 +100,6 @@
           </div>
           
           <div class="flex items-center space-x-2">
-            <!-- Dynamic Worksheet Toggle Buttons -->
             <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 border border-slate-200">
               <button id="ws-btn-1" onclick="bcast('SET_WORKSHEET', { ws: 1 }); apply('SET_WORKSHEET', { ws: 1 });" class="px-3 py-1.5 rounded-lg text-xs font-fredoka font-bold transition-all duration-200">
                 Worksheet 1 (Letters)
@@ -122,10 +116,7 @@
           </div>
         </div>
 
-        <!-- 26 Letters Deck Grid -->
-        <div id="phonics-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-3 pb-6">
-          <!-- Dynamic cards injected here -->
-        </div>
+        <div id="phonics-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-3 pb-6"></div>
       </div>
 
       <!-- SCREEN 2: Phonics Test Arena -->
@@ -139,10 +130,7 @@
             <p class="text-slate-500 font-medium mt-1">Select a targeting character spectrum range below to initialize interactive student tests.</p>
           </div>
 
-          <!-- Dynamic 2x4 Ranges Grid -->
-          <div id="ranges-grid" class="grid grid-cols-2 gap-4 max-w-2xl w-full">
-            <!-- Dynamically populated buttons -->
-          </div>
+          <div id="ranges-grid" class="grid grid-cols-2 gap-4 max-w-2xl w-full"></div>
 
           <button onclick="bcast('NAV', { s: 'phonics' }); apply('NAV', { s: 'phonics' });" class="mt-8 px-6 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-fredoka font-bold rounded-xl active-pop flex items-center space-x-2">
             <i class="fa-solid fa-arrow-left"></i>
@@ -151,16 +139,13 @@
         </div>
 
         <!-- SUB-SCREEN B: Dynamic Multi-choice Test Interface -->
-        <div id="test-arena" class="flex-1 flex flex-col hidden">
-          <!-- Live interactive test elements loaded instantly by state controller -->
-        </div>
+        <div id="test-arena" class="flex-1 flex flex-col hidden"></div>
 
       </div>
 
     </div>
 
     <!-- 4. REMOTE HANDLER PERSISTENT OVERLAYS -->
-    <!-- Percentage relative visual synchronized remote pointer -->
     <div id="remote-cursor" style="position: absolute; width: 22px; height: 22px; background: rgba(239, 68, 68, 0.9); border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); pointer-events: none; z-index: 99999; transform: translate(-50%, -50%); display: none; transition: left 100ms ease-out, top 100ms ease-out;">
       <div style="position: absolute; top: 100%; left: 100%; transform: translate(-2px, -2px); color: #ef4444; font-size: 14px; text-shadow: 1px 1px 2px black;">
         <i class="fa-solid fa-arrow-pointer"></i>
@@ -169,9 +154,7 @@
 
   </div>
 
-  <!-- FRAMEWORK LOGIC SCRIPTS -->
   <script>
-    // --- 1. FONTS, BACKGROUND COLORS, AND WORKSHEET METADATA ---
     const letterColors = [
       '#e84393', '#4361ee', '#f97316', '#06d6a0', '#a855f7',
       '#ef4444', '#0ea5e9', '#22c55e', '#f59e0b', '#ec4899',
@@ -200,7 +183,6 @@
       { l: 'A–Z', s: 'A', e: 'Z', color: '#a855f7' }
     ];
 
-    // Master Worksheet 2 Metadata (Vocab + Emojis mapping from Apple to Zoo)
     const wsData = {
       2: {
         A: { word: "Apple", emoji: "🍎" },
@@ -232,7 +214,6 @@
       }
     };
 
-    // --- 2. MULTI-USER CO-ORDINATION ENGINE (RESPONSIVE SCALING) ---
     function applyScale() {
       const shell = document.getElementById('app');
       if (!shell) return;
@@ -247,9 +228,11 @@
     }
     window.addEventListener('resize', applyScale);
 
-    // --- 3. HIGH-FIDELITY AUDIO SYSTEM (STATIC ASSET PATH ARCHITECTURE) ---
+    // --- 3. HIGH-FIDELITY AUDIO SYSTEM (FIXED PATH & FALLBACK LOGIC) ---
     const Aud = (() => {
       let actx;
+      let currentAudio = null;
+
       function ctx2() {
         if (!actx) {
           actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -262,31 +245,54 @@
       
       function play(letter, forcePhonics = false) {
         ctx2();
-        const L = letter.toLowerCase();
         
-        // High-fidelity target configuration matching assets folder standard:
-        // Worksheet 1 raw sound: assets/audio/a.mp3
-        // Worksheet 2 word sound: assets/audio/a sound.mp3 (restored space format to match "A sound.mp3" on disk)
-        let audioPath = "";
-        if (forcePhonics || ST.worksheet === 1) {
-          audioPath = `assets/audio/${L}.mp3`;
-        } else {
-          audioPath = `assets/audio/${L} sound.mp3`;
+        // Stop any running sound
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
         }
 
-        try {
-          const audio = new Audio(audioPath);
-          const playPromise = audio.play();
-          
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              console.warn(`Local sound file missing at "${audioPath}". Triggering dynamic synth fallback.`);
-              beep();
-            });
-          }
-        } catch(e) {
-          beep();
+        const charUpper = letter.toUpperCase();
+        const charLower = letter.toLowerCase();
+        
+        let targetCandidates = [];
+
+        // Exact pattern match with GitHub repo:
+        // Quiz or Worksheet 2 = Phonics Audio (e.g., A_sound.mp3)
+        // Worksheet 1 = Letter Audio (e.g., A.mp3)
+        if (forcePhonics || ST.worksheet === 2) {
+          targetCandidates = [
+            `assets/audio/${charUpper}_sound.mp3`,
+            `assets/audio/${charLower}_sound.mp3`,
+            `assets/audio/${charUpper}%20sound.mp3`
+          ];
+        } else {
+          targetCandidates = [
+            `assets/audio/${charUpper}.mp3`,
+            `assets/audio/${charLower}.mp3`
+          ];
         }
+
+        function tryPlayCandidate(index) {
+          if (index >= targetCandidates.length) {
+            console.warn(`All audio formats exhausted for Letter: ${letter}. Fallback to synth.`);
+            beep();
+            return;
+          }
+
+          const path = targetCandidates[index];
+          const audio = new Audio(path);
+          currentAudio = audio;
+
+          audio.play().then(() => {
+            console.log("Audio playing successfully from:", path);
+          }).catch(err => {
+            console.warn(`Candidate failed (${path}), checking alternate casing...`, err);
+            tryPlayCandidate(index + 1);
+          });
+        }
+
+        tryPlayCandidate(0);
       }
 
       function beep() {
@@ -308,8 +314,8 @@
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15);
         gain.gain.setValueAtTime(0.15, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.40);
         osc.connect(gain);
@@ -332,13 +338,13 @@
         osc.stop(ctx.currentTime + 0.30);
       }
 
-      return { play, chime, buzz };
+      return { play, chime, buzz, ctx2 };
     })();
 
     // --- 4. UNIFIED SHARED STATE SYSTEM ---
     const ST = {
-      screen: 'phonics',       // 'phonics' | 'test'
-      testPhase: 'ranges',     // 'ranges' | 'active'
+      screen: 'phonics',
+      testPhase: 'ranges',
       testRange: null,
       testPool: [],
       testIdx: 0,
@@ -348,10 +354,9 @@
       testSubmitted: false,
       testDone: false,
       testSeed: 12345,
-      worksheet: 1             // Active selection tracker (1 or 2)
+      worksheet: 1
     };
 
-    // Seeded random shuffle algorithm for perfect multi-user parity
     function seededShuffle(arr, seed) {
       let m = arr.length, t, i;
       let x = seed;
@@ -368,7 +373,6 @@
       return arr;
     }
 
-    // Creates identical randomized options on both clients
     function getQuestionOptions(letter, seed, idx) {
       const allLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
       const wrong = allLetters.filter(l => l !== letter);
@@ -378,7 +382,7 @@
       return choices;
     }
 
-    // --- 5. STATE TRANSITION ENGINE (APPLY ACTIONS SIMULTANEOUSLY) ---
+    // --- 5. STATE TRANSITION ENGINE ---
     function apply(type, payload) {
       console.log("EXEC STATE TRANSITION:", type, payload);
       
@@ -391,7 +395,6 @@
           break;
 
         case 'PLAY_AUDIO':
-          // Accepts custom forcePhonics flag to route Worksheet 1 audios dynamically
           Aud.play(payload.letter, payload.forcePhonics);
           break;
 
@@ -422,7 +425,6 @@
             ST.testOpts = getQuestionOptions(ST.testPool[0], payload.seed, 0);
           }
 
-          // Trigger automated raw phonics sound (worksheet 1 style) for quiz questions
           setTimeout(() => {
             if (ST.screen === 'test' && ST.testPhase === 'active' && !ST.testDone) {
               Aud.play(ST.testPool[ST.testIdx], true);
@@ -522,9 +524,7 @@
       }
     });
 
-    // Pointer position update (high-frequency tracking dispatch)
     let lastMove = 0;
-    
     function sendPointer(cx, cy) {
       const now = Date.now();
       if (now - lastMove < 50) return;
@@ -549,30 +549,7 @@
       }
     });
 
-    // Elegant Screen Toasts
-    function showToast(message, isError = false) {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = `px-4 py-3 rounded-xl shadow-lg font-fredoka font-semibold text-white pointer-events-auto transition-all duration-300 transform translate-x-10 opacity-0 flex items-center space-x-2 ${
-        isError ? 'bg-rose-500 border border-rose-600' : 'bg-slate-800 border border-slate-700'
-      }`;
-      toast.innerHTML = `
-        <i class="${isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'}"></i>
-        <span>${message}</span>
-      `;
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.classList.remove('translate-x-10', 'opacity-0');
-      }, 10);
-
-      setTimeout(() => {
-        toast.classList.add('translate-x-10', 'opacity-0');
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    }
-
-    // --- 7. MASTER RENDER LAYER (COMPLETELY ENGLISH LOCALIZED) ---
+    // --- 7. MASTER RENDER LAYER ---
     function render() {
       const pScreen = document.getElementById('screen-phonics');
       const tScreen = document.getElementById('screen-test');
@@ -610,7 +587,6 @@
       }
     }
 
-    // Screen 1: Sound Cards Grid Loader
     function renderPhonicsGrid() {
       const grid = document.getElementById('phonics-grid');
       grid.innerHTML = '';
@@ -618,7 +594,6 @@
       letters.forEach((l, idx) => {
         const card = document.createElement('div');
         
-        // Worksheet 1: Letters Only (Only displays uppercase letters)
         if (ST.worksheet === 1) {
           card.className = "relative rounded-2xl shadow-sm p-4 flex flex-col items-center justify-center text-white font-fredoka transition-all transform hover:scale-102 cursor-pointer h-[132px] select-none active-pop border-b-4 border-black/15";
           card.style.backgroundColor = letterColors[idx];
@@ -629,14 +604,11 @@
             <div class="text-6xl font-black tracking-wide drop-shadow-sm select-none mb-1">${l}</div>
             <div class="text-xs font-semibold lowercase tracking-wide text-white/85 select-none">${letterLabels[idx]}</div>
           `;
-        } 
-        // Worksheet 2: Emojis + Words Layout
-        else {
+        } else {
           const itemData = wsData[2][l];
           card.className = "relative rounded-2xl shadow-sm p-3 flex flex-col justify-between text-white font-fredoka transition-all transform hover:scale-102 cursor-pointer h-[132px] select-none active-pop border-b-4 border-black/15";
           card.style.backgroundColor = letterColors[idx];
 
-          // Top Header: Letter + Volume icon
           const topRow = document.createElement('div');
           topRow.className = "flex items-center justify-between w-full";
           topRow.innerHTML = `
@@ -647,7 +619,6 @@
           `;
           card.appendChild(topRow);
 
-          // Center Graphic: Image with emoji fallback
           const midVisual = document.createElement('div');
           midVisual.className = "flex items-center justify-center my-1 relative h-12 w-full";
           
@@ -658,7 +629,6 @@
           `;
           card.appendChild(midVisual);
 
-          // Footer Row: Word text and Phonics label
           const btmRow = document.createElement('div');
           btmRow.className = "flex items-center justify-between w-full text-[11px] font-semibold border-t border-white/10 pt-1 mt-auto";
           btmRow.innerHTML = `
@@ -668,9 +638,8 @@
           card.appendChild(btmRow);
         }
 
-        // Action Trigger: Play Audio on card tap & broadcast the state instantly
         card.addEventListener('click', () => {
-          const forcePhonicsMode = (ST.worksheet === 1);
+          const forcePhonicsMode = (ST.worksheet === 2);
           bcast('PLAY_AUDIO', { letter: l, forcePhonics: forcePhonicsMode });
           apply('PLAY_AUDIO', { letter: l, forcePhonics: forcePhonicsMode });
           card.classList.add('ring-4', 'ring-white/40');
@@ -681,7 +650,6 @@
       });
     }
 
-    // Screen 2A: Interactive Quiz Range Buttons
     function renderRanges() {
       const grid = document.getElementById('ranges-grid');
       grid.innerHTML = '';
@@ -698,6 +666,7 @@
         `;
 
         btn.addEventListener('click', () => {
+          Aud.ctx2(); // User gesture enables sound immediately
           const randSeed = Math.floor(Math.random() * 100000);
           bcast('TEST_GO', { r, seed: randSeed });
           apply('TEST_GO', { r, seed: randSeed });
@@ -707,7 +676,6 @@
       });
     }
 
-    // Screen 2B: Question Builder and Option Selectors
     function renderTestArena() {
       const arena = document.getElementById('test-arena');
       arena.innerHTML = '';
@@ -752,7 +720,6 @@
       const correctLetter = ST.testPool[ST.testIdx];
       const isSubmitted = ST.testSubmitted;
 
-      // Header Block (Quit Button + Score Tracker)
       const hdr = document.createElement('div');
       hdr.className = "flex items-center justify-between font-fredoka pb-4 border-b border-slate-100 shrink-0";
       hdr.innerHTML = `
@@ -765,13 +732,11 @@
       `;
       arena.appendChild(hdr);
 
-      // Question Number Marker
       const banner = document.createElement('div');
       banner.className = "text-center text-[10px] text-slate-400 font-black tracking-widest uppercase mt-4";
       banner.innerText = `Question ${ST.testIdx + 1} / ${ST.testPool.length}`;
       arena.appendChild(banner);
 
-      // Main Audio Controller Interface
       const centralCue = document.createElement('div');
       centralCue.className = "flex flex-col items-center justify-center py-6 space-y-4 shrink-0";
       
@@ -791,7 +756,6 @@
       
       arena.appendChild(centralCue);
 
-      // Options Selection Panel
       const optionsBox = document.createElement('div');
       optionsBox.className = "flex-1 flex flex-col justify-center space-y-3 max-w-md mx-auto w-full py-2";
 
@@ -827,7 +791,6 @@
 
         row.className += ` ${borderStyle} ${textStyle}`;
 
-        // Dynamic individual option audio speaker triggers
         const spk = document.createElement('button');
         spk.className = "w-10 h-10 rounded-full flex items-center justify-center text-white text-xs shadow-sm transform active-pop hover:brightness-105 shrink-0";
         const codeIdx = letters.indexOf(opt);
@@ -839,19 +802,16 @@
           apply('PLAY_AUDIO', { letter: opt, forcePhonics: true });
         });
 
-        // Setup layouts based on the active worksheet rules
         const word = document.createElement('div');
         word.className = "flex-1 ml-4 text-left flex items-center justify-between";
 
         if (ST.worksheet === 1) {
-          // Worksheet 1: Plain Letter with no image hints
           word.innerHTML = `
             <span class="font-fredoka text-lg text-slate-700">
               Letter <span class="font-extrabold text-2xl">${opt}</span>
             </span>
           `;
         } else {
-          // Worksheet 2: Complete Word representation
           const visualItem = wsData[2][opt];
           const imgPath = `assets/images/worksheet2/${opt.toLowerCase()}.png`;
           word.innerHTML = `
@@ -884,7 +844,6 @@
 
       arena.appendChild(optionsBox);
 
-      // Quiz Stage Advancement Buttons
       const foot = document.createElement('div');
       foot.className = "pt-4 pb-2 text-center font-fredoka shrink-0 mt-auto";
 
@@ -915,7 +874,6 @@
       arena.appendChild(foot);
     }
 
-    // --- 8. INITIALIZATION ---
     window.onload = () => {
       applyScale();
       render();
