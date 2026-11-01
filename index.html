@@ -1371,20 +1371,30 @@ window.addEventListener('message', (event) => {
   }
 });
 
+// --- FIXED FAST SWITCHING IFRAME FUNCTION ---
 function loadWorksheetFast(path) {
   if (!path) return;
   hideOverlay('waiting-overlay');
   showLoadingOverlay();
+  
   const frame = document.getElementById('game-frame');
   const url = buildWorksheetUrl(path);
-  frame.onload = () => { hideLoadingOverlay(); clearTimeout(window._loadFallback); };
+
+  // 1. Pazhaya worksheet memory, animations, loop-ai instant-ah terminate panna blank aakum
+  frame.src = 'about:blank';
+
   clearTimeout(window._loadFallback);
-  window._loadFallback = setTimeout(() => hideLoadingOverlay(), 2000);
-  if (frame.src === url || frame.getAttribute('src') === url) {
-    hideLoadingOverlay();
-    return;
-  }
-  frame.src = url;
+  window._loadFallback = setTimeout(() => hideLoadingOverlay(), 3000);
+
+  // 2. 40ms micro-pause kuduthu clean environment-la pudhu worksheet load aagum
+  setTimeout(() => {
+    frame.onload = () => {
+      if (frame.contentWindow && frame.contentWindow.location.href.includes('about:blank')) return;
+      hideLoadingOverlay();
+      clearTimeout(window._loadFallback);
+    };
+    frame.src = url;
+  }, 40);
 }
 
 function showLoadingOverlay() { showOverlay('loading-overlay'); }

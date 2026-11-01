@@ -1,0 +1,185 @@
+{
+  "title": "fat_and_thin",
+  "questions": [
+    {
+      "type": "odd_one_out",
+      "prompt": "Choose THIN",
+      "questionMedia": "",
+      "answerMedia": "images/worm.gif",
+      "options": [
+        "images/potato_character_waving_b9aba9e2.jpg",
+        "images/tree_trunk.gif",
+        "images/watermllon.webp",
+        "images/worm.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "choose Thin",
+      "questionMedia": "",
+      "answerMedia": "images/potato_character_smiling_de9208da.jpg",
+      "options": [
+        "images/pig.gif",
+        "images/pinapple.gif",
+        "images/potato_character_smiling_de9208da.jpg",
+        "images/potato_character_waving_b9aba9e2.jpg"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Odd One Out!",
+      "questionMedia": "",
+      "answerMedia": "images/bottle1_(2).jpg",
+      "options": [
+        "images/bottle1_(1).jpg",
+        "images/bottle1_(2).jpg",
+        "images/bottle1_(3).jpg",
+        "images/bottle1_(4).jpg"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Choose THIN",
+      "questionMedia": "",
+      "answerMedia": "images/carrot2.jpg",
+      "options": [
+        "images/carrot1.jpg",
+        "images/carrot2.jpg",
+        "images/carrot3.jpg",
+        "images/carrot4.jpg"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "choose THIN",
+      "questionMedia": "",
+      "answerMedia": "images/pencil1.png",
+      "options": [
+        "images/ball.gif",
+        "images/donut.gif",
+        "images/drum.webp",
+        "images/pencil1.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "choose FAT",
+      "questionMedia": "",
+      "answerMedia": "images/pencil4.png",
+      "options": [
+        "images/pencil1.png",
+        "images/pencil2.webp",
+        "images/pencil3.png",
+        "images/pencil4.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "choose thin",
+      "questionMedia": "",
+      "answerMedia": "images/grass.gif",
+      "options": [
+        "images/drum.webp",
+        "images/elephant.gif",
+        "images/fat.gif",
+        "images/grass.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Odd One Out!",
+      "questionMedia": "",
+      "answerMedia": "images/potato_character_smiling_de9208da.jpg",
+      "options": [
+        "images/cartoon_potato_smiling_8dc34873.jpg",
+        "images/cute_potato_character_smiling_4230db8b.jpg",
+        "images/potato_character_smiling_de9208da.jpg",
+        "images/potato_character_waving_b9aba9e2.jpg"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "choose FAT",
+      "questionMedia": "",
+      "answerMedia": "images/pinapple.gif",
+      "options": [
+        "images/bottle1_(2).jpg",
+        "images/carrot2.jpg",
+        "images/pinapple.gif",
+        "images/potato_character_smiling_de9208da.jpg"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Choose FAT",
+      "questionMedia": "",
+      "answerMedia": "images/pencil4.png",
+      "options": [
+        "images/chili.gif",
+        "images/grass.gif",
+        "images/pencil2.png",
+        "images/pencil4.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "choose THIN",
+      "questionMedia": "",
+      "answerMedia": "images/fox.gif",
+      "options": [
+        "images/elephant.gif",
+        "images/fat.gif",
+        "images/fox.gif",
+        "images/panda.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "CHOOSE THIN",
+      "questionMedia": "",
+      "answerMedia": "images/chili.gif",
+      "options": [
+        "images/bottle1_(1).jpg",
+        "images/carrot3.jpg",
+        "images/cartoon_potato_smiling_8dc34873.jpg",
+        "images/chili.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "CHOOSE THIN",
+      "questionMedia": "",
+      "answerMedia": "images/girl1.jpg",
+      "options": [
+        "images/girl1.jpg",
+        "images/girl2.jpg",
+        "images/girl3.jpg",
+        "images/girl4.jpg"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "CHOOSE THIN",
+      "questionMedia": "",
+      "answerMedia": "images/man1.jpg",
+      "options": [
+        "images/man1.jpg",
+        "images/man2.jpg",
+        "images/man3.jpg",
+        "images/man4.jpg"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "CHOOSE FAT",
+      "questionMedia": "",
+      "answerMedia": "images/carrot1.jpg",
+      "options": [
+        "images/carrot1.jpg",
+        "images/girl1.jpg",
+        "images/man1.jpg",
+        "images/potato_character_smiling_de9208da.jpg"
+      ]
+    }
+  ]
+}

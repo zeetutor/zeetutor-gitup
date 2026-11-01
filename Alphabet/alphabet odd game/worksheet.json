@@ -1,0 +1,317 @@
+{
+  "title": "alphabet_odd",
+  "questions": [
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND B ",
+      "questionMedia": "",
+      "answerMedia": "images/b_1.png",
+      "options": [
+        "images/a_1.png",
+        "images/a_2.png",
+        "images/a_3.png",
+        "images/b_1.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND D ",
+      "questionMedia": "",
+      "answerMedia": "images/d_1.png",
+      "options": [
+        "images/c_1.png",
+        "images/c_2.jpeg",
+        "images/c_3.png",
+        "images/d_1.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND A ",
+      "questionMedia": "",
+      "answerMedia": "images/a_3.png",
+      "options": [
+        "images/a_3.png",
+        "images/b_1.png",
+        "images/b_2.jpeg",
+        "images/b_3.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND F ",
+      "questionMedia": "",
+      "answerMedia": "images/f_1.jpeg",
+      "options": [
+        "images/d_1.png",
+        "images/d_2.png",
+        "images/d_3.png",
+        "images/f_1.jpeg"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND C ",
+      "questionMedia": "",
+      "answerMedia": "images/c_3.png",
+      "options": [
+        "images/c_3.png",
+        "images/e_1.png",
+        "images/e_2.png",
+        "images/e_3.jpeg"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND G",
+      "questionMedia": "",
+      "answerMedia": "images/g_1.png",
+      "options": [
+        "images/f_1.jpeg",
+        "images/f_2.png",
+        "images/f3.png",
+        "images/g_1.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND L ",
+      "questionMedia": "",
+      "answerMedia": "images/l_2.gif",
+      "options": [
+        "images/g_1.png",
+        "images/g_2.jpeg",
+        "images/g_3.png",
+        "images/l_2.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND G ",
+      "questionMedia": "",
+      "answerMedia": "images/g_3.png",
+      "options": [
+        "images/g_3.png",
+        "images/h_1.png",
+        "images/h2.jpeg",
+        "images/h3.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND P ",
+      "questionMedia": "",
+      "answerMedia": "images/p1.gif",
+      "options": [
+        "images/i_1.png",
+        "images/i_2.jpeg",
+        "images/i3.png",
+        "images/p1.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND J ",
+      "questionMedia": "",
+      "answerMedia": "images/j3.jpeg",
+      "options": [
+        "images/j3.jpeg",
+        "images/k_1.png",
+        "images/k2.jpeg",
+        "images/k3.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND I ",
+      "questionMedia": "",
+      "answerMedia": "images/i3.png",
+      "options": [
+        "images/i3.png",
+        "images/l_1.gif",
+        "images/l_2.gif",
+        "images/l_3.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND K",
+      "questionMedia": "",
+      "answerMedia": "images/k_1.png",
+      "options": [
+        "images/j1.png",
+        "images/j2.jpeg",
+        "images/j3.jpeg",
+        "images/k_1.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND O ",
+      "questionMedia": "",
+      "answerMedia": "images/o2.gif",
+      "options": [
+        "images/m_2.gif",
+        "images/m1.gif",
+        "images/m3.gif",
+        "images/o2.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND N ",
+      "questionMedia": "",
+      "answerMedia": "images/n3.gif",
+      "options": [
+        "images/n3.gif",
+        "images/p1.gif",
+        "images/p2.png",
+        "images/p3.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND M ",
+      "questionMedia": "",
+      "answerMedia": "images/m_2.gif",
+      "options": [
+        "images/m_2.gif",
+        "images/o_1.gif",
+        "images/o2.gif",
+        "images/o3.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND P ",
+      "questionMedia": "",
+      "answerMedia": "images/p1.gif",
+      "options": [
+        "images/p1.gif",
+        "images/q1.gif",
+        "images/q2.gif",
+        "images/q3.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND O ",
+      "questionMedia": "",
+      "answerMedia": "images/o2.gif",
+      "options": [
+        "images/m_2.gif",
+        "images/m1.gif",
+        "images/m3.gif",
+        "images/o2.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND T ",
+      "questionMedia": "",
+      "answerMedia": "images/t3.gif",
+      "options": [
+        "images/t3.gif",
+        "images/u1.png",
+        "images/u2.png",
+        "images/u3.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND Y ",
+      "questionMedia": "",
+      "answerMedia": "images/y3.gif",
+      "options": [
+        "images/y3.gif",
+        "images/z1.png",
+        "images/z2.png",
+        "images/z3.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND S ",
+      "questionMedia": "",
+      "answerMedia": "images/s1.gif",
+      "options": [
+        "images/r1.gif",
+        "images/r2.png",
+        "images/r3.gif",
+        "images/s1.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND R ",
+      "questionMedia": "",
+      "answerMedia": "images/r3.gif",
+      "options": [
+        "images/r3.gif",
+        "images/s1.gif",
+        "images/s2.gif",
+        "images/s3.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND W ",
+      "questionMedia": "",
+      "answerMedia": "images/w2.gif",
+      "options": [
+        "images/w2.gif",
+        "images/x1.gif",
+        "images/x2.png",
+        "images/x3.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND U ",
+      "questionMedia": "",
+      "answerMedia": "images/u3.gif",
+      "options": [
+        "images/u3.gif",
+        "images/v1.gif",
+        "images/v2.gif",
+        "images/v3.png"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND Z ",
+      "questionMedia": "",
+      "answerMedia": "images/z3.gif",
+      "options": [
+        "images/w1.gif",
+        "images/w2.gif",
+        "images/w3.gif",
+        "images/z3.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND V ",
+      "questionMedia": "",
+      "answerMedia": "images/v3.png",
+      "options": [
+        "images/v3.png",
+        "images/z1.png",
+        "images/z2.png",
+        "images/z3.gif"
+      ]
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "FIND Y ",
+      "questionMedia": "",
+      "answerMedia": "images/y2.gif",
+      "options": [
+        "images/j1.png",
+        "images/j2.jpeg",
+        "images/j3.jpeg",
+        "images/y2.gif"
+      ]
+    }
+  ]
+}

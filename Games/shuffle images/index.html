@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Memory Match - Images & Alphabets</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<script>
+    window.isSimulating = false;
+    const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace('#', '?'));
+    const roomId = urlParams.get('room') || '54321';
+    let localSeed = 0;
+    for (let i = 0; i < roomId.length; i++) localSeed = roomId.charCodeAt(i) + ((localSeed << 5) - localSeed);
+    localSeed = Math.abs(localSeed);
+    
+    window.seededRandom = function() {
+        let x = Math.sin(localSeed++) * 10000;
+        return x - Math.floor(x);
+    };
+    const originalRandom = Math.random;
+
+    let _aidCtr = 0;
+    document.addEventListener('click', (e) => {
+        if (e.isTrusted === false || window.isSimulating) return;
+        let el = e.target;
+        let selector = '';
+        if (el.id) selector = '#' + el.id;
+        else if (el.closest('.cw')) selector = '#' + el.closest('.cw').id;
+        else if (el.closest('.bcat')) selector = '#' + el.closest('.bcat').id;
+        else if (el.closest('.bpair')) selector = '#' + el.closest('.bpair').id;
+        else if (el.closest('.pcard')) selector = '#' + el.closest('.pcard').id;
+        else if (el.closest('.brew')) selector = '#' + el.closest('.brew').id;
+        else if (el.closest('.b3d')) selector = '#' + el.closest('.b3d').id;
+        else if (el.closest('.bic')) selector = '#' + el.closest('.bic').id;
+        if (!selector) return;
+
+        _aidCtr++;
+        window.parent.postMessage({
+            type: 'IFRAME_ACTION_TRIGGERED',
+            payload: { type: 'UNIVERSAL_CLICK', selector: selector,
+                seed: localSeed, actionId: 'c_' + _aidCtr + '_' + Date.now() }
+        }, '*');
+    }, true);
+
+    document.addEventListener('mousemove', (e) => {
+        window.parent.postMessage({ type: 'IFRAME_MOUSE_TRACK',
+            pctX: (e.clientX / window.innerWidth) * 100,
+            pctY: (e.clientY / window.innerHeight) * 100 }, '*');
+    });
+
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'EXECUTE_UNIVERSAL_ACTION') {
+            const action = event.data.action;
+            if (action.type === 'UNIVERSAL_CURSOR') return;
+            window.isSimulating = true;
+            if (action.seed !== undefined) localSeed = action.seed;
+            const element = document.querySelector(action.selector);
+            if (element) element.click();
+            setTimeout(() => { window.isSimulating = false; }, 50);
+        }
+    });
+</script>
+
+<style>
+:root {
+  --ff: 'Fredoka One', cursive; --fn: 'Nunito', sans-serif;
+  --pink:#FF6B9D; --blue:#4A90D9; --purple:#8B5CF6;
+  --green:#22C55E; --orange:#F97316; --gold:#F5A623;
+}
+* { box-sizing:border-box; margin:0; padding:0; user-select:none; }
+body {
+  width: 100vw; min-height: 100vh; overflow: hidden; font-family: var(--ff);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  display: flex; justify-content: center; align-items: center;
+}
+#app-wrapper {
+  width: 95vw; max-width: 850px; height: 95vh; max-height: 800px;
+  background: rgba(255, 255, 255, 0.96); border-radius: 30px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 6px solid white;
+  display: flex; flex-direction: column; overflow: hidden; position: relative;
+}
+.screen { display:none; position:absolute; inset:0; flex-direction:column; align-items:center; overflow:hidden; }
+.screen.on { display:flex; }
+.topbar {
+  width:100%; display:flex; align-items:center; justify-content:space-between;
+  padding:12px 18px; background:rgba(255,255,255,.9); border-bottom:2px solid #e2e8f0; z-index: 50;
+}
+.topbar h2 { font-size:1.15rem; color:#334155; }
+.bic {
+  width:42px; height:42px; border-radius:50%; border:none; background:#f1f5f9; color:#475569;
+  font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.b3d {
+  border:none; border-radius:16px; font-family:var(--ff); font-size:1.05rem; color:white;
+  cursor:pointer; padding:14px 18px; box-shadow:0 6px 0 rgba(0,0,0,.15);
+}
+.b3d:active { transform:translateY(6px); box-shadow:none; }
+
+.rew-bar { position:absolute; bottom:12px; left:0; width:100%; display:flex; justify-content:center; gap:8px; z-index:200; }
+.brew {
+  background:white; border:2px solid #e2e8f0; border-radius:50px; padding:8px 14px;
+  font-family:var(--fn); font-weight:800; font-size:0.85rem; color:#475569; cursor:pointer;
+}
+
+#scr-menu .body { flex:1; width:100%; display:flex; flex-direction:column; align-items:center; padding:15px; overflow-y:auto; }
+.mtitle { font-size:3rem; color:var(--blue); margin:8px 0; }
+.cat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%; max-width:440px; }
+.bcat { min-height:75px; font-size:1.4rem; display:flex; align-items:center; justify-content:center; }
+.bcat.c1{background:linear-gradient(135deg,#FF6B9D,#FF8E53);}
+.bcat.c2{background:linear-gradient(135deg,#4A90D9,#00C896);}
+.bcat.c3{background:linear-gradient(135deg,#8B5CF6,#C44AE0);}
+.bcat.c4{background:linear-gradient(135deg,#F97316,#EF4444);}
+.bcat.c5{background:linear-gradient(135deg,#22C55E,#4A90D9);}
+.bcat.c6{background:linear-gradient(135deg,#F5A623,#FF6B9D);}
+.bcat.call{grid-column:1/-1; background:linear-gradient(135deg,#FF6B9D,#8B5CF6,#4A90D9); min-height:55px;}
+
+#scr-mode .body { flex:1; width:100%; max-width:480px; display:flex; flex-direction:column; padding:15px; gap:15px; margin:0 auto; overflow-y:auto; }
+.mcard { background:#f8fafc; border-radius:20px; padding:18px; border:2px solid #e2e8f0; text-align:center; }
+.prow { display:flex; gap:8px; justify-content:center; margin:12px 0; }
+.bpair { flex:1; padding:9px 4px; background:#e2e8f0; color:#64748b; border:none; border-radius:12px; font-weight:900; cursor:pointer; }
+.bpair.sa { background:var(--blue); color:white; }
+.bpair.si { background:var(--pink); color:white; }
+
+#scr-game .body { flex:1; width:100%; display:flex; flex-direction:column; align-items:center; padding:12px; overflow-y:auto; }
+.plbl { font-family:var(--fn); font-weight:900; font-size:1.1rem; color:#475569; background:#f1f5f9; padding:6px 22px; border-radius:30px; margin-bottom:12px; }
+#board { display:grid; gap:12px; width:95%; padding:14px; background:#f8fafc; border-radius:24px; border:4px solid #e2e8f0; margin:auto; }
+.cw { aspect-ratio:1; cursor:pointer; position:relative; }
+.ci { position:absolute; inset:0; transform-style:preserve-3d; transition:transform .5s; }
+.cw.flipped .ci, .cw.matched .ci { transform:rotateY(180deg); }
+.cf { position:absolute; inset:0; border-radius:16px; backface-visibility:hidden; display:flex; align-items:center; justify-content:center; border:4px solid white; box-shadow:0 4px 8px rgba(0,0,0,.08); }
+.cf.back { background:linear-gradient(135deg,var(--purple),var(--blue)); }
+.cf.front { background:white; transform:rotateY(180deg); flex-direction:column; }
+.cf.front img { width:80%; height:80%; object-fit:contain; }
+.bigl { font-size: clamp(2.2rem, 10vw, 4.5rem); color:var(--blue); }
+.wlab { font-family:var(--fn); font-weight:900; font-size:0.85rem; color:#64748b; }
+.cw.matched .cf.front { border-color:var(--gold); }
+
+#scr-win .body { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.wbox { background:white; border-radius:26px; padding:35px 25px; border:5px solid #e2e8f0; text-align:center; max-width:380px; width:100%; }
+</style>
+</head>
+<body>
+
+<div id="app-wrapper">
+    <div class="rew-bar">
+      <button class="brew" id="brw-ic" onclick="giveReward('ic')">🍦 Treat</button>
+      <button class="brew" id="brw-s" onclick="giveReward('s')">⭐ Star</button>
+      <button class="brew" id="brw-h" onclick="giveReward('h')">❤️ Heart</button>
+      <button class="brew" id="brw-hp" onclick="giveReward('hp')">😊 Happy</button>
+    </div>
+
+    <!-- MENU -->
+    <div class="screen on" id="scr-menu">
+      <div class="topbar"><h2>Memory Match</h2></div>
+      <div class="body">
+        <h1 class="mtitle">Choose Group</h1>
+        <div class="cat-grid">
+          <button class="b3d bcat c1" id="cat-AD" onclick="openMode('A-D')">A – D</button>
+          <button class="b3d bcat c2" id="cat-EH" onclick="openMode('E-H')">E – H</button>
+          <button class="b3d bcat c3" id="cat-IL" onclick="openMode('I-L')">I – L</button>
+          <button class="b3d bcat c4" id="cat-MP" onclick="openMode('M-P')">M – P</button>
+          <button class="b3d bcat c5" id="cat-QT" onclick="openMode('Q-T')">Q – T</button>
+          <button class="b3d bcat c6" id="cat-UZ" onclick="openMode('U-Z')">U – Z</button>
+          <button class="b3d bcat call" id="cat-ALL" onclick="openMode('ALL')">✨ All Items ✨</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE -->
+    <div class="screen" id="scr-mode">
+      <div class="topbar">
+        <button class="bic" id="btn-back-mode" onclick="go('scr-menu')">←</button>
+        <h2 id="mode-ttl">Group A-D</h2>
+        <div></div>
+      </div>
+      <div class="body">
+        <div class="mcard">
+          <div style="font-size: 2.2rem;">🔤</div>
+          <h3>Match Alphabets</h3>
+          <div class="prow">
+            <button class="bpair" id="ap-2" onclick="setPairs('a',2)">2 Pairs</button>
+            <button class="bpair sa" id="ap-3" onclick="setPairs('a',3)">3 Pairs</button>
+            <button class="bpair" id="ap-4" onclick="setPairs('a',4)">4 Pairs</button>
+          </div>
+          <button class="b3d" id="btn-play-alpha" style="background:var(--blue); width:100%;" onclick="startAlpha()">▶ Play Alphabets</button>
+        </div>
+
+        <div class="mcard">
+          <div style="font-size: 2.2rem;">🖼️</div>
+          <h3>Match Images</h3>
+          <div class="prow">
+            <button class="bpair" id="ip-2" onclick="setPairs('i',2)">2 Pairs</button>
+            <button class="bpair si" id="ip-3" onclick="setPairs('i',3)">3 Pairs</button>
+            <button class="bpair" id="ip-4" onclick="setPairs('i',4)">4 Pairs</button>
+          </div>
+          <button class="b3d" id="btn-play-imgs" style="background:var(--pink); width:100%;" onclick="startImagesDirect()">▶ Play Images</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME BOARD -->
+    <div class="screen" id="scr-game">
+      <div class="topbar">
+        <button class="bic" id="btn-back-game" onclick="go('scr-mode')">←</button>
+        <h2 id="game-cat-title">Game</h2>
+        <div></div>
+      </div>
+      <div class="body">
+        <div class="plbl" id="phase-lbl">👀 Look carefully!</div>
+        <div id="board"></div>
+      </div>
+    </div>
+
+    <!-- WIN -->
+    <div class="screen" id="scr-win">
+      <div class="body">
+        <div class="wbox">
+          <div style="font-size:4rem;">🎉</div>
+          <h1>PERFECT!</h1>
+          <p>Matched all the pairs!</p>
+          <button class="b3d" id="btn-again" style="background:var(--green); width:100%; margin-bottom:12px;" onclick="playAgain()">↺ Play Again</button>
+          <button class="b3d" id="btn-menu-win" style="background:var(--blue); width:100%;" onclick="go('scr-menu')">🏠 Menu</button>
+        </div>
+      </div>
+    </div>
+</div>
+
+<script>
+window.GAME_DATA = [];
+const CATS = {
+  'A-D': ['A','B','C','D'],
+  'E-H': ['E','F','G','H'],
+  'I-L': ['I','J','K','L'],
+  'M-P': ['M','N','O','P'],
+  'Q-T': ['Q','R','S','T'],
+  'U-Z': ['U','V','W','X','Y','Z'],
+  'ALL': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+};
+
+let curCat = 'A-D', pairsA = 3, pairsI = 3, curMode = 'alpha';
+let gameCards = [], flipped = [], matchedCount = 0, locked = false;
+
+fetch('worksheet.json').then(r => r.json()).then(d => {
+  window.GAME_DATA = d.items || [];
+});
+
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+function openMode(cat) {
+  curCat = cat;
+  document.getElementById('mode-ttl').innerText = (cat === 'ALL') ? 'All Items' : 'Group ' + cat;
+  go('scr-mode');
+}
+
+function setPairs(type, n) {
+  if (type === 'a') {
+    pairsA = n;
+    [2,3,4].forEach(v => document.getElementById('ap-'+v).className = 'bpair' + (v===n ? ' sa' : ''));
+  } else {
+    pairsI = n;
+    [2,3,4].forEach(v => document.getElementById('ip-'+v).className = 'bpair' + (v===n ? ' si' : ''));
+  }
+}
+
+function getGroupItems(cat) {
+  const lets = CATS[cat];
+  return window.GAME_DATA.filter(it => lets.includes(it.letter.toUpperCase()));
+}
+
+function shuf(arr) {
+  let a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(window.seededRandom() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startAlpha() {
+  curMode = 'alpha';
+  const group = getGroupItems(curCat);
+  const distinctLetters = Array.from(new Set(group.map(g => g.letter)));
+  let pool = shuf(distinctLetters.length ? distinctLetters : CATS[curCat]);
+  pool = pool.slice(0, pairsA);
+
+  const deck = [];
+  pool.forEach((ltr, i) => {
+    deck.push({ kind:'letter', val:ltr, pairId:i });
+    deck.push({ kind:'letter', val:ltr, pairId:i });
+  });
+  launchGame(shuf(deck));
+}
+
+function startImagesDirect() {
+  curMode = 'img';
+  let group = getGroupItems(curCat);
+  if (!group.length) group = window.GAME_DATA;
+  let pool = shuf(group).slice(0, pairsI);
+
+  const deck = [];
+  pool.forEach((it, i) => {
+    deck.push({ kind:'img', val:it.src, word:it.word, letter:it.letter, pairId:i });
+    deck.push({ kind:'img', val:it.src, word:it.word, letter:it.letter, pairId:i });
+  });
+  launchGame(shuf(deck));
+}
+
+function launchGame(deck) {
+  gameCards = deck; flipped = []; matchedCount = 0; locked = true;
+  buildBoard();
+  go('scr-game');
+  setTimeout(doReveal, 350);
+}
+
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  const n = gameCards.length;
+  board.style.gridTemplateColumns = (n <= 4) ? 'repeat(2,1fr)' : (n <= 6 ? 'repeat(3,1fr)' : 'repeat(4,1fr)');
+  board.style.maxWidth = (n <= 4) ? '350px' : '520px';
+
+  gameCards.forEach((c, i) => {
+    const cw = document.createElement('div');
+    cw.className = 'cw'; cw.id = 'card-' + i;
+    const front = (c.kind === 'img')
+      ? `<img src="${c.val}"><div class="wlab">${c.word || ''}</div>`
+      : `<div class="bigl">${c.val}</div>`;
+
+    cw.innerHTML = `
+      <div class="ci">
+        <div class="cf back"><span>⭐</span></div>
+        <div class="cf front">${front}</div>
+      </div>`;
+    cw.onclick = () => onCardClick(i);
+    board.appendChild(cw);
+  });
+}
+
+async function doReveal() {
+  const lbl = document.getElementById('phase-lbl');
+  const cards = document.querySelectorAll('.cw');
+  lbl.innerText = '👀 Look carefully!';
+  cards.forEach(c => c.classList.add('flipped'));
+  await new Promise(r => setTimeout(r, 1600));
+
+  lbl.innerText = '🔀 Shuffling...';
+  cards.forEach(c => c.classList.remove('flipped'));
+  await new Promise(r => setTimeout(r, 400));
+  lbl.innerText = '🎮 Find the Pairs!';
+  locked = false;
+}
+
+function onCardClick(i) {
+  if (locked && !window.isSimulating) return;
+  const el = document.getElementById('card-' + i);
+  if (!el || el.classList.contains('flipped') || el.classList.contains('matched')) return;
+
+  el.classList.add('flipped');
+  flipped.push(i);
+  if (flipped.length === 2) {
+    locked = true;
+    setTimeout(checkMatch, 600);
+  }
+}
+
+function checkMatch() {
+  const [a, b] = flipped;
+  const ca = document.getElementById('card-' + a);
+  const cb = document.getElementById('card-' + b);
+
+  if (gameCards[a].pairId === gameCards[b].pairId) {
+    ca.classList.add('matched'); cb.classList.add('matched');
+    matchedCount++;
+    confetti({ particleCount: 30, spread: 60, origin:{ y:0.7 } });
+    if (matchedCount === (curMode === 'alpha' ? pairsA : pairsI)) {
+      setTimeout(() => go('scr-win'), 600);
+    } else locked = false;
+  } else {
+    ca.classList.remove('flipped'); cb.classList.remove('flipped');
+    locked = false;
+  }
+  flipped = [];
+}
+
+function playAgain() { curMode === 'alpha' ? startAlpha() : startImagesDirect(); }
+
+function giveReward(t) {
+  confetti({ particleCount: 40, spread: 60, origin:{ y:0.9 } });
+}
+</script>
+</body>
+</html>

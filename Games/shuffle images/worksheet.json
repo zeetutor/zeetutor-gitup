@@ -1,0 +1,85 @@
+{
+  "title": "auto-shuffle-match",
+  "items": [
+    {
+      "letter": " ",
+      "word": " Beetroot ",
+      "src": "images/_beetroot_.png"
+    },
+    {
+      "letter": "B",
+      "word": "Bitter Gourd",
+      "src": "images/bitter_gourd.png"
+    },
+    {
+      "letter": "B",
+      "word": "Brinjal",
+      "src": "images/brinjal.png"
+    },
+    {
+      "letter": "B",
+      "word": "Broccoli",
+      "src": "images/broccoli.png"
+    },
+    {
+      "letter": "C",
+      "word": "Cabbage (2)",
+      "src": "images/cabbage_(2).png"
+    },
+    {
+      "letter": "C",
+      "word": "Carrot (2)",
+      "src": "images/carrot_(2).png"
+    },
+    {
+      "letter": "C",
+      "word": "Cauli Flower",
+      "src": "images/cauli_flower.png"
+    },
+    {
+      "letter": "C",
+      "word": "Cucumber",
+      "src": "images/cucumber.png"
+    },
+    {
+      "letter": "G",
+      "word": "Garlic",
+      "src": "images/garlic.png"
+    },
+    {
+      "letter": "G",
+      "word": "Green Chilli",
+      "src": "images/green_chilli.png"
+    },
+    {
+      "letter": "O",
+      "word": "Onion (2)",
+      "src": "images/onion_(2).png"
+    },
+    {
+      "letter": "P",
+      "word": "Potato",
+      "src": "images/potato.png"
+    },
+    {
+      "letter": "P",
+      "word": "Pumpkin (2)",
+      "src": "images/pumpkin_(2).png"
+    },
+    {
+      "letter": "R",
+      "word": "Red Capsicum",
+      "src": "images/red_capsicum.png"
+    },
+    {
+      "letter": "S",
+      "word": "Sweet Corn",
+      "src": "images/sweet_corn.png"
+    },
+    {
+      "letter": "T",
+      "word": "Tomato (2)",
+      "src": "images/tomato_(2).png"
+    }
+  ]
+}

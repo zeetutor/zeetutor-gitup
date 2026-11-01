@@ -1,0 +1,35 @@
+{
+  "title": "vegetables-shadow-match",
+  "items": [
+    {
+      "id": "row_1793389098191_m6qg",
+      "path": "images/carrot.png",
+      "label": "Carrot"
+    },
+    {
+      "id": "row_1793389098192_49ym",
+      "path": "images/beetroot.png",
+      "label": "Beetroot"
+    },
+    {
+      "id": "row_1793389098192_3lpc",
+      "path": "images/broccoli_character_smiling_445b5bd1-removebg-preview.png",
+      "label": "Broccoli "
+    },
+    {
+      "id": "row_1793389098192_vy17",
+      "path": "images/cartoon_bitter_gourd_smiling_c6c1ee5a-removebg-preview.png",
+      "label": "Cartoon Bitter Gourd Smiling C6c1ee5a Removebg Preview"
+    },
+    {
+      "id": "row_1793389102748_j7kk",
+      "path": "images/cartoon_carrot_character_smiling_c2058951-removebg-preview.png",
+      "label": "Cartoon Carrot Character Smiling C2058951 Removebg Preview"
+    },
+    {
+      "id": "row_1793389103677_fmr0",
+      "path": "images/cartoon_cauliflower_character_sm__cb3a43f0-removebg-preview.png",
+      "label": "Cartoon Cauliflower Character Sm Cb3a43f0 Removebg Preview"
+    }
+  ]
+}
