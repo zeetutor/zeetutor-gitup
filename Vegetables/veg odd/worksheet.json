@@ -1,0 +1,135 @@
+{
+  "title": "veg-odd_worksheet",
+  "questions": [
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Beetroot ( Hint : Red colour )",
+      "questionMedia": "",
+      "answerMedia": "images/_beetroot_.png",
+      "options": [
+        "images/_beetroot_.png",
+        "images/bitter_gourd.png",
+        "images/brinjal.png",
+        "images/cabbage_(2).png"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the carrot ( Hint : orange colour )",
+      "questionMedia": "",
+      "answerMedia": "images/carrot.png",
+      "options": [
+        "images/brinjal.png",
+        "images/cabbage.png",
+        "images/carrot.png",
+        "images/cauli_flower.png"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Corn (Hint : yellow )",
+      "questionMedia": "",
+      "answerMedia": "images/corn.png",
+      "options": [
+        "images/chili.png",
+        "images/corn.png",
+        "images/cucumber.png",
+        "images/garlic.png"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the patato ( oval shape ) ",
+      "questionMedia": "",
+      "answerMedia": "images/potato.png",
+      "options": [
+        "images/lady_finger_(2).png",
+        "images/onion.png",
+        "images/potato.png",
+        "images/pumpkin_(2).png"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Onion",
+      "questionMedia": "",
+      "answerMedia": "images/onion_(2).png",
+      "options": [
+        "images/glossy_3d_carrot_with_fresh_greens.png",
+        "images/green_pea.png",
+        "images/lady_finger.png",
+        "images/onion_(2).png"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Cabbage",
+      "questionMedia": "",
+      "answerMedia": "images/cabbage.png",
+      "options": [
+        "images/cabbage.png",
+        "images/corn.png",
+        "images/cucumber.png",
+        "images/garlic.png"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Tomato ",
+      "questionMedia": "",
+      "answerMedia": "images/tomato.png",
+      "options": [
+        "images/potato.png",
+        "images/pumpkin.png",
+        "images/sweet_corn.png",
+        "images/tomato.png"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Lady finger",
+      "questionMedia": "",
+      "answerMedia": "images/lady_finger_(2).png",
+      "options": [
+        "images/chili.png",
+        "images/garlic.png",
+        "images/lady_finger_(2).png",
+        "images/patato.png"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Green Chilli",
+      "questionMedia": "",
+      "answerMedia": "images/chili.png",
+      "options": [
+        "images/carrot.png",
+        "images/chili.png",
+        "images/corn.png",
+        "images/onion_(2).png"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "Find the Brinjal ",
+      "questionMedia": "",
+      "answerMedia": "images/brinjal.png",
+      "options": [
+        "images/_beetroot_.png",
+        "images/brinjal.png",
+        "images/carrot_(2).png",
+        "images/green_pea.png"
+      ],
+      "pairs": []
+    }
+  ]
+}

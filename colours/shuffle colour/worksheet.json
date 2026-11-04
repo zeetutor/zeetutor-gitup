@@ -1,0 +1,34 @@
+{
+  "title": "shuffe_colour",
+  "questions": [
+    {
+      "type": "pair_match",
+      "prompt": "match the colours ",
+      "questionMedia": "",
+      "answerMedia": "",
+      "options": [],
+      "pairs": [
+        {
+          "itemA": "images/screenshot_2026-11-04_124439.png",
+          "itemB": "images/screenshot_2026-11-04_124554.png"
+        },
+        {
+          "itemA": "images/screenshot_2026-11-04_124447.png",
+          "itemB": "images/screenshot_2026-11-04_124531.png"
+        },
+        {
+          "itemA": "images/screenshot_2026-11-04_124457.png",
+          "itemB": "images/screenshot_2026-11-04_124559.png"
+        },
+        {
+          "itemA": "images/screenshot_2026-11-04_124509.png",
+          "itemB": "images/screenshot_2026-11-04_124549.png"
+        },
+        {
+          "itemA": "images/screenshot_2026-11-04_124524.png",
+          "itemB": "images/screenshot_2026-11-04_124538.png"
+        }
+      ]
+    }
+  ]
+}
