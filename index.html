@@ -94,8 +94,8 @@
 
   .file-card { 
     border: 1.5px solid var(--glass-border); 
-    background: var(--glass-bg);
-    backdrop-filter: blur(14px);
+    background: var(--glass-bg); 
+    backdrop-filter: blur(14px); 
     transition: all 0.22s ease;
   }
   .file-card:hover {
@@ -329,7 +329,6 @@
       
       <iframe id="game-frame" class="w-full h-full border-0 absolute inset-0 bg-white" src="about:blank" allow="autoplay"></iframe>
 
-
       <div id="waiting-overlay" class="absolute inset-0 bg-slate-950 flex-col items-center justify-center z-10 text-center" style="display:none">
         <div class="w-16 h-16 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin mb-4"></div>
         <p class="font-fredoka text-3xl text-white">Waiting for class</p>
@@ -454,7 +453,6 @@ function applyUniversalZoom() {
   });
 }
 
-// Multi-Level Robust Folder Parser
 function parsePathInfo(path) {
   const clean = String(path || '').trim().replace(/^[\/\\]+|[\/\\]+$/g, '').replace(/\/index\.html$/i, '');
   const parts = clean.split(/[\/\\]+/);
@@ -474,7 +472,6 @@ function parsePathInfo(path) {
   };
 }
 
-// Universal Robust Worksheet URL Resolver
 function buildWorksheetUrl(path) {
   let clean = String(path || '').trim().replace(/^[\/\\]+|[\/\\]+$/g, '');
   if (!clean.toLowerCase().endsWith('.html')) {
@@ -734,7 +731,6 @@ window.confirmStudentAndContinue = function() {
   showToast('Timer started: ' + plannedMinutes + ' min for ' + studentName);
 };
 
-// Clean exit to Library: Kills the running game frame immediately
 window.openLibrary = function() {
   const frame = document.getElementById('game-frame');
   if (frame) {
@@ -1209,7 +1205,6 @@ function connectFirebaseEngine() {
       }
       if (myRole === 'student') applyStudentScreens();
       
-      // If teacher cleared worksheet back to list
       if (!data.current_url) {
         activeFile = '';
         lastLoadedUrl = '';
@@ -1232,7 +1227,9 @@ function connectFirebaseEngine() {
         if (data.last_action.actionId && data.last_action.actionId !== lastProcessedOuterActionId) {
           lastProcessedOuterActionId = data.last_action.actionId;
           const frame = document.getElementById('game-frame');
-          if (frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'EXECUTE_UNIVERSAL_ACTION', action: data.last_action }, '*');
+          if (frame && frame.contentWindow) {
+            frame.contentWindow.postMessage({ type: 'EXECUTE_UNIVERSAL_ACTION', action: data.last_action }, '*');
+          }
           const rpl = document.getElementById('touch-ripple');
           if (rpl && data.pointer) {
             rpl.style.left = data.pointer.x + '%'; rpl.style.top = data.pointer.y + '%';
@@ -1357,25 +1354,24 @@ window.addEventListener('message', (event) => {
     const payload = event.data.payload;
     if (payload?.type === 'UNIVERSAL_CURSOR') {
       const now = Date.now();
-      if (now - lastFirebaseCursorUpdate > 200) {
+      if (now - lastFirebaseCursorUpdate > 180) {
         lastFirebaseCursorUpdate = now;
         update(dbRef, { pointer: { x: payload.pctX, y: payload.pctY, initiator: myRole } });
       }
     } else {
-      const actionId = payload.actionId || ('click_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+      const actionId = payload.actionId || ('act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
       update(dbRef, { last_action: { ...payload, actionId, initiator: myRole, timestamp: Date.now() } });
     }
   }
   if (event.data?.type === 'IFRAME_MOUSE_TRACK') {
     const now = Date.now();
-    if (now - lastFirebaseCursorUpdate > 200) {
+    if (now - lastFirebaseCursorUpdate > 180) {
       lastFirebaseCursorUpdate = now;
       update(dbRef, { pointer: { x: event.data.pctX, y: event.data.pctY, initiator: myRole } });
     }
   }
 });
 
-// High-speed, unlagged iframe loader
 function loadWorksheetFast(path) {
   if (!path) return;
   hideOverlay('waiting-overlay');
@@ -1384,11 +1380,9 @@ function loadWorksheetFast(path) {
   const frame = document.getElementById('game-frame');
   const targetUrl = buildWorksheetUrl(path);
 
-  // Kill old page scripts, loops, and memory immediately
   frame.src = 'about:blank';
   clearTimeout(window._loadFallback);
 
-  // Instant async dispatch
   requestAnimationFrame(() => {
     frame.onload = () => {
       try {
