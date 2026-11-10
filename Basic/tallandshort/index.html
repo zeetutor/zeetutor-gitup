@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Worksheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body {
+    background: radial-gradient(circle at top, #1e1b4b, #0f172a 100%);
+    font-family: "Nunito", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+  }
+  .card {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 20px;
+    padding: 14px 20px;
+    max-width: 900px;
+    width: 98%;
+    height: 96vh;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .title { font-family: "Fredoka One", cursive; font-size: 1.4rem; color: #4338ca; line-height: 1.1; }
+  .prompt { font-size: 1rem; font-weight: 800; color: #475569; margin: 4px 0 8px 0; }
+  .round-indicator { display: inline-block; font-size: 11px; font-weight: 900; background: #e0e7ff; color: #4338ca; padding: 2px 10px; border-radius: 20px; margin-bottom: 4px; }
+  .target-frame { height: 110px; max-width: 160px; border-radius: 14px; border: 3px solid #6366f1; object-fit: contain; margin: 0 auto 8px auto; background: #000; display: block; }
+  .game-area-box { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 0; overflow: hidden; margin-bottom: 8px; }
+  .grid-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; width: 100%; max-height: 100%; }
+  .opt-card {
+    border: 3.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 6px;
+    cursor: pointer;
+    background: #f8fafc;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .opt-card:hover { transform: scale(1.03); border-color: #818cf8; }
+  .opt-card.correct { border-color: #22c55e; background: #dcfce7; transform: scale(1.05); }
+  .opt-card.wrong { border-color: #ef4444; background: #fee2e2; animation: shake 0.4s; }
+  .opt-card img, .opt-card video { width: 100%; height: 95px; object-fit: contain; border-radius: 10px; pointer-events: none; background: #000; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .match-columns-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+  }
+  .match-col { display: flex; flex-direction: column; gap: 8px; justify-content: center; height: 100%; }
+  .match-card {
+    border: 3px solid #cbd5e1;
+    border-radius: 14px;
+    padding: 6px;
+    background: #f8fafc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    max-height: 85px;
+    transition: all 0.2s;
+  }
+  .match-card:hover { transform: scale(1.02); border-color: #6366f1; }
+  .match-card.selected { border-color: #3b82f6; background: #dbeafe; transform: scale(1.03); }
+  .match-card.matched { border-color: #22c55e; background: #dcfce7; opacity: 0.55; pointer-events: none; }
+  .match-card img, .match-card video { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
+  .memory-grid-container {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    perspective: 1000px;
+    align-content: center;
+    justify-content: center;
+  }
+  .flip-card { aspect-ratio: 1; cursor: pointer; position: relative; border-radius: 12px; height: 100%; max-height: 110px; }
+  .flip-card-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+  .flip-card.flipped .flip-card-inner, .flip-card.matched .flip-card-inner { transform: rotateY(180deg); }
+  .flip-face { position: absolute; inset: 0; border-radius: 12px; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border: 3px solid #e2e8f0; overflow: hidden; }
+  .flip-back { background: linear-gradient(135deg, #6366f1, #3b82f6); color: white; font-size: 1.8rem; }
+  .flip-front { background: white; transform: rotateY(180deg); padding: 6px; }
+  .flip-front img, .flip-front video { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+  .flip-card.matched .flip-front { border-color: #22c55e; background: #dcfce7; }
+  .reaction-bar { display: flex; justify-content: center; gap: 10px; background: #f1f5f9; padding: 6px 14px; border-radius: 30px; width: fit-content; margin: 0 auto; border: 1.5px solid #cbd5e1; }
+  .react-btn { background: #fff; border: 1px solid #e2e8f0; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
+  .react-btn:hover { transform: scale(1.2); }
+  .floating-emoji { position: fixed; pointer-events: none; z-index: 9999; animation: floatUp 1.4s forwards; }
+  @keyframes floatUp { 0% { opacity:0; transform: translate(-50%, -50%) scale(0.4); } 15% { opacity:1; transform: translate(-50%, -60px) scale(1.3); } 100% { opacity:0; transform: translate(-50%, -250px) scale(0.7); } }
+</style>
+</head>
+<body>
+  <div class="card" id="mainCard">
+    <div>
+      <div class="title" id="wsTitle">LiveTutor Worksheet</div>
+      <div class="prompt" id="wsPrompt">Loading questions...</div>
+      <div id="roundTagBox"></div>
+    </div>
+    <div class="game-area-box">
+      <div id="targetBox"></div>
+      <div class="grid-opts" id="optsBox"></div>
+      <div class="match-columns-container" id="matchBox" style="display:none;">
+        <div class="match-col" id="colA"></div>
+        <div class="match-col" id="colB"></div>
+      </div>
+      <div class="memory-grid-container" id="pairMatchBox" style="display:none;"></div>
+    </div>
+    <div class="reaction-bar">
+      <button class="react-btn" id="btn-choc" onclick="onReactionClick('🍫', '#btn-choc')">🍫</button>
+      <button class="react-btn" id="btn-ice" onclick="onReactionClick('🍦', '#btn-ice')">🍦</button>
+      <button class="react-btn" id="btn-star" onclick="onReactionClick('⭐', '#btn-star')">⭐</button>
+      <button class="react-btn" id="btn-heart" onclick="onReactionClick('❤️', '#btn-heart')">❤️</button>
+    </div>
+  </div>
+<script>
+  let wsConfig = null;
+  let qIndex = 0;
+  let currentRound = 0;
+  let windowAudioCtx = null;
+  window.isSimulating = false;
+  let selectedMatchA = null;
+  let matchedPairsCount = 0;
+  let memoryFlipped = [];
+  let memoryMatchedCount = 0;
+  let memoryLocked = false;
+  const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace("#", "?"));
+  const roomId = urlParams.get("room") || "1000";
+  let seedValue = 0;
+  for (let i = 0; i < roomId.length; i++) seedValue += roomId.charCodeAt(i);
+  function seededRandom() {
+    let x = Math.sin(seedValue++) * 10000;
+    return x - Math.floor(x);
+  }
+  function shuffle(arr) {
+    let a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function playSound(type) {
+    try {
+      if (!windowAudioCtx) windowAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = windowAudioCtx.createOscillator();
+      const gain = windowAudioCtx.createGain();
+      osc.type = (type === "bad") ? "sawtooth" : "sine";
+      let freq = 587;
+      if (type === "bad") freq = 160;
+      if (type === "chime") freq = 880;
+      osc.frequency.setValueAtTime(freq, windowAudioCtx.currentTime);
+      gain.gain.setValueAtTime(0.18, windowAudioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, windowAudioCtx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(windowAudioCtx.destination);
+      osc.start();
+      osc.stop(windowAudioCtx.currentTime + 0.3);
+    } catch (e) {}
+  }
+  function spawnFloatingEmojis(emoji) {
+    playSound("chime");
+    for (let i = 0; i < 5; i++) {
+      const span = document.createElement("span");
+      span.className = "floating-emoji";
+      span.innerText = emoji;
+      span.style.fontSize = (Math.random() * 18 + 24) + "px";
+      span.style.left = (window.innerWidth / 2 + (Math.random() * 100 - 50)) + "px";
+      span.style.top = (window.innerHeight / 2 + (Math.random() * 60 - 30)) + "px";
+      document.body.appendChild(span);
+      setTimeout(() => span.remove(), 1400);
+    }
+  }
+  function onReactionClick(emoji, selector) {
+    if (!window.isSimulating) {
+      window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_CLICK", selector: selector } }, "*");
+    }
+    spawnFloatingEmojis(emoji);
+  }
+  window.addEventListener("message", (ev) => {
+    if (!ev.data) return;
+    if (ev.data.type === "EXECUTE_UNIVERSAL_ACTION") {
+      const act = ev.data.action;
+      if (!act) return;
+      window.isSimulating = true;
+      if (act.type === "UNIVERSAL_CLICK" && act.selector) {
+        const el = document.querySelector(act.selector);
+        if (el) el.click();
+      }
+      setTimeout(() => { window.isSimulating = false; }, 35);
+    }
+  });
+  document.addEventListener("mousemove", (e) => {
+    if (window.isSimulating) return;
+    const pctX = (e.clientX / window.innerWidth) * 100;
+    const pctY = (e.clientY / window.innerHeight) * 100;
+    window.parent.postMessage({ type: "IFRAME_MOUSE_TRACK", pctX, pctY }, "*");
+  });
+  window.addEventListener("beforeunload", () => {
+    if (windowAudioCtx) { windowAudioCtx.close(); windowAudioCtx = null; }
+  });
+  fetch("worksheet.json")
+    .then(r => r.json())
+    .then(data => {
+      wsConfig = data;
+      document.getElementById("wsTitle").innerText = data.title || "Worksheet";
+      loadCurrentQuestion();
+    })
+    .catch(() => { document.getElementById("wsPrompt").innerText = "worksheet.json not found!"; });
+  function loadCurrentQuestion() {
+    if (!wsConfig || !wsConfig.questions.length) return;
+    if (qIndex >= wsConfig.questions.length) {
+      document.getElementById("wsPrompt").innerText = "🎉 All rounds completed!";
+      document.getElementById("targetBox").innerHTML = "";
+      document.getElementById("optsBox").style.display = "none";
+      document.getElementById("matchBox").style.display = "none";
+      document.getElementById("pairMatchBox").style.display = "none";
+      document.getElementById("roundTagBox").innerHTML = "";
+      return;
+    }
+    const q = wsConfig.questions[qIndex];
+    document.getElementById("wsPrompt").innerText = q.prompt;
+    const itemsPerRound = q.itemsPerRound || 4;
+    if (q.type === "match_following" || q.type === "pair_match") {
+      const totalPairs = q.pairs || [];
+      const totalRounds = Math.ceil(totalPairs.length / itemsPerRound) || 1;
+      const startIdx = currentRound * itemsPerRound;
+      const currentPairsBatch = totalPairs.slice(startIdx, startIdx + itemsPerRound);
+      document.getElementById("roundTagBox").innerHTML = totalRounds > 1 ? ("<span class='round-indicator'>Round " + (currentRound + 1) + " of " + totalRounds + "</span>") : "";
+      if (q.type === "pair_match") {
+        document.getElementById("targetBox").innerHTML = "";
+        document.getElementById("optsBox").style.display = "none";
+        document.getElementById("matchBox").style.display = "none";
+        const pBox = document.getElementById("pairMatchBox");
+        pBox.style.display = "grid";
+        pBox.innerHTML = "";
+        memoryFlipped = [];
+        memoryMatchedCount = 0;
+        memoryLocked = false;
+        const deck = [];
+        currentPairsBatch.forEach((p, idx) => {
+          deck.push({ pairId: idx, path: p.itemA });
+          deck.push({ pairId: idx, path: p.itemB });
+        });
+        const shuffledDeck = shuffle(deck);
+        const count = shuffledDeck.length;
+        const cols = count <= 6 ? 3 : 4;
+        pBox.style.gridTemplateColumns = "repeat(" + cols + ", 1fr)";
+        pBox.style.maxWidth = count <= 6 ? "380px" : "520px";
+        shuffledDeck.forEach((cardItem, cIdx) => {
+          const card = document.createElement("div");
+          card.className = "flip-card";
+          card.id = "flip-card-" + cIdx;
+          card.innerHTML = "<div class='flip-card-inner'><div class='flip-face flip-back'>⭐</div><div class='flip-face flip-front'><img src='" + cardItem.path + "'></div></div>";
+          card.onclick = () => {
+            if (memoryLocked) return;
+            if (card.classList.contains("flipped") || card.classList.contains("matched")) return;
+            if (!window.isSimulating) {
+              window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_CLICK", selector: "#flip-card-" + cIdx } }, "*");
+            }
+            card.classList.add("flipped");
+            playSound("chime");
+            memoryFlipped.push({ card, item: cardItem });
+            if (memoryFlipped.length === 2) {
+              memoryLocked = true;
+              const [c1, c2] = memoryFlipped;
+              if (c1.item.pairId === c2.item.pairId) {
+                playSound("win");
+                c1.card.classList.add("matched");
+                c2.card.classList.add("matched");
+                memoryMatchedCount++;
+                memoryFlipped = [];
+                memoryLocked = false;
+                if (memoryMatchedCount >= currentPairsBatch.length) {
+                  spawnFloatingEmojis("⭐");
+                  setTimeout(() => {
+                    if (currentRound + 1 < totalRounds) { currentRound++; loadCurrentQuestion(); } else { currentRound = 0; qIndex++; loadCurrentQuestion(); }
+                  }, 1200);
+                }
+              } else {
+                playSound("bad");
+                setTimeout(() => {
+                  c1.card.classList.remove("flipped");
+                  c2.card.classList.remove("flipped");
+                  memoryFlipped = [];
+                  memoryLocked = false;
+                }, 600);
+              }
+            }
+          };
+          pBox.appendChild(card);
+        });
+        return;
+      }
+      if (q.type === "match_following") {
+        document.getElementById("targetBox").innerHTML = "";
+        document.getElementById("optsBox").style.display = "none";
+        document.getElementById("pairMatchBox").style.display = "none";
+        const mBox = document.getElementById("matchBox");
+        mBox.style.display = "grid";
+        selectedMatchA = null;
+        matchedPairsCount = 0;
+        const colA = document.getElementById("colA");
+        const colB = document.getElementById("colB");
+        colA.innerHTML = "";
+        colB.innerHTML = "";
+        const leftItems = currentPairsBatch.map((p, idx) => ({ id: idx, path: p.itemA }));
+        const rightItems = shuffle(currentPairsBatch.map((p, idx) => ({ id: idx, path: p.itemB })));
+        leftItems.forEach((item, lIdx) => {
+          const cardA = document.createElement("div");
+          cardA.className = "match-card";
+          cardA.id = "match-left-" + lIdx;
+          cardA.innerHTML = "<img src='" + item.path + "'>";
+          cardA.onclick = () => {
+            if (!window.isSimulating) {
+              window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_CLICK", selector: "#match-left-" + lIdx } }, "*");
+            }
+            document.querySelectorAll("#colA .match-card").forEach(c => c.classList.remove("selected"));
+            cardA.classList.add("selected");
+            selectedMatchA = item.id;
+            playSound("chime");
+          };
+          colA.appendChild(cardA);
+        });
+        rightItems.forEach((item, rIdx) => {
+          const cardB = document.createElement("div");
+          cardB.className = "match-card";
+          cardB.id = "match-right-" + rIdx;
+          cardB.innerHTML = "<img src='" + item.path + "'>";
+          cardB.onclick = () => {
+            if (!window.isSimulating) {
+              window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_CLICK", selector: "#match-right-" + rIdx } }, "*");
+            }
+            if (selectedMatchA === null) { playSound("bad"); return; }
+            if (selectedMatchA === item.id) {
+              playSound("win");
+              cardB.classList.add("matched");
+              const selLeft = document.querySelector("#colA .match-card.selected");
+              if (selLeft) selLeft.classList.add("matched");
+              selectedMatchA = null;
+              matchedPairsCount++;
+              if (matchedPairsCount >= currentPairsBatch.length) {
+                spawnFloatingEmojis("⭐");
+                setTimeout(() => {
+                  if (currentRound + 1 < totalRounds) { currentRound++; loadCurrentQuestion(); } else { currentRound = 0; qIndex++; loadCurrentQuestion(); }
+                }, 1200);
+              }
+            } else {
+              playSound("bad");
+              cardB.classList.add("wrong");
+              setTimeout(() => cardB.classList.remove("wrong"), 400);
+            }
+          };
+          colB.appendChild(cardB);
+        });
+        return;
+      }
+    }
+    document.getElementById("matchBox").style.display = "none";
+    document.getElementById("pairMatchBox").style.display = "none";
+    document.getElementById("roundTagBox").innerHTML = "";
+    const oBox = document.getElementById("optsBox");
+    oBox.style.display = "grid";
+    const tBox = document.getElementById("targetBox");
+    tBox.innerHTML = "";
+    if (q.questionMedia) {
+      const isVid = q.questionMedia.endsWith(".mp4") || q.questionMedia.endsWith(".webm");
+      tBox.innerHTML = isVid ? ("<video src='" + q.questionMedia + "' class='target-frame' autoplay muted loop></video>") : ("<img src='" + q.questionMedia + "' class='target-frame'>");
+    }
+    oBox.innerHTML = "";
+    const shuffledOpts = shuffle(q.options || []);
+    shuffledOpts.forEach((optPath, idx) => {
+      const card = document.createElement("div");
+      card.className = "opt-card";
+      card.id = "opt-btn-" + idx;
+      const isVid = optPath.endsWith(".mp4") || optPath.endsWith(".webm");
+      card.innerHTML = isVid ? ("<video src='" + optPath + "' autoplay muted loop></video>") : ("<img src='" + optPath + "'>");
+      card.onclick = () => {
+        if (!window.isSimulating) {
+          window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_CLICK", selector: "#opt-btn-" + idx } }, "*");
+        }
+        if (optPath === q.answerMedia) {
+          card.classList.add("correct");
+          playSound("win");
+          spawnFloatingEmojis("⭐");
+          setTimeout(() => { qIndex++; loadCurrentQuestion(); }, 1200);
+        } else {
+          card.classList.add("wrong");
+          playSound("bad");
+          setTimeout(() => card.classList.remove("wrong"), 450);
+        }
+      };
+      oBox.appendChild(card);
+    });
+  }
+</script>
+</body>
+</html>

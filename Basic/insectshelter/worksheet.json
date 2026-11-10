@@ -1,0 +1,248 @@
+{
+  "title": "insect_shelter_",
+  "questions": [
+    {
+      "type": "match_following",
+      "prompt": "Match the following pairs!",
+      "itemsPerRound": 3,
+      "questionMedia": "",
+      "answerMedia": "",
+      "options": [],
+      "pairs": [
+        {
+          "itemA": "images/butterfuly.gif",
+          "itemB": "images/flowers.gif"
+        },
+        {
+          "itemA": "images/catterpillar.gif",
+          "itemB": "images/cocoon.gif"
+        },
+        {
+          "itemA": "images/earthworm.gif",
+          "itemB": "images/mud.gif"
+        }
+      ]
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of wasp : wasp nest ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/wasp.gif",
+      "answerMedia": "images/wasp_nest.gif",
+      "options": [
+        "images/cocoon.gif",
+        "images/hole.gif",
+        "images/wasp_nest.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of earthworm : mud ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/earthworm.gif",
+      "answerMedia": "images/mud.gif",
+      "options": [
+        "images/mud.gif",
+        "images/shell.gif",
+        "images/underleaf.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of catterpillar : cocoon",
+      "itemsPerRound": 4,
+      "questionMedia": "images/catterpillar.gif",
+      "answerMedia": "images/cocoon.gif",
+      "options": [
+        "images/cocoon.gif",
+        "images/flowers.gif",
+        "images/grass.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of fish : water ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/fish.gif",
+      "answerMedia": "images/water.gif",
+      "options": [
+        "images/underleaf.gif",
+        "images/wasp_nest.gif",
+        "images/water.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of cricket : grass",
+      "itemsPerRound": 4,
+      "questionMedia": "images/cricket.gif",
+      "answerMedia": "images/grass.gif",
+      "options": [
+        "images/flowers.gif",
+        "images/grass.gif",
+        "images/hole.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of frog : water ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/frog.gif",
+      "answerMedia": "images/water.gif",
+      "options": [
+        "images/shell.gif",
+        "images/wasp_nest.gif",
+        "images/water.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of mosquito : stagnant dirty water ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/mosquito.gif",
+      "answerMedia": "images/stagnet_water_.gif",
+      "options": [
+        "images/stagnet_water_.gif",
+        "images/wasp_nest.gif",
+        "images/water.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of lady bug : under leaf ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/ladybug.gif",
+      "answerMedia": "images/underleaf.gif",
+      "options": [
+        "images/flowers.gif",
+        "images/grass.gif",
+        "images/underleaf.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of termite : mound ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/termite.gif",
+      "answerMedia": "images/mound.gif",
+      "options": [
+        "images/mound.gif",
+        "images/shell.gif",
+        "images/stagnet_water_.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of rat : hole",
+      "itemsPerRound": 4,
+      "questionMedia": "images/rat.gif",
+      "answerMedia": "images/hole.gif",
+      "options": [
+        "images/grass.gif",
+        "images/hole.gif",
+        "images/stagnet_water_.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the shelter of snail : shell ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/sanil.gif",
+      "answerMedia": "images/shell.gif",
+      "options": [
+        "images/cocoon.gif",
+        "images/flowers.gif",
+        "images/shell.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "which insect live in the mud ? : earthworm ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/mud.gif",
+      "answerMedia": "images/earthworm.gif",
+      "options": [
+        "images/butterfuly.gif",
+        "images/earthworm.gif",
+        "images/fish.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "which insect live in the grass ? cricket ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/grass.gif",
+      "answerMedia": "images/cricket.gif",
+      "options": [
+        "images/cricket.gif",
+        "images/mosquito.gif",
+        "images/rat.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "which insect live in the stagnant dirty water ? : mosquito ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/stagnet_water_.gif",
+      "answerMedia": "images/mosquito.gif",
+      "options": [
+        "images/ladybug.gif",
+        "images/mosquito.gif",
+        "images/rat.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "which insect live in the wasp nest : wasp ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/wasp_nest.gif",
+      "answerMedia": "images/wasp.gif",
+      "options": [
+        "images/catterpillar.gif",
+        "images/earthworm.gif",
+        "images/wasp.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "which insect live in under leaf ? : lady bug  ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/underleaf.gif",
+      "answerMedia": "images/ladybug.gif",
+      "options": [
+        "images/ladybug.gif",
+        "images/mosquito.gif",
+        "images/rat.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "which insect live in the mound ? : termite",
+      "itemsPerRound": 4,
+      "questionMedia": "images/mound.gif",
+      "answerMedia": "images/termite.gif",
+      "options": [
+        "images/cricket.gif",
+        "images/frog.gif",
+        "images/termite.gif"
+      ],
+      "pairs": []
+    }
+  ]
+}

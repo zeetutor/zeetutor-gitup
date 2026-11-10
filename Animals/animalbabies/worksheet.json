@@ -1,0 +1,209 @@
+{
+  "title": "animal_babies",
+  "questions": [
+    {
+      "type": "match_following",
+      "prompt": "Match the following pairs!",
+      "itemsPerRound": 3,
+      "questionMedia": "",
+      "answerMedia": "",
+      "options": [],
+      "pairs": [
+        {
+          "itemA": "images/bear.gif",
+          "itemB": "images/bearcub.gif"
+        },
+        {
+          "itemA": "images/cow.gif",
+          "itemB": "images/cowcalf.gif"
+        },
+        {
+          "itemA": "images/elaphant.gif",
+          "itemB": "images/elephantcalf.gif"
+        }
+      ]
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the tiger cub",
+      "itemsPerRound": 4,
+      "questionMedia": "images/tiger.gif",
+      "answerMedia": "images/tighercub.gif",
+      "options": [
+        "images/chick_(2).gif",
+        "images/cowcalf.gif",
+        "images/tighercub.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of pig : piglet ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/pig.gif",
+      "answerMedia": "images/piglet.gif",
+      "options": [
+        "images/bearcub.gif",
+        "images/cub.gif",
+        "images/piglet.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of bear : cub",
+      "itemsPerRound": 4,
+      "questionMedia": "images/bear.gif",
+      "answerMedia": "images/bearcub.gif",
+      "options": [
+        "images/bearcub.gif",
+        "images/duckling.gif",
+        "images/fawn.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of goat : kid ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/goat.gif",
+      "answerMedia": "images/kid.gif",
+      "options": [
+        "images/cowcalf.gif",
+        "images/cub.gif",
+        "images/kid.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of elephant : calf ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/elaphant.gif",
+      "answerMedia": "images/elephantcalf.gif",
+      "options": [
+        "images/elephantcalf.gif",
+        "images/joey.gif",
+        "images/kitten.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of horse : foal ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/horse.gif",
+      "answerMedia": "images/foal.gif",
+      "options": [
+        "images/elephantcalf.gif",
+        "images/fawn.gif",
+        "images/foal.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of cow : calf",
+      "itemsPerRound": 4,
+      "questionMedia": "images/cow.gif",
+      "answerMedia": "images/cowcalf.gif",
+      "options": [
+        "images/bearcub.gif",
+        "images/chick_(2).gif",
+        "images/cowcalf.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of sheep : lamp",
+      "itemsPerRound": 4,
+      "questionMedia": "images/sheep.gif",
+      "answerMedia": "images/lamp.gif",
+      "options": [
+        "images/duckling.gif",
+        "images/fawn.gif",
+        "images/lamp.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of duck : duckling",
+      "itemsPerRound": 4,
+      "questionMedia": "images/duck.gif",
+      "answerMedia": "images/duckling.gif",
+      "options": [
+        "images/cub.gif",
+        "images/duckling.gif",
+        "images/fawn.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "Find the baby of dog : puppy ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/dofg.gif",
+      "answerMedia": "images/puppy.gif",
+      "options": [
+        "images/piglet.gif",
+        "images/puppy.gif",
+        "images/tighercub.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of hen : chick",
+      "itemsPerRound": 4,
+      "questionMedia": "images/hen.gif",
+      "answerMedia": "images/chick_(2).gif",
+      "options": [
+        "images/bearcub.gif",
+        "images/chick_(2).gif",
+        "images/elephantcalf.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of lion : cub ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/lion.gif",
+      "answerMedia": "images/cub.gif",
+      "options": [
+        "images/cub.gif",
+        "images/joey.gif",
+        "images/kid.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of kangaroo : joey ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/kangaroo.gif",
+      "answerMedia": "images/joey.gif",
+      "options": [
+        "images/joey.gif",
+        "images/kid.gif",
+        "images/kitten.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "choose_correct",
+      "prompt": "find the baby of cat : kitten ",
+      "itemsPerRound": 4,
+      "questionMedia": "images/cat.gif",
+      "answerMedia": "images/kitten.gif",
+      "options": [
+        "images/bearcub.gif",
+        "images/cowcalf.gif",
+        "images/kitten.gif"
+      ],
+      "pairs": []
+    }
+  ]
+}
