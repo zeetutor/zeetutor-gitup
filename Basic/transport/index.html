@@ -19,99 +19,165 @@
   }
   .card {
     background: rgba(255, 255, 255, 0.98);
-    border-radius: 20px;
-    padding: 14px 20px;
-    max-width: 900px;
-    width: 98%;
-    height: 96vh;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    border-radius: 24px;
+    padding: 14px 18px;
+    max-width: 1200px;
+    width: 100%;
+    height: 98vh;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
     text-align: center;
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
   }
-  .title { font-family: "Fredoka One", cursive; font-size: 1.4rem; color: #4338ca; line-height: 1.1; }
-  .prompt { font-size: 1rem; font-weight: 800; color: #475569; margin: 4px 0 8px 0; }
-  .round-indicator { display: inline-block; font-size: 11px; font-weight: 900; background: #e0e7ff; color: #4338ca; padding: 2px 10px; border-radius: 20px; margin-bottom: 4px; }
-  .target-frame { height: 110px; max-width: 160px; border-radius: 14px; border: 3px solid #6366f1; object-fit: contain; margin: 0 auto 8px auto; background: #000; display: block; }
-  .game-area-box { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 0; overflow: hidden; margin-bottom: 8px; }
-  .grid-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; width: 100%; max-height: 100%; }
-  .opt-card {
-    border: 3.5px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 6px;
-    cursor: pointer;
-    background: #f8fafc;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s;
+  .header-box { flex-shrink: 0; margin-bottom: 6px; }
+  .title { font-family: "Fredoka One", cursive; font-size: clamp(1.3rem, 2.2vw, 1.9rem); color: #4338ca; line-height: 1.1; }
+  .prompt { font-size: clamp(0.95rem, 1.5vw, 1.25rem); font-weight: 800; color: #475569; margin-top: 4px; }
+  .round-indicator { display: inline-block; font-size: 11px; font-weight: 900; background: #e0e7ff; color: #4338ca; padding: 2px 10px; border-radius: 20px; margin-top: 4px; }
+  .game-area-box {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 6px 0;
+    gap: 12px;
   }
-  .opt-card:hover { transform: scale(1.03); border-color: #818cf8; }
-  .opt-card.correct { border-color: #22c55e; background: #dcfce7; transform: scale(1.05); }
+  .target-frame-wrap { flex-shrink: 0; display: flex; justify-content: center; width: 100%; max-height: 38%; }
+  .target-frame {
+    height: 100%;
+    max-height: 200px;
+    width: auto;
+    max-width: 90%;
+    border-radius: 18px;
+    border: 3px solid #6366f1;
+    object-fit: contain;
+    background: #f8fafc;
+    box-shadow: 0 6px 16px rgba(99,102,241,0.15);
+  }
+  .grid-opts {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+  }
+  .opt-card {
+    border: 3.5px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 8px;
+    cursor: pointer;
+    background: #ffffff;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    width: auto;
+    height: 100%;
+    max-height: 240px;
+    max-width: 240px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+  }
+  .opt-card:hover { transform: translateY(-3px) scale(1.02); border-color: #6366f1; box-shadow: 0 10px 22px rgba(99,102,241,0.2); }
+  .opt-card.correct { border-color: #22c55e; background: #dcfce7; transform: scale(1.04); }
   .opt-card.wrong { border-color: #ef4444; background: #fee2e2; animation: shake 0.4s; }
-  .opt-card img, .opt-card video { width: 100%; height: 95px; object-fit: contain; border-radius: 10px; pointer-events: none; background: #000; }
-  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .opt-card img, .opt-card video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+    pointer-events: none;
+  }
   .match-columns-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 16px;
     width: 100%;
     height: 100%;
+    align-items: stretch;
   }
-  .match-col { display: flex; flex-direction: column; gap: 8px; justify-content: center; height: 100%; }
+  .match-col { display: flex; flex-direction: column; gap: 10px; justify-content: center; height: 100%; }
   .match-card {
     border: 3px solid #cbd5e1;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 6px;
-    background: #f8fafc;
+    background: #ffffff;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     flex: 1;
-    max-height: 85px;
+    max-height: 120px;
     transition: all 0.2s;
   }
   .match-card:hover { transform: scale(1.02); border-color: #6366f1; }
   .match-card.selected { border-color: #3b82f6; background: #dbeafe; transform: scale(1.03); }
   .match-card.matched { border-color: #22c55e; background: #dcfce7; opacity: 0.55; pointer-events: none; }
-  .match-card img, .match-card video { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
+  .match-card img, .match-card video { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
   .memory-grid-container {
     display: grid;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
     height: 100%;
     perspective: 1000px;
     align-content: center;
     justify-content: center;
   }
-  .flip-card { aspect-ratio: 1; cursor: pointer; position: relative; border-radius: 12px; height: 100%; max-height: 110px; }
+  .flip-card { aspect-ratio: 1; cursor: pointer; position: relative; border-radius: 14px; height: 100%; max-height: 140px; }
   .flip-card-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
   .flip-card.flipped .flip-card-inner, .flip-card.matched .flip-card-inner { transform: rotateY(180deg); }
-  .flip-face { position: absolute; inset: 0; border-radius: 12px; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border: 3px solid #e2e8f0; overflow: hidden; }
-  .flip-back { background: linear-gradient(135deg, #6366f1, #3b82f6); color: white; font-size: 1.8rem; }
+  .flip-face { position: absolute; inset: 0; border-radius: 14px; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border: 3px solid #e2e8f0; overflow: hidden; }
+  .flip-back { background: linear-gradient(135deg, #6366f1, #3b82f6); color: white; font-size: 2rem; }
   .flip-front { background: white; transform: rotateY(180deg); padding: 6px; }
   .flip-front img, .flip-front video { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
   .flip-card.matched .flip-front { border-color: #22c55e; background: #dcfce7; }
-  .reaction-bar { display: flex; justify-content: center; gap: 10px; background: #f1f5f9; padding: 6px 14px; border-radius: 30px; width: fit-content; margin: 0 auto; border: 1.5px solid #cbd5e1; }
-  .react-btn { background: #fff; border: 1px solid #e2e8f0; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
+  .reaction-bar { flex-shrink: 0; display: flex; justify-content: center; gap: 12px; background: #f1f5f9; padding: 6px 16px; border-radius: 30px; width: fit-content; margin: 0 auto; border: 1.5px solid #cbd5e1; }
+  .react-btn { background: #fff; border: 1px solid #e2e8f0; border-radius: 50%; width: 38px; height: 38px; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
   .react-btn:hover { transform: scale(1.2); }
   .floating-emoji { position: fixed; pointer-events: none; z-index: 9999; animation: floatUp 1.4s forwards; }
   @keyframes floatUp { 0% { opacity:0; transform: translate(-50%, -50%) scale(0.4); } 15% { opacity:1; transform: translate(-50%, -60px) scale(1.3); } 100% { opacity:0; transform: translate(-50%, -250px) scale(0.7); } }
+  @media (max-width: 600px), (orientation: portrait) {
+    .card { padding: 10px 12px; height: 99vh; }
+    .target-frame-wrap { max-height: 28%; }
+    .target-frame { max-height: 150px; }
+    .grid-opts {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-content: center;
+      justify-content: center;
+    }
+    .opt-card {
+      flex: 1 1 28%;
+      max-width: 30vw;
+      max-height: 30vw;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      padding: 4px;
+    }
+    .match-card { max-height: 80px; }
+    .flip-card { max-height: 90px; }
+  }
 </style>
 </head>
 <body>
   <div class="card" id="mainCard">
-    <div>
+    <div class="header-box">
       <div class="title" id="wsTitle">LiveTutor Worksheet</div>
       <div class="prompt" id="wsPrompt">Loading questions...</div>
       <div id="roundTagBox"></div>
     </div>
     <div class="game-area-box">
-      <div id="targetBox"></div>
+      <div class="target-frame-wrap" id="targetBoxWrap" style="display:none;"><div id="targetBox"></div></div>
       <div class="grid-opts" id="optsBox"></div>
       <div class="match-columns-container" id="matchBox" style="display:none;">
         <div class="match-col" id="colA"></div>
@@ -137,6 +203,7 @@
   let memoryFlipped = [];
   let memoryMatchedCount = 0;
   let memoryLocked = false;
+  let lastMouseSend = 0;
   const urlParams = new URLSearchParams(window.location.search || window.location.hash.replace("#", "?"));
   const roomId = urlParams.get("room") || "1000";
   let seedValue = 0;
@@ -205,9 +272,13 @@
   });
   document.addEventListener("mousemove", (e) => {
     if (window.isSimulating) return;
-    const pctX = (e.clientX / window.innerWidth) * 100;
-    const pctY = (e.clientY / window.innerHeight) * 100;
-    window.parent.postMessage({ type: "IFRAME_MOUSE_TRACK", pctX, pctY }, "*");
+    const now = Date.now();
+    if (now - lastMouseSend > 100) {
+      lastMouseSend = now;
+      const pctX = (e.clientX / window.innerWidth) * 100;
+      const pctY = (e.clientY / window.innerHeight) * 100;
+      window.parent.postMessage({ type: "IFRAME_MOUSE_TRACK", pctX, pctY }, "*");
+    }
   });
   window.addEventListener("beforeunload", () => {
     if (windowAudioCtx) { windowAudioCtx.close(); windowAudioCtx = null; }
@@ -224,7 +295,7 @@
     if (!wsConfig || !wsConfig.questions.length) return;
     if (qIndex >= wsConfig.questions.length) {
       document.getElementById("wsPrompt").innerText = "🎉 All rounds completed!";
-      document.getElementById("targetBox").innerHTML = "";
+      document.getElementById("targetBoxWrap").style.display = "none";
       document.getElementById("optsBox").style.display = "none";
       document.getElementById("matchBox").style.display = "none";
       document.getElementById("pairMatchBox").style.display = "none";
@@ -241,7 +312,7 @@
       const currentPairsBatch = totalPairs.slice(startIdx, startIdx + itemsPerRound);
       document.getElementById("roundTagBox").innerHTML = totalRounds > 1 ? ("<span class='round-indicator'>Round " + (currentRound + 1) + " of " + totalRounds + "</span>") : "";
       if (q.type === "pair_match") {
-        document.getElementById("targetBox").innerHTML = "";
+        document.getElementById("targetBoxWrap").style.display = "none";
         document.getElementById("optsBox").style.display = "none";
         document.getElementById("matchBox").style.display = "none";
         const pBox = document.getElementById("pairMatchBox");
@@ -259,7 +330,7 @@
         const count = shuffledDeck.length;
         const cols = count <= 6 ? 3 : 4;
         pBox.style.gridTemplateColumns = "repeat(" + cols + ", 1fr)";
-        pBox.style.maxWidth = count <= 6 ? "380px" : "520px";
+        pBox.style.maxWidth = count <= 6 ? "520px" : "680px";
         shuffledDeck.forEach((cardItem, cIdx) => {
           const card = document.createElement("div");
           card.className = "flip-card";
@@ -306,7 +377,7 @@
         return;
       }
       if (q.type === "match_following") {
-        document.getElementById("targetBox").innerHTML = "";
+        document.getElementById("targetBoxWrap").style.display = "none";
         document.getElementById("optsBox").style.display = "none";
         document.getElementById("pairMatchBox").style.display = "none";
         const mBox = document.getElementById("matchBox");
@@ -373,12 +444,16 @@
     document.getElementById("pairMatchBox").style.display = "none";
     document.getElementById("roundTagBox").innerHTML = "";
     const oBox = document.getElementById("optsBox");
-    oBox.style.display = "grid";
+    oBox.style.display = "flex";
     const tBox = document.getElementById("targetBox");
+    const tWrap = document.getElementById("targetBoxWrap");
     tBox.innerHTML = "";
     if (q.questionMedia) {
+      tWrap.style.display = "flex";
       const isVid = q.questionMedia.endsWith(".mp4") || q.questionMedia.endsWith(".webm");
       tBox.innerHTML = isVid ? ("<video src='" + q.questionMedia + "' class='target-frame' autoplay muted loop></video>") : ("<img src='" + q.questionMedia + "' class='target-frame'>");
+    } else {
+      tWrap.style.display = "none";
     }
     oBox.innerHTML = "";
     const shuffledOpts = shuffle(q.options || []);
