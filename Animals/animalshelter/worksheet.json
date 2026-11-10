@@ -1,5 +1,5 @@
 {
-  "title": "animal_shelter_",
+  "title": "animalshelter",
   "questions": [
     {
       "type": "match_following",
@@ -25,7 +25,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in barn  ? ",
+      "prompt": "which animal live in barn  ? : goat",
       "itemsPerRound": 4,
       "questionMedia": "images/barn.gif",
       "answerMedia": "images/goat.gif",
@@ -38,7 +38,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which bird live in the coop ? ",
+      "prompt": "which bird live in the coop ? : hen",
       "itemsPerRound": 4,
       "questionMedia": "images/coop.gif",
       "answerMedia": "images/hen.gif",
@@ -51,7 +51,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in the den ? ",
+      "prompt": "which animal live in the den ? : lion",
       "itemsPerRound": 4,
       "questionMedia": "images/den.gif",
       "answerMedia": "images/lion.gif",
@@ -64,7 +64,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in the forest ? ",
+      "prompt": "which animal live in the forest ? : elephant",
       "itemsPerRound": 4,
       "questionMedia": "images/forest.gif",
       "answerMedia": "images/elepahnt.gif",
@@ -77,7 +77,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in the basket ? ",
+      "prompt": "which animal live in the basket ? : cat",
       "itemsPerRound": 4,
       "questionMedia": "images/basket.gif",
       "answerMedia": "images/cat.gif",
@@ -90,7 +90,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in the kennel ? ",
+      "prompt": "which animal live in the kennel ? : dog",
       "itemsPerRound": 4,
       "questionMedia": "images/kennel.gif",
       "answerMedia": "images/dog.gif",
@@ -103,7 +103,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in stable ? ",
+      "prompt": "which animal live in stable ? : horse",
       "itemsPerRound": 4,
       "questionMedia": "images/stabe.gif",
       "answerMedia": "images/horse.gif",
@@ -116,7 +116,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in the shed ? ",
+      "prompt": "which animal live in the shed ? : cow",
       "itemsPerRound": 4,
       "questionMedia": "images/shed.gif",
       "answerMedia": "images/cow.gif",
@@ -129,7 +129,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in the tree ? ",
+      "prompt": "which animal live in the tree ? : monkey",
       "itemsPerRound": 4,
       "questionMedia": "images/tree.gif",
       "answerMedia": "images/monkey.gif",
@@ -142,7 +142,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in the lair ? ",
+      "prompt": "which animal live in the lair ? : tiger",
       "itemsPerRound": 4,
       "questionMedia": "images/lair.gif",
       "answerMedia": "images/tiger.gif",
@@ -155,7 +155,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which anima live in the hutch ? ",
+      "prompt": "which anima live in the hutch ? : rabbit",
       "itemsPerRound": 4,
       "questionMedia": "images/hutch.gif",
       "answerMedia": "images/rabbit.gif",
@@ -168,7 +168,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in the savannha ? ",
+      "prompt": "which animal live in the savannha ? : giraffee",
       "itemsPerRound": 4,
       "questionMedia": "images/savahana.gif",
       "answerMedia": "images/giraffe.gif",
@@ -181,7 +181,7 @@
     },
     {
       "type": "choose_correct",
-      "prompt": "which animal live in the shed ? ",
+      "prompt": "which animal live in the shed ? : cow",
       "itemsPerRound": 4,
       "questionMedia": "images/shed.gif",
       "answerMedia": "images/cow.gif",

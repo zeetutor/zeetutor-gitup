@@ -3,7 +3,7 @@
   "questions": [
     {
       "type": "match_following",
-      "prompt": "Match the following pairs!",
+      "prompt": "animalbabies",
       "itemsPerRound": 3,
       "questionMedia": "",
       "answerMedia": "",
