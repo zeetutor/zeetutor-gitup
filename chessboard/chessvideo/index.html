@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Video Player</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body {
+    background: radial-gradient(circle at top, #1e1b4b, #0f172a 100%);
+    font-family: "Nunito", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+  .video-card {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 20px;
+    padding: 10px 14px;
+    max-width: 1100px;
+    width: 98%;
+    height: 98vh;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+  }
+  .header-bar { display: flex; justify-content: center; align-items: center; margin-bottom: 4px; }
+  .title-badge {
+    font-family: "Fredoka One", cursive;
+    font-size: 0.95rem;
+    color: #4338ca;
+    background: #e0e7ff;
+    padding: 2px 14px;
+    border-radius: 20px;
+    display: inline-block;
+    letter-spacing: 0.5px;
+  }
+  .video-container {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    background: #000;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .sound-banner {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ff5964;
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    z-index: 10;
+    border: none;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } }
+  .timeline-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    padding: 0 4px;
+  }
+  .time-stamp { font-family: monospace; font-size: 0.8rem; font-weight: 800; color: #475569; width: 40px; }
+  .timeline-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 6px;
+    border-radius: 4px;
+    background: #cbd5e1;
+    outline: none;
+    cursor: pointer;
+  }
+  .timeline-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ff477e;
+    cursor: pointer;
+  }
+  .controls-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .ctrl-btn {
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-weight: 800;
+    color: #334155;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .ctrl-btn:hover { background: #e2e8f0; }
+  .ctrl-btn-primary { background: #6366f1; border-color: #4f46e5; color: #fff; min-width: 80px; }
+  .ctrl-btn-primary:hover { background: #4f46e5; color: #fff; }
+  @media (max-width: 600px), (orientation: portrait) {
+    body { padding: 0 !important; background: #000; }
+    .video-card {
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+      padding: 6px 8px !important;
+      max-width: none !important;
+      background: #0f172a !important;
+    }
+    .header-bar { margin-bottom: 2px; }
+    .title-badge { font-size: 0.8rem; padding: 2px 10px; background: rgba(255,255,255,0.12); color: #fff; }
+    .video-container { border-radius: 10px; flex: 1; }
+    .time-stamp { color: #94a3b8; font-size: 0.75rem; }
+    .ctrl-btn { padding: 6px 10px; font-size: 0.78rem; background: #1e293b; color: #fff; border-color: #334155; }
+  }
+</style>
+</head>
+<body>
+  <div class="video-card">
+    <div class="header-bar">
+      <span class="title-badge" id="videoTitle">Video</span>
+    </div>
+    <div class="video-container" id="videoContainer">
+      <video id="kidsVideo" autoplay muted playsinline loop preload="auto"></video>
+      <button class="sound-banner" id="btn-sound" onclick="handleSoundClick(event)">🔊 Tap for Sound!</button>
+    </div>
+    <div class="timeline-bar-wrap">
+      <span id="curTimeText" class="time-stamp">00:00</span>
+      <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="100" value="0" step="0.5" oninput="handleSliderInput(event)">
+      <span id="durTimeText" class="time-stamp">00:00</span>
+    </div>
+    <div class="controls-bar">
+      <button class="ctrl-btn" id="btn-back-30" onclick="handleSkipClick(-30)">⏪ -30s</button>
+      <button class="ctrl-btn" id="btn-back-10" onclick="handleSkipClick(-10)">⏪ -10s</button>
+      <button class="ctrl-btn ctrl-btn-primary" id="btn-toggle-play" onclick="handlePlayPauseClick()">⏸ Pause</button>
+      <button class="ctrl-btn" id="btn-fwd-10" onclick="handleSkipClick(10)">+10s ⏩</button>
+      <button class="ctrl-btn" id="btn-fwd-30" onclick="handleSkipClick(30)">+30s ⏩</button>
+      <button class="ctrl-btn" id="btn-restart" onclick="handleRestartClick()">↺ Restart</button>
+    </div>
+  </div>
+<script>
+  const vid = document.getElementById("kidsVideo");
+  const soundBtn = document.getElementById("btn-sound");
+  const titleEl = document.getElementById("videoTitle");
+  const toggleBtn = document.getElementById("btn-toggle-play");
+  const timeline = document.getElementById("timelineSlider");
+  const curTime = document.getElementById("curTimeText");
+  const durTime = document.getElementById("durTimeText");
+  window.isSimulating = false;
+  let isDragging = false;
+  let lastMouseSend = 0;
+  function formatTime(s) {
+    s = Math.floor(s || 0);
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
+  }
+  fetch("worksheet.json")
+    .then(r => r.json())
+    .then(d => {
+      if (d.title) titleEl.innerText = d.title;
+      if (d.video) {
+        vid.src = encodeURI(d.video);
+        vid.play().catch(() => {});
+      }
+    });
+  vid.addEventListener("timeupdate", () => {
+    if (!isDragging && vid.duration) {
+      timeline.value = (vid.currentTime / vid.duration) * 100;
+      curTime.innerText = formatTime(vid.currentTime);
+    }
+  });
+  vid.addEventListener("loadedmetadata", () => {
+    durTime.innerText = formatTime(vid.duration);
+  });
+  function handlePlayPauseClick() {
+    if (!window.isSimulating) {
+      window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_CLICK", selector: "#btn-toggle-play" } }, "*");
+    }
+    if (vid.paused) {
+      vid.play();
+      toggleBtn.innerText = "⏸ Pause";
+    } else {
+      vid.pause();
+      toggleBtn.innerText = "▶ Play";
+    }
+  }
+  function handleRestartClick() {
+    if (!window.isSimulating) {
+      window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_CLICK", selector: "#btn-restart" } }, "*");
+    }
+    vid.currentTime = 0;
+    vid.play();
+    toggleBtn.innerText = "⏸ Pause";
+  }
+  function handleSkipClick(seconds) {
+    let sel = "#btn-fwd-10";
+    if (seconds === -30) sel = "#btn-back-30";
+    if (seconds === -10) sel = "#btn-back-10";
+    if (seconds === 30) sel = "#btn-fwd-30";
+    if (!window.isSimulating) {
+      window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_CLICK", selector: sel } }, "*");
+    }
+    vid.currentTime = Math.max(0, Math.min(vid.currentTime + seconds, vid.duration || 9999));
+  }
+  function handleSliderInput(e) {
+    if (!vid.duration) return;
+    const targetPct = parseFloat(e.target.value);
+    const targetTime = (targetPct / 100) * vid.duration;
+    vid.currentTime = targetTime;
+    if (!window.isSimulating) {
+      window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_SEEK", time: targetTime } }, "*");
+    }
+  }
+  function handleSoundClick(e) {
+    if (e) e.stopPropagation();
+    if (!window.isSimulating) {
+      window.parent.postMessage({ type: "IFRAME_ACTION_TRIGGERED", payload: { type: "UNIVERSAL_CLICK", selector: "#btn-sound" } }, "*");
+    }
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+      if (ctx.state === "suspended") ctx.resume();
+    } catch(err) {}
+    vid.muted = false;
+    vid.volume = 1.0;
+    vid.play().then(() => {
+      soundBtn.style.display = "none";
+    }).catch(() => { vid.muted = false; });
+  }
+  document.getElementById("videoContainer").addEventListener("click", (e) => {
+    if (e.target === soundBtn) return;
+    if (vid.muted) handleSoundClick(e);
+    else handlePlayPauseClick();
+  });
+  function stopAndKillMedia() {
+    try {
+      vid.pause();
+      vid.muted = true;
+      vid.removeAttribute("src");
+      vid.load();
+    } catch(e) {}
+  }
+  window.addEventListener("beforeunload", stopAndKillMedia);
+  window.addEventListener("pagehide", stopAndKillMedia);
+  window.addEventListener("unload", stopAndKillMedia);
+  window.addEventListener("message", ev => {
+    if (!ev.data) return;
+    if (ev.data.type === "EXECUTE_UNIVERSAL_ACTION") {
+      const act = ev.data.action;
+      if (!act) return;
+      window.isSimulating = true;
+      if (act.type === "UNIVERSAL_CLICK" && act.selector) {
+        const el = document.querySelector(act.selector);
+        if (el) el.click();
+      } else if (act.type === "UNIVERSAL_SEEK" && typeof act.time === "number") {
+        vid.currentTime = act.time;
+      }
+      setTimeout(() => { window.isSimulating = false; }, 40);
+    }
+  });
+  document.addEventListener("mousemove", e => {
+    if (window.isSimulating) return;
+    const now = Date.now();
+    if (now - lastMouseSend > 100) {
+      lastMouseSend = now;
+      window.parent.postMessage({
+        type: "IFRAME_MOUSE_TRACK",
+        pctX: (e.clientX / window.innerWidth) * 100,
+        pctY: (e.clientY / window.innerHeight) * 100
+      }, "*");
+    }
+  });
+</script>
+</body>
+</html>
