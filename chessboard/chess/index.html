@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LiveTutor Chess Thinking Lab (Ages 3-4)</title>
+<style>
+  :root {
+    --bg-grad: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    --card-bg: #ffffff;
+    --panel-bg: #f8fafc;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --accent: #4f46e5;
+    --accent-soft: #eef2ff;
+    --sq-light: #fef3c7;
+    --sq-dark: #65a30d;
+    --border-col: #cbd5e1;
+  }
+
+  body[data-theme="ocean"] {
+    --bg-grad: linear-gradient(135deg, #0c4a6e 0%, #0369a1 100%);
+    --card-bg: #ffffff;
+    --panel-bg: #f0f9ff;
+    --text-main: #0f172a;
+    --text-muted: #334155;
+    --accent: #0284c7;
+    --accent-soft: #e0f2fe;
+    --sq-light: #ffffff;
+    --sq-dark: #38bdf8;
+    --border-col: #7dd3fc;
+  }
+
+  body[data-theme="wood"] {
+    --bg-grad: linear-gradient(135deg, #451a03 0%, #78350f 100%);
+    --card-bg: #ffffff;
+    --panel-bg: #fffbeb;
+    --text-main: #1c1917;
+    --text-muted: #44403c;
+    --accent: #d97706;
+    --accent-soft: #fef3c7;
+    --sq-light: #f0d9b5;
+    --sq-dark: #b58863;
+    --border-col: #fcd34d;
+  }
+
+  body[data-theme="dark"] {
+    --bg-grad: linear-gradient(135deg, #090d16 0%, #1e1b4b 100%);
+    --card-bg: #1e293b;
+    --panel-bg: #0f172a;
+    --text-main: #f8fafc;
+    --text-muted: #cbd5e1;
+    --accent: #8b5cf6;
+    --accent-soft: #2e1065;
+    --sq-light: #cbd5e1;
+    --sq-dark: #475569;
+    --border-col: #334155;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+  }
+
+  html, body {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    background: var(--bg-grad);
+    color: var(--text-main);
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .app-shell {
+    background: var(--card-bg);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 1180px;
+    min-height: calc(100vh - 16px);
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    border: 3px solid var(--border-col);
+  }
+
+  /* Minimal Top Bar */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-col);
+    flex-shrink: 0;
+  }
+
+  .left-nav { display: flex; align-items: center; gap: 10px; }
+
+  .back-btn {
+    padding: 9px 16px;
+    border-radius: 14px;
+    border: none;
+    background: var(--accent);
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+  }
+
+  .screen-title {
+    font-weight: 900;
+    font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+    color: var(--text-main);
+  }
+
+  .right-tools { display: flex; align-items: center; gap: 8px; }
+
+  .theme-select {
+    padding: 7px 10px;
+    border-radius: 12px;
+    border: 2px solid var(--border-col);
+    background: var(--panel-bg);
+    color: var(--text-main);
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  /* One Screen = One Action Stage */
+  .stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0 4px 0;
+    width: 100%;
+  }
+
+  /* Home Menu Cards */
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    width: 100%;
+    max-width: 960px;
+  }
+
+  .menu-card {
+    background: var(--panel-bg);
+    border: 3px solid var(--border-col);
+    border-radius: 22px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.18s, border-color 0.18s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .menu-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .menu-badge {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 900;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .menu-icon { font-size: 2.8rem; }
+  .menu-title { font-weight: 900; font-size: 1.25rem; color: var(--text-main); }
+  .menu-desc { font-size: 0.9rem; color: var(--text-muted); font-weight: 700; }
+
+  /* Piece Picker Grid */
+  .piece-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 860px;
+  }
+  .piece-card {
+    background: var(--panel-bg);
+    border: 3px solid var(--border-col);
+    border-radius: 22px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.18s, border-color 0.18s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .piece-card:hover { transform: scale(1.04); border-color: var(--accent); }
+  .piece-card svg { width: 108px; height: 108px; }
+  .piece-card-name { font-weight: 900; font-size: 1.25rem; color: var(--text-main); }
+  .piece-card-rule { font-size: 0.88rem; font-weight: 800; color: var(--accent); }
+
+  /* Focused Board Workspace */
+  .board-workspace {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .board-frame {
+    width: min(520px, 88vw);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+  }
+
+  .chess-board {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    border: 6px solid #292524;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+  }
+  .chess-board.grid-4 { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); }
+  .chess-board.grid-8 { grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); }
+
+  .sq {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: #1e293b;
+  }
+  .sq.light { background: var(--sq-light); }
+  .sq.dark { background: var(--sq-dark); }
+  .sq.selected { background: #fde047 !important; }
+  .sq.found-good { background: #4ade80 !important; box-shadow: inset 0 0 0 4px #15803d; }
+  .sq.glow-hint { background: #86efac !important; box-shadow: inset 0 0 0 5px #16a34a; animation: pulseHint 0.9s infinite; }
+  .sq.wrong-flash { background: #f87171 !important; animation: shake 0.35s; }
+
+  .sq svg {
+    width: 86%;
+    height: 86%;
+    pointer-events: none;
+    filter: drop-shadow(0 3px 3px rgba(0,0,0,0.45));
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .sq.selected svg { transform: scale(1.16) translateY(-3px); }
+
+  .sq.move-dot::after {
+    content: "";
+    width: 34%;
+    height: 34%;
+    border-radius: 50%;
+    background: #2563eb;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  }
+  .sq.star-target::after {
+    content: "⭐";
+    font-size: clamp(1.6rem, 4.5vw, 2.5rem);
+  }
+  .sq.blocked-x::after {
+    content: "🚫";
+    font-size: clamp(1.3rem, 3.5vw, 1.9rem);
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+  }
+
+  @keyframes pulseHint { 0%,100% { transform: scale(1); } 50% { transform: scale(0.94); } }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+  /* Right Instruction Panel (Toddler-Friendly Big Text & Buttons) */
+  .focus-panel {
+    flex: 1;
+    max-width: 440px;
+    min-width: 280px;
+    background: var(--panel-bg);
+    border: 3px solid var(--border-col);
+    border-radius: 22px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .step-pill {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-weight: 900;
+    font-size: 0.88rem;
+    width: fit-content;
+  }
+
+  .big-heading {
+    font-weight: 900;
+    font-size: 1.45rem;
+    color: var(--text-main);
+    line-height: 1.25;
+  }
+
+  .simple-card {
+    background: var(--card-bg);
+    border: 2.5px solid var(--border-col);
+    border-radius: 16px;
+    padding: 14px;
+    font-size: 1.05rem;
+    line-height: 1.45;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .big-btn {
+    padding: 14px 18px;
+    border-radius: 16px;
+    border: none;
+    background: #10b981;
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 1.05rem;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 5px 14px rgba(16, 185, 129, 0.25);
+  }
+  .big-btn.blue { background: var(--accent); box-shadow: 0 5px 14px rgba(79, 70, 229, 0.25); }
+  .big-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .choice-list { display: flex; flex-direction: column; gap: 10px; }
+  .choice-btn {
+    padding: 13px 15px;
+    border-radius: 14px;
+    border: 2.5px solid var(--border-col);
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-weight: 800;
+    font-size: 1rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .choice-btn.correct { background: #dcfce7; border-color: #22c55e; color: #14532d; }
+  .choice-btn.wrong { background: #fee2e2; border-color: #ef4444; color: #7f1d1d; }
+
+  .tutor-bubble {
+    padding: 13px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 1rem;
+    background: #fef3c7;
+    color: #92400e;
+    border: 2.5px solid #f59e0b;
+    text-align: center;
+  }
+
+  @media (max-width: 780px), (orientation: portrait) {
+    body { padding: 4px; }
+    .app-shell { padding: 10px; border-radius: 16px; }
+    .piece-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .piece-card svg { width: 85px; height: 85px; }
+    .board-workspace { flex-direction: column; gap: 12px; }
+    .board-frame { width: 92vw; max-width: 390px; }
+    .focus-panel { width: 100%; max-width: none; min-width: 0; padding: 14px; }
+  }
+</style>
+</head>
+<body data-theme="default">
+
+<div class="app-shell">
+  <div class="top-bar">
+    <div class="left-nav">
+      <button class="back-btn" id="btnBack" onclick="goBack()" style="display:none;">← Back</button>
+      <span class="screen-title" id="screenTitle">♟️ Chess Thinking Lab</span>
+    </div>
+    <div class="right-tools">
+      <select class="theme-select" id="themeSelect" onchange="setTheme(this.value)">
+        <option value="default">Sunny Meadow</option>
+        <option value="ocean">Ocean Blue</option>
+        <option value="wood">Classic Wood</option>
+        <option value="dark">Night Space</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="stage" id="stage"></div>
+</div>
+
+<script>
+  window.isSimulating = false;
+  let lastMouseSend = 0;
+  let audioCtx = null;
+
+  function playTone(type) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type === 'bad' ? 'sawtooth' : 'sine';
+      osc.frequency.setValueAtTime(type === 'bad' ? 165 : (type === 'win' ? 840 : 540), audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.25);
+    } catch (e) {}
+  }
+
+  function syncClick(selector) {
+    if (!window.isSimulating) {
+      window.parent.postMessage({
+        type: 'IFRAME_ACTION_TRIGGERED',
+        payload: { type: 'UNIVERSAL_CLICK', selector: selector }
+      }, '*');
+    }
+  }
+
+  window.addEventListener('message', (ev) => {
+    if (ev.data?.type === 'EXECUTE_UNIVERSAL_ACTION') {
+      const act = ev.data.action;
+      if (!act) return;
+      window.isSimulating = true;
+      if (act.type === 'UNIVERSAL_CLICK' && act.selector) {
+        const el = document.querySelector(act.selector);
+        if (el) el.click();
+      }
+      setTimeout(() => { window.isSimulating = false; }, 40);
+    }
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (window.isSimulating) return;
+    const now = Date.now();
+    if (now - lastMouseSend > 120) {
+      lastMouseSend = now;
+      window.parent.postMessage({
+        type: 'IFRAME_MOUSE_TRACK',
+        pctX: (e.clientX / window.innerWidth) * 100,
+        pctY: (e.clientY / window.innerHeight) * 100
+      }, '*');
+    }
+  });
+
+  function setTheme(val) {
+    document.body.setAttribute('data-theme', val);
+  }
+
+  /* Classic Staunton Chess Coin SVGs */
+  function getChessCoinSVG(code) {
+    const isW = code[0] === 'w';
+    const type = code[1];
+    const bodyFill = isW ? '#fffbeb' : '#1e293b';
+    const trimFill = isW ? '#f59e0b' : '#94a3b8';
+    const strokeCol = isW ? '#1e293b' : '#f8fafc';
+
+    const coins = {
+      K: `<svg viewBox="0 0 100 100">
+            <rect x="46.5" y="5" width="7" height="17" rx="1.5" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2.5"/>
+            <rect x="41" y="10" width="18" height="6" rx="1.5" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2.5"/>
+            <path d="M32 30 C32 21 68 21 68 30 L64 42 L36 42 Z" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5" stroke-linejoin="round"/>
+            <rect x="33" y="41" width="34" height="6" rx="3" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2.5"/>
+            <path d="M36 47 L64 47 L70 76 L30 76 Z" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5" stroke-linejoin="round"/>
+            <rect x="24" y="76" width="52" height="8" rx="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="3"/>
+            <rect x="20" y="84" width="60" height="9" rx="4.5" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5"/>
+          </svg>`,
+      Q: `<svg viewBox="0 0 100 100">
+            <polygon points="20,25 32,42 38,18 50,40 62,18 68,42 80,25 70,48 30,48" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5" stroke-linejoin="round"/>
+            <circle cx="20" cy="21" r="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2"/>
+            <circle cx="38" cy="14" r="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2"/>
+            <circle cx="50" cy="12" r="4.5" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2"/>
+            <circle cx="62" cy="14" r="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2"/>
+            <circle cx="80" cy="21" r="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2"/>
+            <path d="M33 48 L67 48 L72 76 L28 76 Z" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5" stroke-linejoin="round"/>
+            <rect x="24" y="76" width="52" height="8" rx="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="3"/>
+            <rect x="20" y="84" width="60" height="9" rx="4.5" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5"/>
+          </svg>`,
+      R: `<svg viewBox="0 0 100 100">
+            <path d="M26 16 L26 32 L36 32 L36 16 L45 16 L45 32 L55 32 L55 16 L64 16 L64 32 L74 32 L74 16 L74 38 L66 44 L70 76 L30 76 L34 44 L26 38 Z" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5" stroke-linejoin="round"/>
+            <line x1="33" y1="44" x2="67" y2="44" stroke="${strokeCol}" stroke-width="3"/>
+            <rect x="24" y="76" width="52" height="8" rx="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="3"/>
+            <rect x="20" y="84" width="60" height="9" rx="4.5" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5"/>
+          </svg>`,
+      B: `<svg viewBox="0 0 100 100">
+            <circle cx="50" cy="12" r="5.5" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2.5"/>
+            <path d="M50 18 C33 30 31 46 37 56 L63 56 C69 46 67 30 50 18 Z" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5" stroke-linejoin="round"/>
+            <line x1="43" y1="29" x2="55" y2="41" stroke="${trimFill}" stroke-width="4" stroke-linecap="round"/>
+            <rect x="34" y="55" width="32" height="6" rx="3" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2.5"/>
+            <path d="M36 61 L64 61 L69 76 L31 76 Z" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5" stroke-linejoin="round"/>
+            <rect x="24" y="76" width="52" height="8" rx="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="3"/>
+            <rect x="20" y="84" width="60" height="9" rx="4.5" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5"/>
+          </svg>`,
+      N: `<svg viewBox="0 0 100 100">
+            <path d="M32 76 L68 76 L66 52 C74 42 74 22 56 14 L48 7 L44 19 C30 23 22 36 27 46 L44 43 L34 58 Z" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5" stroke-linejoin="round"/>
+            <path d="M61 18 Q70 32 65 50" stroke="${trimFill}" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+            <circle cx="42" cy="29" r="3.2" fill="${strokeCol}"/>
+            <rect x="24" y="76" width="52" height="8" rx="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="3"/>
+            <rect x="20" y="84" width="60" height="9" rx="4.5" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5"/>
+          </svg>`,
+      P: `<svg viewBox="0 0 100 100">
+            <circle cx="50" cy="27" r="13" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5"/>
+            <rect x="36" y="40" width="28" height="6" rx="3" fill="${trimFill}" stroke="${strokeCol}" stroke-width="2.5"/>
+            <path d="M38 46 L62 46 L68 76 L32 76 Z" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5" stroke-linejoin="round"/>
+            <rect x="26" y="76" width="48" height="8" rx="4" fill="${trimFill}" stroke="${strokeCol}" stroke-width="3"/>
+            <rect x="22" y="84" width="56" height="9" rx="4.5" fill="${bodyFill}" stroke="${strokeCol}" stroke-width="3.5"/>
+          </svg>`
+    };
+    return coins[type] || '';
+  }
+
+  /* LEVEL 0: 4x4 BOARD DISCOVERY TASKS (Ages 3-4) */
+  const L0_TASKS = [
+    {
+      title: 'Step 1: Light Squares',
+      prompt: 'Tap 4 Light (Yellow) squares on the board!',
+      type: 'light',
+      targetCount: 4
+    },
+    {
+      title: 'Step 2: Dark Squares',
+      prompt: 'Tap 4 Dark (Green) squares on the board!',
+      type: 'dark',
+      targetCount: 4
+    },
+    {
+      title: 'Step 3: Top Row',
+      prompt: 'Tap all 4 squares on the TOP row!',
+      type: 'top',
+      targetCount: 4
+    },
+    {
+      title: 'Step 4: Bottom Row',
+      prompt: 'Tap all 4 squares on the BOTTOM row!',
+      type: 'bottom',
+      targetCount: 4
+    },
+    {
+      title: 'Step 5: Count 1, 2, 3, 4!',
+      prompt: 'Tap the squares in order: 1 → 2 → 3 → 4 to reach the ⭐ Star!',
+      type: 'count',
+      targetCount: 4
+    }
+  ];
+
+  /* LEVEL 2: WATCH -> TRY -> WHY WRONG -> REMEMBER (Ages 3-4 English) */
+  const PIECE_LESSONS = {
+    R: {
+      name: 'Rook',
+      shortRule: 'Straight lines only',
+      story: 'The Rook drives like a train on straight tracks: up, down, left, or right!',
+      start: [4, 2],
+      demoPath: [[4, 2], [4, 5], [1, 5], [1, 2], [4, 2]],
+      wrongReasons: {
+        diagonal: 'Oops! The Rook cannot go diagonally. It only goes straight!',
+        jump: 'Oops! The Rook only travels in straight lines (+ shape).'
+      },
+      quiz: {
+        q: 'How does the Rook move?',
+        opts: ['Straight lines only', 'In a circle'],
+        ans: 0
+      }
+    },
+    B: {
+      name: 'Bishop',
+      shortRule: 'Diagonal lines only',
+      story: 'The Bishop slides across corners like an X! It stays on its own square color.',
+      start: [4, 4],
+      demoPath: [[4, 4], [2, 6], [4, 4], [6, 2], [4, 4]],
+      wrongReasons: {
+        straight: 'Oops! The Bishop cannot go straight. It slides diagonally across corners!',
+        jump: 'Oops! Follow the diagonal corners (X shape).'
+      },
+      quiz: {
+        q: 'How does the Bishop move?',
+        opts: ['Diagonal lines only', 'Straight up and down'],
+        ans: 0
+      }
+    },
+    K: {
+      name: 'King',
+      shortRule: 'One step any way',
+      story: 'The King takes tiny royal baby-steps: just 1 square in any direction!',
+      start: [4, 4],
+      demoPath: [[4, 4], [3, 4], [3, 5], [4, 5], [4, 4]],
+      wrongReasons: {
+        far: 'Oops! That is too far. The King only takes 1 step at a time!',
+        jump: 'Oops! Just 1 step next to the King.'
+      },
+      quiz: {
+        q: 'How many steps can the King take?',
+        opts: ['1 step in any direction', '5 steps at once'],
+        ans: 0
+      }
+    },
+    Q: {
+      name: 'Queen',
+      shortRule: 'Straight and diagonal',
+      story: 'The Queen is super strong! She can go straight OR diagonally.',
+      start: [4, 3],
+      demoPath: [[4, 3], [4, 6], [1, 3], [4, 3]],
+      wrongReasons: {
+        knight: 'Oops! The Queen goes straight or diagonally, not like a horse jump!',
+        jump: 'Oops! Try a straight line or a diagonal corner.'
+      },
+      quiz: {
+        q: 'Where can the Queen move?',
+        opts: ['Straight and diagonal', 'Only 1 step forward'],
+        ans: 0
+      }
+    },
+    N: {
+      name: 'Knight',
+      shortRule: 'L-shaped jump',
+      story: 'The Knight jumps like a horse: 2 steps straight and 1 step sideways (L-shape)!',
+      start: [4, 4],
+      demoPath: [[4, 4], [2, 5], [4, 4], [3, 2], [4, 4]],
+      wrongReasons: {
+        line: 'Oops! The Knight does not slide in lines. Count 2 steps + 1 sideways (L-shape)!',
+        jump: 'Oops! Jump in an L-shape to a blue dot.'
+      },
+      quiz: {
+        q: 'What shape does the Knight jump in?',
+        opts: ['An L-shape', 'A straight line'],
+        ans: 0
+      }
+    },
+    P: {
+      name: 'Pawn',
+      shortRule: 'Forward 1 step',
+      story: 'The Pawn marches straight forward 1 step at a time—never backward!',
+      start: [6, 3],
+      demoPath: [[6, 3], [5, 3], [4, 3]],
+      wrongReasons: {
+        back: 'Oops! Pawns never walk backward. March straight forward!',
+        side: 'Oops! Pawns march straight forward (1 step).'
+      },
+      quiz: {
+        q: 'Which way does the Pawn march?',
+        opts: ['Straight forward', 'Backward'],
+        ans: 0
+      }
+    }
+  };
+
+  /* LEVEL 3: RULES & BLOCKERS */
+  const RULE_TESTS = [
+    {
+      title: 'Can the Rook jump over a friend?',
+      prompt: 'A Pawn stands in front of the Rook. Can the Rook jump over to reach the ⭐ Star?',
+      pieces: { '4,1': 'wR', '4,4': 'wP' },
+      star: [4, 7],
+      blocked: [4, 4],
+      opts: ['No! The Rook stops before the Pawn', 'Yes! The Rook jumps over'],
+      ans: 0,
+      explain: 'Wonderful! Only the Knight can jump. The Rook must stop.'
+    },
+    {
+      title: 'Can the Rook go diagonally?',
+      prompt: 'The ⭐ Star is on a corner diagonal. Can the Rook slide there?',
+      pieces: { '5,2': 'wR' },
+      star: [2, 5],
+      blocked: null,
+      opts: ['No! Rooks go straight only', 'Yes! Rooks go diagonally'],
+      ans: 0,
+      explain: 'Great job! Rooks only travel on straight roads.'
+    }
+  ];
+
+  /* LEVEL 4: BRAIN CHALLENGES */
+  const CHALLENGES = [
+    {
+      title: 'Problem 1: Find the Rook’s Path',
+      prompt: 'Rooky is here. Tap the ⭐ Star along a straight road!',
+      pieces: { '5,1': 'wR' },
+      activeSq: [5, 1],
+      star: [5, 6],
+      winTo: [5, 6],
+      hint: 'Go straight across to the ⭐ Star!'
+    },
+    {
+      title: 'Problem 2: Stop Before the Blocker',
+      prompt: 'A friend blocks the Bishop. Tap the glowing green square right before the Pawn!',
+      pieces: { '6,1': 'wB', '3,4': 'wP' },
+      activeSq: [6, 1],
+      star: [4, 3],
+      winTo: [4, 3],
+      hint: 'Stop 1 square diagonally before the Pawn.'
+    },
+    {
+      title: 'Problem 3: The Knight’s Jump',
+      prompt: 'Jump the Knight in an L-shape to land on the ⭐ Star!',
+      pieces: { '5,3': 'wN', '4,3': 'wP', '4,4': 'wP' },
+      activeSq: [5, 3],
+      star: [3, 4],
+      winTo: [3, 4],
+      hint: 'Count 2 up and 1 right!'
+    },
+    {
+      title: 'Problem 4: Pawn Diagonal Capture',
+      prompt: 'An enemy Knight stands diagonally ahead. Tap the Knight to capture it!',
+      pieces: { '5,3': 'wP', '4,3': 'bR', '4,4': 'bN' },
+      activeSq: [5, 3],
+      star: [4, 4],
+      winTo: [4, 4],
+      hint: 'Pawns capture 1 step diagonally forward!'
+    }
+  ];
+
+  /* State */
+  let view = 'HOME';
+  let l0Step = 0;
+  let l0Found = [];
+  let activePiece = 'R';
+  let l2Stage = 'WATCH'; // 'WATCH' -> 'TRY' -> 'QUIZ'
+  let wrongCount = 0;
+  let showGlowHint = false;
+  let demoTimer = null;
+
+  let ruleIdx = 0;
+  let probIdx = 0;
+  let board = [];
+  let selectedSq = null;
+  let validMoves = [];
+  let aiTurn = 'w';
+
+  function emptyBoard() {
+    return Array.from({ length: 8 }, () => Array(8).fill(null));
+  }
+
+  function clearDemoTimer() {
+    if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+  }
+
+  function setHeader(title, showBack) {
+    document.getElementById('screenTitle').innerText = title;
+    document.getElementById('btnBack').style.display = showBack ? 'inline-block' : 'none';
+  }
+
+  function goBack() {
+    syncClick('#btnBack');
+    clearDemoTimer();
+    if (view === 'L2_BOARD') {
+      openLevel2Picker();
+    } else {
+      openHome();
+    }
+  }
+
+  /* HOME MENU */
+  function openHome() {
+    view = 'HOME';
+    clearDemoTimer();
+    setHeader('♟️ Chess Thinking Lab', false);
+    document.getElementById('stage').innerHTML = `
+      <div class="menu-grid">
+        <div class="menu-card" id="m-l0" onclick="openLevel0()">
+          <span class="menu-badge">Level 0 • Start Here</span>
+          <div class="menu-icon">🟨</div>
+          <div class="menu-title">4×4 Board Discovery</div>
+          <div class="menu-desc">Light & dark squares, top, bottom, and counting 1-2-3-4.</div>
+        </div>
+        <div class="menu-card" id="m-l1" onclick="openLevel1()">
+          <span class="menu-badge">Level 1</span>
+          <div class="menu-icon">👑</div>
+          <div class="menu-title">Meet the Chess Coins</div>
+          <div class="menu-desc">Tap each coin to see its shape and name.</div>
+        </div>
+        <div class="menu-card" id="m-l2" onclick="openLevel2Picker()">
+          <span class="menu-badge">Level 2</span>
+          <div class="menu-icon">👀</div>
+          <div class="menu-title">Watch & Try Each Piece</div>
+          <div class="menu-desc">Watch the demo move first, then try it yourself!</div>
+        </div>
+        <div class="menu-card" id="m-l3" onclick="openLevel3()">
+          <span class="menu-badge">Level 3</span>
+          <div class="menu-icon">🚧</div>
+          <div class="menu-title">Rules & Blockers</div>
+          <div class="menu-desc">Learn what blocks a piece on the road.</div>
+        </div>
+        <div class="menu-card" id="m-l4" onclick="openLevel4()">
+          <span class="menu-badge">Level 4</span>
+          <div class="menu-icon">⭐</div>
+          <div class="menu-title">Brain Challenges</div>
+          <div class="menu-desc">Find the right square and solve 4 puzzles.</div>
+        </div>
+        <div class="menu-card" id="m-l5" onclick="openLevel5()">
+          <span class="menu-badge">Level 5</span>
+          <div class="menu-icon">🤖</div>
+          <div class="menu-title">Mini Chess Game</div>
+          <div class="menu-desc">Play with a friendly AI Tutor.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  /* LEVEL 0: 4x4 BOARD DISCOVERY */
+  function openLevel0() {
+    syncClick('#m-l0');
+    view = 'L0_BOARD';
+    l0Step = 0;
+    loadL0Step();
+  }
+
+  function loadL0Step() {
+    const task = L0_TASKS[l0Step];
+    l0Found = [];
+    setHeader('Level 0: 4×4 Board Discovery', true);
+
+    document.getElementById('stage').innerHTML = `
+      <div class="board-workspace">
+        <div class="board-frame"><div class="chess-board grid-4" id="board4"></div></div>
+        <div class="focus-panel">
+          <span class="step-pill">${task.title}</span>
+          <div class="big-heading">${task.prompt}</div>
+          <div class="tutor-bubble" id="l0Status">Found: 0 of ${task.targetCount}</div>
+          <button class="big-btn blue" id="btnL0Next" onclick="nextL0Step()" style="display:none;">Next Step ➔</button>
+        </div>
+      </div>
+    `;
+    draw4x4Board();
+  }
+
+  function draw4x4Board() {
+    const el = document.getElementById('board4');
+    if (!el) return;
+    el.innerHTML = '';
+    const task = L0_TASKS[l0Step];
+
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const sq = document.createElement('div');
+        const isLight = (r + c) % 2 === 0;
+        sq.className = 'sq ' + (isLight ? 'light' : 'dark');
+        sq.id = `b4-${r}-${c}`;
+
+        const key = `${r},${c}`;
+        if (l0Found.includes(key)) {
+          sq.classList.add('found-good');
+          if (task.type === 'count') sq.innerText = l0Found.indexOf(key) + 1;
+          else sq.innerText = '⭐';
+        } else if (task.type === 'count' && r === 2 && c === l0Found.length) {
+          if (l0Found.length === 3) sq.classList.add('star-target');
+          else sq.classList.add('glow-hint');
+        }
+
+        sq.onclick = () => on4x4Click(r, c);
+        el.appendChild(sq);
+      }
+    }
+  }
+
+  function on4x4Click(r, c) {
+    syncClick(`#b4-${r}-${c}`);
+    const task = L0_TASKS[l0Step];
+    const key = `${r},${c}`;
+    if (l0Found.includes(key)) return;
+
+    let valid = false;
+    if (task.type === 'light' && (r + c) % 2 === 0) valid = true;
+    if (task.type === 'dark' && (r + c) % 2 !== 0) valid = true;
+    if (task.type === 'top' && r === 0) valid = true;
+    if (task.type === 'bottom' && r === 3) valid = true;
+    if (task.type === 'count' && r === 2 && c === l0Found.length) valid = true;
+
+    if (valid) {
+      l0Found.push(key);
+      playTone(l0Found.length >= task.targetCount ? 'win' : 'move');
+      draw4x4Board();
+      if (l0Found.length >= task.targetCount) {
+        document.getElementById('l0Status').innerText = '🎉 Great job! You did it!';
+        document.getElementById('btnL0Next').style.display = 'block';
+      } else {
+        document.getElementById('l0Status').innerText = `Found: ${l0Found.length} of ${task.targetCount}`;
+      }
+    } else {
+      playTone('bad');
+      const sqEl = document.getElementById(`b4-${r}-${c}`);
+      if (sqEl) { sqEl.classList.add('wrong-flash'); setTimeout(() => sqEl.classList.remove('wrong-flash'), 350); }
+      document.getElementById('l0Status').innerText = '❌ Try another square!';
+    }
+  }
+
+  function nextL0Step() {
+    syncClick('#btnL0Next');
+    l0Step = (l0Step + 1) % L0_TASKS.length;
+    loadL0Step();
+  }
+
+  /* LEVEL 1: MEET THE CHESS COINS */
+  function openLevel1() {
+    syncClick('#m-l1');
+    view = 'L1_CARDS';
+    setHeader('Level 1: Meet the Chess Coins', true);
+    const order = ['K', 'Q', 'R', 'B', 'N', 'P'];
+    const cards = order.map(k => `
+      <div class="piece-card" id="l1-c-${k}" onclick="tapCoinCard('${k}')">
+        ${getChessCoinSVG('w' + k)}
+        <div class="piece-card-name">${PIECE_LESSONS[k].name}</div>
+        <div class="piece-card-rule">${PIECE_LESSONS[k].shortRule}</div>
+      </div>
+    `).join('');
+
+    document.getElementById('stage').innerHTML = `
+      <div class="piece-grid">${cards}</div>
+      <div class="tutor-bubble" id="l1Msg" style="margin-top:14px; max-width:860px; width:100%;">
+        Tap any chess coin to hear its story!
+      </div>
+    `;
+  }
+
+  function tapCoinCard(code) {
+    syncClick('#l1-c-' + code);
+    playTone('move');
+    const p = PIECE_LESSONS[code];
+    document.getElementById('l1Msg').innerHTML = `<strong>${p.name}:</strong> ${p.story}`;
+  }
+
+  /* LEVEL 2 STEP A: PICK ONE PIECE */
+  function openLevel2Picker() {
+    syncClick('#m-l2');
+    clearDemoTimer();
+    view = 'L2_PICKER';
+    setHeader('Level 2: Choose One Piece', true);
+    const order = ['R', 'B', 'K', 'Q', 'N', 'P'];
+    const cards = order.map(k => `
+      <div class="piece-card" id="l2-p-${k}" onclick="startPiecePipeline('${k}')">
+        ${getChessCoinSVG('w' + k)}
+        <div class="piece-card-name">${PIECE_LESSONS[k].name}</div>
+        <div class="piece-card-rule">Tap to Learn ➔</div>
+      </div>
+    `).join('');
+
+    document.getElementById('stage').innerHTML = `<div class="piece-grid">${cards}</div>`;
+  }
+
+  /* LEVEL 2 STEP B: WATCH -> TRY -> WHY WRONG -> REMEMBER */
+  function startPiecePipeline(code) {
+    syncClick('#l2-p-' + code);
+    clearDemoTimer();
+    activePiece = code;
+    view = 'L2_BOARD';
+    l2Stage = 'WATCH';
+    wrongCount = 0;
+    showGlowHint = false;
+
+    const info = PIECE_LESSONS[code];
+    setHeader('Level 2: ' + info.name, true);
+
+    board = emptyBoard();
+    const [sr, sc] = info.start;
+    board[sr][sc] = 'w' + code;
+    selectedSq = [sr, sc];
+    validMoves = [];
+
+    renderLevel2UI();
+    runWatchAnimation();
+  }
+
+  function runWatchAnimation() {
+    clearDemoTimer();
+    const info = PIECE_LESSONS[activePiece];
+    const path = info.demoPath;
+    let step = 0;
+    l2Stage = 'WATCH';
+    validMoves = [];
+    renderLevel2UI();
+
+    demoTimer = setInterval(() => {
+      step++;
+      if (step >= path.length) {
+        clearDemoTimer();
+        // Automatically transition to Step 2: TRY
+        l2Stage = 'TRY';
+        const [cr, cc] = selectedSq;
+        validMoves = getLegalMoves(cr, cc, board);
+        renderLevel2UI();
+        return;
+      }
+      const [prevR, prevC] = path[step - 1];
+      const [nextR, nextC] = path[step];
+      board[prevR][prevC] = null;
+      board[nextR][nextC] = 'w' + activePiece;
+      selectedSq = [nextR, nextC];
+      playTone('move');
+      draw8x8Board('L2');
+    }, 650);
+  }
+
+  function replayWatchDemo() {
+    syncClick('#btnWatchAgain');
+    const info = PIECE_LESSONS[activePiece];
+    board = emptyBoard();
+    const [sr, sc] = info.start;
+    board[sr][sc] = 'w' + activePiece;
+    selectedSq = [sr, sc];
+    runWatchAnimation();
+  }
+
+  function openLevel2QuizStep() {
+    syncClick('#btnToQuiz');
+    l2Stage = 'QUIZ';
+    renderLevel2UI();
+  }
+
+  function renderLevel2UI() {
+    const info = PIECE_LESSONS[activePiece];
+    let panelContent = '';
+
+    if (l2Stage === 'WATCH') {
+      panelContent = `
+        <span class="step-pill">Step 1 of 3 • Watch First</span>
+        <div class="big-heading">Watch how the ${info.name} moves!</div>
+        <div class="simple-card">${info.story}</div>
+        <div class="tutor-bubble">👀 Watch the board closely...</div>
+      `;
+    } else if (l2Stage === 'TRY') {
+      panelContent = `
+        <span class="step-pill">Step 2 of 3 • Your Turn to Try</span>
+        <div class="big-heading">Tap any blue dot to move the ${info.name}!</div>
+        <div class="simple-card">${info.story}</div>
+        <div class="tutor-bubble" id="l2Feedback">Tap a blue dot—or tap another square to see what happens!</div>
+        <button class="big-btn blue" id="btnWatchAgain" onclick="replayWatchDemo()">▶ Watch Demo Again</button>
+        <button class="big-btn" id="btnToQuiz" onclick="openLevel2QuizStep()">Step 3: Quick Question ➔</button>
+      `;
+    } else {
+      const opts = info.quiz.opts.map((o, i) =>
+        `<button class="choice-btn" id="l2-qz-${i}" onclick="checkL2Quiz(${i})">${o}</button>`
+      ).join('');
+      panelContent = `
+        <span class="step-pill">Step 3 of 3 • Remember</span>
+        <div class="big-heading">${info.quiz.q}</div>
+        <div class="choice-list">${opts}</div>
+        <div class="tutor-bubble" id="l2Feedback">Choose the right answer!</div>
+      `;
+    }
+
+    document.getElementById('stage').innerHTML = `
+      <div class="board-workspace">
+        <div class="board-frame"><div class="chess-board grid-8" id="board8"></div></div>
+        <div class="focus-panel">${panelContent}</div>
+      </div>
+    `;
+    draw8x8Board('L2');
+  }
+
+  function checkL2Quiz(idx) {
+    syncClick('#l2-qz-' + idx);
+    const quiz = PIECE_LESSONS[activePiece].quiz;
+    const btns = document.querySelectorAll('.choice-btn');
+    if (idx === quiz.ans) {
+      playTone('win');
+      btns[idx].classList.add('correct');
+      document.getElementById('l2Feedback').innerText = '⭐ Wonderful! Tap "← Back" to try another piece!';
+    } else {
+      playTone('bad');
+      btns[idx].classList.add('wrong');
+      document.getElementById('l2Feedback').innerText = '❌ Try again! Remember: ' + PIECE_LESSONS[activePiece].shortRule;
+    }
+  }
+
+  /* LEVEL 3: RULES & BLOCKERS */
+  function openLevel3() {
+    syncClick('#m-l3');
+    view = 'L3_BOARD';
+    setHeader('Level 3: Rules & Blockers', true);
+    renderL3();
+  }
+
+  function renderL3() {
+    const sc = RULE_TESTS[ruleIdx];
+    board = emptyBoard();
+    Object.entries(sc.pieces).forEach(([k, v]) => {
+      const [r, c] = k.split(',').map(Number);
+      board[r][c] = v;
+    });
+    selectedSq = null;
+    validMoves = [];
+
+    const opts = sc.opts.map((o, i) =>
+      `<button class="choice-btn" id="l3-c-${i}" onclick="checkL3(${i})">${o}</button>`
+    ).join('');
+
+    document.getElementById('stage').innerHTML = `
+      <div class="board-workspace">
+        <div class="board-frame"><div class="chess-board grid-8" id="board8"></div></div>
+        <div class="focus-panel">
+          <span class="step-pill">Rule ${ruleIdx + 1} of ${RULE_TESTS.length}</span>
+          <div class="big-heading">${sc.title}</div>
+          <div class="simple-card">${sc.prompt}</div>
+          <div class="choice-list">${opts}</div>
+          <div class="tutor-bubble" id="l3Feedback">Tap your answer!</div>
+          <button class="big-btn blue" id="btnNextL3" onclick="nextL3()" style="display:none;">Next Rule ➔</button>
+        </div>
+      </div>
+    `;
+    draw8x8Board('L3');
+  }
+
+  function checkL3(idx) {
+    syncClick('#l3-c-' + idx);
+    const sc = RULE_TESTS[ruleIdx];
+    const btns = document.querySelectorAll('.choice-btn');
+    if (idx === sc.ans) {
+      playTone('win');
+      btns[idx].classList.add('correct');
+      document.getElementById('l3Feedback').innerText = '🎉 ' + sc.explain;
+      document.getElementById('btnNextL3').style.display = 'block';
+    } else {
+      playTone('bad');
+      btns[idx].classList.add('wrong');
+      document.getElementById('l3Feedback').innerText = '❌ Look at the blocker on the board and try again!';
+    }
+  }
+
+  function nextL3() {
+    syncClick('#btnNextL3');
+    ruleIdx = (ruleIdx + 1) % RULE_TESTS.length;
+    renderL3();
+  }
+
+  /* LEVEL 4: BRAIN CHALLENGES (Locked until solved + 2-strike visual hint) */
+  function openLevel4() {
+    syncClick('#m-l4');
+    view = 'L4_BOARD';
+    setHeader('Level 4: Brain Challenges', true);
+    renderL4();
+  }
+
+  function renderL4() {
+    const ch = CHALLENGES[probIdx];
+    wrongCount = 0;
+    showGlowHint = false;
+    board = emptyBoard();
+    Object.entries(ch.pieces).forEach(([k, v]) => {
+      const [r, c] = k.split(',').map(Number);
+      board[r][c] = v;
+    });
+    selectedSq = ch.activeSq;
+    validMoves = getLegalMoves(ch.activeSq[0], ch.activeSq[1], board);
+
+    document.getElementById('stage').innerHTML = `
+      <div class="board-workspace">
+        <div class="board-frame"><div class="chess-board grid-8" id="board8"></div></div>
+        <div class="focus-panel">
+          <span class="step-pill">Challenge ${probIdx + 1} of ${CHALLENGES.length}</span>
+          <div class="big-heading">${ch.title}</div>
+          <div class="simple-card">${ch.prompt}</div>
+          <div class="tutor-bubble" id="l4Feedback">Tap the ⭐ Star square on the board!</div>
+          <button class="big-btn" id="btnNextL4" onclick="nextL4()" style="display:none;">Next Challenge ➔</button>
+        </div>
+      </div>
+    `;
+    draw8x8Board('L4');
+  }
+
+  function nextL4() {
+    syncClick('#btnNextL4');
+    probIdx = (probIdx + 1) % CHALLENGES.length;
+    renderL4();
+  }
+
+  /* LEVEL 5: MINI CHESS GAME WITH FRIENDLY AI TUTOR */
+  function openLevel5() {
+    syncClick('#m-l5');
+    view = 'L5_GAME';
+    setHeader('Level 5: Mini Chess Game', true);
+    startL5();
+  }
+
+  function startL5() {
+    board = emptyBoard();
+    const r0 = ['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'];
+    const r7 = ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR'];
+    for (let c = 0; c < 8; c++) {
+      board[0][c] = r0[c];
+      board[1][c] = 'bP';
+      board[6][c] = 'wP';
+      board[7][c] = r7[c];
+    }
+    aiTurn = 'w';
+    selectedSq = null;
+    validMoves = [];
+
+    document.getElementById('stage').innerHTML = `
+      <div class="board-workspace">
+        <div class="board-frame"><div class="chess-board grid-8" id="board8"></div></div>
+        <div class="focus-panel">
+          <span class="step-pill">Friendly AI Tutor</span>
+          <div class="big-heading">Your Turn (White)</div>
+          <div class="simple-card">Tap any White piece on the bottom, then tap a blue dot to move!</div>
+          <div class="tutor-bubble" id="l5Feedback">Tap a White piece to begin!</div>
+          <button class="big-btn blue" id="btnL5Hint" onclick="hintL5()">💡 Show Hint</button>
+          <button class="big-btn" id="btnL5Reset" onclick="syncClick('#btnL5Reset'); startL5();">↺ Restart Game</button>
+        </div>
+      </div>
+    `;
+    draw8x8Board('L5');
+  }
+
+  function hintL5() {
+    syncClick('#btnL5Hint');
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        if (board[r][c] && board[r][c][0] === 'w') {
+          const moves = getLegalMoves(r, c, board);
+          const cap = moves.find(([mr, mc]) => board[mr][mc] && board[mr][mc][0] === 'b');
+          if (cap) {
+            selectedSq = [r, c];
+            validMoves = moves;
+            draw8x8Board('L5');
+            document.getElementById('l5Feedback').innerText = '💡 Your ' + PIECE_LESSONS[board[r][c][1]].name + ' can capture an enemy!';
+            return;
+          }
+        }
+      }
+    }
+    document.getElementById('l5Feedback').innerText = '💡 Move a Pawn forward or jump your Knight!';
+  }
+
+  function aiMoveL5() {
+    const moves = [];
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        if (board[r][c] && board[r][c][0] === 'b') {
+          getLegalMoves(r, c, board).forEach(([mr, mc]) => {
+            moves.push({ from: [r, c], to: [mr, mc], cap: !!board[mr][mc] });
+          });
+        }
+      }
+    }
+    if (!moves.length) return;
+    const pick = moves[Math.floor(Math.random() * moves.length)];
+    const p = board[pick.from[0]][pick.from[1]];
+    board[pick.to[0]][pick.to[1]] = p;
+    board[pick.from[0]][pick.from[1]] = null;
+    aiTurn = 'w';
+    draw8x8Board('L5');
+    document.getElementById('l5Feedback').innerText = '🤖 Tutor moved ' + PIECE_LESSONS[p[1]].name + '! Your turn.';
+  }
+
+  /* 8x8 BOARD RENDERER & INTERACTION */
+  function draw8x8Board(mode) {
+    const el = document.getElementById('board8');
+    if (!el) return;
+    el.innerHTML = '';
+
+    const starSq = mode === 'L3' ? RULE_TESTS[ruleIdx].star : (mode === 'L4' ? CHALLENGES[probIdx].star : null);
+    const blockedSq = mode === 'L3' ? RULE_TESTS[ruleIdx].blocked : null;
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const sq = document.createElement('div');
+        sq.className = 'sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+        sq.id = `sq-${r}-${c}`;
+
+        if (selectedSq && selectedSq[0] === r && selectedSq[1] === c) sq.classList.add('selected');
+        if (starSq && starSq[0] === r && starSq[1] === c) {
+          sq.classList.add('star-target');
+          if (showGlowHint) sq.classList.add('glow-hint');
+        }
+        if (blockedSq && blockedSq[0] === r && blockedSq[1] === c) sq.classList.add('blocked-x');
+
+        const isLegal = validMoves.some(m => m[0] === r && m[1] === c);
+        if (isLegal && ((mode === 'L2' && l2Stage === 'TRY') || mode === 'L5')) {
+          sq.classList.add('move-dot');
+          if (mode === 'L2' && showGlowHint) sq.classList.add('glow-hint');
+        }
+
+        if (board[r][c]) {
+          sq.innerHTML = getChessCoinSVG(board[r][c]);
+        }
+
+        sq.onclick = () => on8x8Click(r, c, mode);
+        el.appendChild(sq);
+      }
+    }
+  }
+
+  function on8x8Click(r, c, mode) {
+    syncClick(`#sq-${r}-${c}`);
+
+    if (mode === 'L2') {
+      if (l2Stage !== 'TRY') return;
+      const isLegal = validMoves.some(m => m[0] === r && m[1] === c);
+      if (isLegal && selectedSq) {
+        board[r][c] = board[selectedSq[0]][selectedSq[1]];
+        board[selectedSq[0]][selectedSq[1]] = null;
+        selectedSq = [r, c];
+        validMoves = getLegalMoves(r, c, board);
+        wrongCount = 0;
+        showGlowHint = false;
+        playTone('win');
+        draw8x8Board('L2');
+        document.getElementById('l2Feedback').innerText = '⭐ Wonderful! You found a legal road!';
+      } else {
+        // Smart "Why Is This Move Wrong?" Feedback
+        wrongCount++;
+        if (wrongCount >= 2) showGlowHint = true;
+        playTone('bad');
+        const sqEl = document.getElementById(`sq-${r}-${c}`);
+        if (sqEl) { sqEl.classList.add('wrong-flash'); setTimeout(() => sqEl.classList.remove('wrong-flash'), 350); }
+        const reasons = PIECE_LESSONS[activePiece].wrongReasons;
+        const msg = Object.values(reasons)[0];
+        draw8x8Board('L2');
+        document.getElementById('l2Feedback').innerText = msg;
+      }
+      return;
+    }
+
+    if (mode === 'L4') {
+      const ch = CHALLENGES[probIdx];
+      if (r === ch.winTo[0] && c === ch.winTo[1]) {
+        const [sr, sc] = ch.activeSq;
+        board[r][c] = board[sr][sc];
+        board[sr][sc] = null;
+        selectedSq = [r, c];
+        validMoves = [];
+        playTone('win');
+        draw8x8Board('L4');
+        document.getElementById('l4Feedback').innerText = '⭐ Amazing! You solved it!';
+        document.getElementById('btnNextL4').style.display = 'block';
+      } else {
+        wrongCount++;
+        if (wrongCount >= 2) showGlowHint = true;
+        playTone('bad');
+        const sqEl = document.getElementById(`sq-${r}-${c}`);
+        if (sqEl) { sqEl.classList.add('wrong-flash'); setTimeout(() => sqEl.classList.remove('wrong-flash'), 350); }
+        draw8x8Board('L4');
+        document.getElementById('l4Feedback').innerText = '❌ Not that square! Hint: ' + ch.hint;
+      }
+      return;
+    }
+
+    if (mode === 'L5') {
+      if (aiTurn !== 'w') return;
+      const isLegal = validMoves.some(m => m[0] === r && m[1] === c);
+      if (selectedSq && isLegal) {
+        const moving = board[selectedSq[0]][selectedSq[1]];
+        const captured = board[r][c];
+        board[r][c] = (moving === 'wP' && r === 0) ? 'wQ' : moving;
+        board[selectedSq[0]][selectedSq[1]] = null;
+        selectedSq = null;
+        validMoves = [];
+        playTone(captured ? 'win' : 'move');
+
+        if (captured && captured[1] === 'K') {
+          draw8x8Board('L5');
+          document.getElementById('l5Feedback').innerText = '🏆 You won! Great job!';
+          return;
+        }
+
+        aiTurn = 'b';
+        draw8x8Board('L5');
+        document.getElementById('l5Feedback').innerText = '🤖 Tutor is thinking...';
+        if (!window.isSimulating) setTimeout(aiMoveL5, 650);
+        return;
+      }
+
+      if (board[r][c] && board[r][c][0] === 'w') {
+        selectedSq = [r, c];
+        validMoves = getLegalMoves(r, c, board);
+        playTone('move');
+        draw8x8Board('L5');
+      }
+    }
+  }
+
+  function getLegalMoves(r, c, b) {
+    const piece = b[r][c];
+    if (!piece) return [];
+    const color = piece[0];
+    const type = piece[1];
+    const moves = [];
+
+    const tryAdd = (nr, nc) => {
+      if (nr < 0 || nr > 7 || nc < 0 || nc > 7) return false;
+      if (!b[nr][nc]) { moves.push([nr, nc]); return true; }
+      if (b[nr][nc][0] !== color) moves.push([nr, nc]);
+      return false;
+    };
+
+    if (type === 'P') {
+      const dir = color === 'w' ? -1 : 1;
+      const startRow = color === 'w' ? 6 : 1;
+      if (r + dir >= 0 && r + dir <= 7 && !b[r + dir][c]) {
+        moves.push([r + dir, c]);
+        if (r === startRow && !b[r + 2 * dir][c]) moves.push([r + 2 * dir, c]);
+      }
+      [-1, 1].forEach(dc => {
+        const nr = r + dir, nc = c + dc;
+        if (nr >= 0 && nr <= 7 && nc >= 0 && nc <= 7 && b[nr][nc] && b[nr][nc][0] !== color) {
+          moves.push([nr, nc]);
+        }
+      });
+    }
+    if (type === 'N') {
+      [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr, dc]) => tryAdd(r + dr, c + dc));
+    }
+    if (type === 'K') {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr !== 0 || dc !== 0) tryAdd(r + dr, c + dc);
+        }
+      }
+    }
+    if (type === 'R' || type === 'Q') {
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr, dc]) => {
+        let nr = r + dr, nc = c + dc;
+        while (tryAdd(nr, nc)) { nr += dr; nc += dc; }
+      });
+    }
+    if (type === 'B' || type === 'Q') {
+      [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr, dc]) => {
+        let nr = r + dr, nc = c + dc;
+        while (tryAdd(nr, nc)) { nr += dr; nc += dc; }
+      });
+    }
+    return moves;
+  }
+
+  openHome();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+{
+  "title": "rabbit_choose_",
+  "questions": [
+    {
+      "type": "odd_one_out",
+      "prompt": "GOOD MORNING , EVERYONE , Once upon a time, a little rabbit found a gold coin.",
+      "itemsPerRound": 4,
+      "questionMedia": "",
+      "answerMedia": "images/bunny’s_golden_coin_adventure.gif",
+      "options": [
+        "images/bunny’s_golden_coin_adventure.gif",
+        "images/animated_rabbit_walking_through_forest_meadow.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "He looked around and found a sad squirrel searching for it . ",
+      "itemsPerRound": 4,
+      "questionMedia": "",
+      "answerMedia": "images/rabbit_and_squirrel’s_lost_coin_adventure.gif",
+      "options": [
+        "images/rabbit_and_squirrel’s_lost_coin_adventure.gif",
+        "images/animated_rabbit_walking_through_forest.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "The rabbit returned the coin to the squirrel ",
+      "itemsPerRound": 4,
+      "questionMedia": "",
+      "answerMedia": "images/rabbit_shares_a_shiny_coin.gif",
+      "options": [
+        "images/rabbit_shares_a_shiny_coin.gif",
+        "images/animated_rabbit_walking_through_forest_meadow.gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "the squirrel smiled and said thank you , my friend , they become the best of friends",
+      "itemsPerRound": 4,
+      "questionMedia": "",
+      "answerMedia": "images/best_friends_forever_in_the_forest.gif",
+      "options": [
+        "images/best_friends_forever_in_the_forest.gif",
+        "images/rabbit_and_squirrel’s_forest_search_(0.25x)_(1).gif"
+      ],
+      "pairs": []
+    },
+    {
+      "type": "odd_one_out",
+      "prompt": "moral : Honesty is the best policy ",
+      "itemsPerRound": 4,
+      "questionMedia": "",
+      "answerMedia": "images/rabbit_and_squirrel_share_an_honest_friendship_(0.5x).gif",
+      "options": [
+        "images/rabbit_and_squirrel_share_an_honest_friendship_(0.5x).gif",
+        "images/rabbit_and_squirrel’s_forest_search_(0.25x)_(1).gif"
+      ],
+      "pairs": []
+    }
+  ]
+}
